@@ -1,0 +1,15 @@
+coverage/
+doc/
+src/
+test/
+gulpfile.js
+jsdoc.json
+karma.config.js
+.editorconfig
+.eslintrc
+.eslintignore
+.gitignore
+.projectile
+API.md
+circle.yml
+yarn*
