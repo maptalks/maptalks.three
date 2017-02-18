@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>particles demo</title>
+  <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks@0.19.0/dist/maptalks.css">
+  <script type="text/javascript" src="https://unpkg.com/maptalks@0.19.0/dist/maptalks.min.js"></script>
+  <script type="text/javascript" src="https://unpkg.com/three@0.84.0/build/three.min.js"></script>
+  <script type="text/javascript" src="../dist/maptalks.three.js"></script>
+  <script type="text/javascript" src="particles.js"></script>
+  <style>
+    html,body{
+        margin:0px;
+        height:100%;
+        width: 100%;
+    }
+    #map { width: 100%; height: 100%; background-color : #000;}
+  </style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+
+const map = new maptalks.Map("map",{
+    center : [4.44025, 49.25576],
+    zoom   :  6,
+    centerCross : true,
+    doubleClickZoom : false,
+    attributionControl : {
+      'content' : '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    },
+    baseLayer : new maptalks.TileLayer('tile',{
+        'urlTemplate' : 'http://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png',
+        'subdomains'  : ['a','b','c','d','e']
+    }),
+    layers : [
+        new maptalks.VectorLayer('v')
+    ]
+});
+
+const emitter = new ParticleEmitter(map);
+
+const users = [
+    //berlin
+    [2.3803177343749895,48.87426045343498],
+    //london
+    [4.379829453124989,50.815104709180716],
+    //madrid
+    [-0.12456507812501064,51.558774226918004]
+];
+const sites = [
+    [13.3611484375,52.48492172703825],
+    [2.0452304687500003,44.98282973148757],
+    [8.48321875,47.37097595444764]
+];
+
+const links = users.map((u, idx) => [idx, idx]);
+
+map.getLayer('v')
+    .addGeometry(links.map(
+        link => new maptalks.LineString([users[link[0]], sites[link[1]]], {
+            symbol : {
+                'lineColor' : '#fff',
+                'lineWidth' : 1
+            }
+        })
+    ))
+    // draw users
+    .addGeometry(users.map( (u, idx) => {
+            const scale = map.getScale();
+            emitter.add({
+                'count' : 1000,
+                'from'  : u,
+                'to'  : sites[links[idx][1]],
+                'color' : randomColor(),
+                'attractors' : sites.map((s, index) => {
+                    const p = map.coordinateToPoint(new maptalks.Coordinate(s), map.getMaxZoom());
+                    return {
+                        'x' : p.x,
+                        'y' : p.y,
+                        'disabled' : false,
+                        's' : idx === index ? 100 * scale : 50 * scale
+                    };
+                })
+            });
+            return new maptalks.Marker(u, {
+                'symbol' : {
+                    'markerType'  : 'ellipse',
+                    'markerWidth' : 16,
+                    'markerHeight' : 16,
+                    'markerFill'   : '#fff',
+                    'markerLineColor' : '#fff'
+                }
+            });
+        }
+    ))
+    // draw sites
+    .addGeometry(sites.map( s => new maptalks.Marker(s, {
+        'symbol' : [
+            {
+                'markerType'  : 'ellipse',
+                'markerWidth' : 5,
+                'markerHeight' : 5,
+                'markerFillOpacity'   : 0,
+                'markerLineColor' : '#fff'
+            },
+            {
+                'markerType'  : 'ellipse',
+                'markerWidth' : 20,
+                'markerHeight' : 20,
+                'markerFillOpacity'   : 0,
+                'markerLineWidth' : 3,
+                'markerLineColor' : '#fff'
+            }
+        ]
+    })));
+
+// emit particles
+map.on('click', function () {
+    for (let i = 0; i < users.length; i++) {
+        emitter.emit(i, Math.round(20 * Math.random()) + 20);
+    }
+});
+
+
+const player = maptalks.animation.Animation.animate({}, {
+  'duration' : Number.MAX_VALUE
+}, frame => {
+    emitter.drawParticles(frame.state.progress);
+});
+
+player.play();
+
+function randomColor() {
+    return {
+        r: Math.random(),
+        g: Math.random(),
+        b: Math.random()
+    };
+}
+
+</script>
+</body>
+</html>

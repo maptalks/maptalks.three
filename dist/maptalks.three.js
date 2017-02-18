@@ -23,7 +23,8 @@ var options = {
     'renderWhenPanning': true,
     'camera': 'perspective', //orth, perspective
     'renderer': 'webgl',
-    'doubleBuffer': true
+    'doubleBuffer': true,
+    'glOptions': null
 };
 
 /**
@@ -34,19 +35,18 @@ var options = {
  * @example
  *  var layer = new maptalks.ThreeLayer('three');
  *
- *  layer.prepareToDraw = function (context) {
+ *  layer.prepareToDraw = function (gl, scene, camera) {
  *      var size = map.getSize();
  *      return [size.width, size.height]
  *  };
  *
- *  layer.draw = function (context, width, height) {
- *      context.fillStyle = "#f00";
- *      context.fillRect(0, 0, w, h);
+ *  layer.draw = function (gl, scene, camera, width, height) {
+ *      //...
  *  };
  *  layer.addTo(map);
  * @class
  * @category layer
- * @extends {maptalks.Layer}
+ * @extends {maptalks.CanvasLayer}
  * @param {String|Number} id - layer's id
  * @param {Object} options - options defined in [options]{@link maptalks.ThreeLayer#options}
  */
@@ -60,32 +60,42 @@ var ThreeLayer = function (_maptalks$CanvasLayer) {
     }
 
     /**
-     * Convert a geographic coordinate to THREE vector2
+     * Convert a geographic coordinate to THREE Vector3
      * @param  {maptalks.Coordinate} coordinate - coordinate
-     * @return {THREE.Vector2}
+     * @param {Number} [z=0] z value
+     * @return {THREE.Vector3}
      */
-    ThreeLayer.prototype.coordinateToVector = function coordinateToVector(coordinate) {
+    ThreeLayer.prototype.coordinateToVector3 = function coordinateToVector3(coordinate) {
+        var z = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+
         var map = this.getMap();
         if (!map) {
             return null;
         }
         var p = map.coordinateToPoint(coordinate, map.getMaxZoom());
-        return new THREE.Vector2(p.x, p.y);
+        return new THREE.Vector3(p.x, p.y, z);
+    };
+
+    ThreeLayer.prototype.redraw = function redraw() {
+        _maptalks$CanvasLayer.prototype.redraw.call(this);
     };
 
     /**
-     * Convert geographic distance to THREE Vector2
+     * Convert geographic distance to THREE Vector3
      * @param  {Number} w - width
      * @param  {Number} h - height
-     * @return {THREE.Vector2}
+     * @param {Number} [z=0] z value
+     * @return {THREE.Vector3}
      */
 
 
-    ThreeLayer.prototype.distanceToVector = function distanceToVector(w, h) {
+    ThreeLayer.prototype.distanceToVector3 = function distanceToVector3(w, h) {
+        var z = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+
         var map = this.getMap();
         var scale = map.getScale();
         var size = map.distanceToPixel(w, h)._multi(scale);
-        return new THREE.Vector2(size.width, size.height);
+        return new THREE.Vector3(size.width, size.height, z);
     };
 
     /**
@@ -107,10 +117,10 @@ var ThreeLayer = function (_maptalks$CanvasLayer) {
             });
         }
         var center = polygon.getCenter();
-        var centerPt = this.coordinateToVector(center);
+        var centerPt = this.coordinateToVector3(center);
         var shell = polygon.getShell();
         var outer = shell.map(function (c) {
-            return _this2.coordinateToVector(c).sub(centerPt);
+            return _this2.coordinateToVector3(c).sub(centerPt);
         });
         var shape = new THREE.Shape(outer);
         var holes = polygon.getHoles();
@@ -118,7 +128,7 @@ var ThreeLayer = function (_maptalks$CanvasLayer) {
         if (holes && holes.length > 0) {
             shape.holes = holes.map(function (item) {
                 var pts = item.map(function (c) {
-                    return _this2.coordinateToVector(c).sub(centerPt);
+                    return _this2.coordinateToVector3(c).sub(centerPt);
                 });
                 return new THREE.Shape(pts);
             });
@@ -139,8 +149,8 @@ var ThreeLayer = function (_maptalks$CanvasLayer) {
             });
         }
         var shape = this.toShape(polygon);
-        var center = this.coordinateToVector(polygon.getCenter());
-        amount = this.distanceToVector(amount, amount).x;
+        var center = this.coordinateToVector3(polygon.getCenter());
+        amount = this.distanceToVector3(amount, amount).x;
         //{ amount: extrudeH, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 1, bevelThickness: 1 };
         var geom = new THREE.ExtrudeGeometry(shape, { 'amount': amount, 'bevelEnabled': true });
         var mesh = new THREE.Mesh(geom, material);
@@ -220,18 +230,18 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
         var renderer$$1 = this.layer.options['renderer'];
         var gl;
         if (renderer$$1 === 'webgl') {
-            gl = new THREE.WebGLRenderer({
+            gl = new THREE.WebGLRenderer(maptalks.Util.extend({
                 'canvas': this.canvas,
                 'alpha': true,
                 'preserveDrawingBuffer': true
-            });
+            }, this.layer.options['glOptions']));
             gl.autoClear = false;
             gl.clear();
         } else if (renderer$$1 === 'canvas') {
-            gl = new THREE.CanvasRenderer({
+            gl = new THREE.CanvasRenderer(maptalks.Util.extend({
                 'canvas': this.canvas,
                 'alpha': true
-            });
+            }, this.layer.options['glOptions']));
         }
         gl.setSize(this.canvas.width, this.canvas.height);
         gl.setClearColor(new THREE.Color(1, 1, 1), 0);
@@ -286,6 +296,7 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
 
     ThreeRenderer.prototype.draw = function draw() {
         this.prepareCanvas();
+        // this._locateCamera();
         if (!this._predrawed) {
             this._drawContext = this.layer.prepareToDraw(this.context, this.scene, this.camera);
             if (!this._drawContext) {
@@ -300,14 +311,16 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
     };
 
     ThreeRenderer.prototype._drawLayer = function _drawLayer() {
-        this.layer.draw.apply(this.layer, [this.context, this.scene, this.camera].concat(this._drawContext));
+        var args = [this.context, this.scene, this.camera];
+        args.push.apply(args, this._drawContext);
+        this.layer.draw.apply(this.layer, args);
         this.renderScene();
         this.play();
     };
 
     ThreeRenderer.prototype.renderScene = function renderScene() {
         this._locateCamera();
-        this.context.clear();
+        // this.context.clear();
         this.context.render(this.scene, this.camera);
         this.completeRender();
     };
@@ -332,11 +345,12 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
         _maptalks$renderer$Ca.prototype.onMoveStart.call(this, param);
     };
 
-    ThreeRenderer.prototype.onMoving = function onMoving() {
+    ThreeRenderer.prototype.onMoving = function onMoving(param) {
         if (this.layer.options['renderWhenPanning']) {
             this.prepareRender();
             this.draw();
         }
+        // super.onMoving(param);
     };
 
     ThreeRenderer.prototype.onMoveEnd = function onMoveEnd(param) {
