@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>osm buildings demo</title>
+  <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks@0.19.1/dist/maptalks.css">
+  <script type="text/javascript" src="https://unpkg.com/maptalks@0.19.1/dist/maptalks.min.js"></script>
+  <!-- <script type="text/javascript" src="http://localhost:20000/maptalks.js"></script> -->
+  <script type="text/javascript" src="https://unpkg.com/three@0.84.0/build/three.min.js"></script>
+  <script type="text/javascript" src="../dist/maptalks.three.js"></script>
+  <style>
+    html,body{
+        margin:0px;
+        height:100%;
+        width: 100%;
+    }
+    #map { width: 1000px; height: 600px; background-color : #000;}
+  </style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+
+const map = new maptalks.Map("map",{
+    center : [13.41261,52.529611],
+    zoom   :  16,
+    maxZoom : 16,
+    minZoom : 15,
+    centerCross : true,
+    doubleClickZoom : false,
+    attributionControl : {
+      'content' : '<span style="padding:4px;">&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://osmbuilding.org">osmbuilding.org</a></span>'
+    },
+    baseLayer : new maptalks.TileLayer('tile',{
+        'urlTemplate' : 'http://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png',
+        'subdomains'  : ['a','b','c','d','e']
+    })
+});
+
+// feature cache
+var cache = {};
+
+// features to draw
+var features = [];
+
+// a canvas tile layer to help fetch features
+var canvasTile = new maptalks.CanvasTileLayer("tile",{
+    keepBuffer  : 1,
+    urlTemplate : "https://{s}.data.osmbuildings.org/0.2/anonymous/tile/{z}/{x}/{y}.json",
+    subdomains  : ['a','b','c','d'],
+    tileSize    : { 'width' : 512, 'height' : 512 }
+});
+canvasTile.drawTile=function(canvas, tileCtx, onComplete) {
+    maptalks.Ajax.getJSON(tileCtx.url, function (err, data) {
+        if (err || !data || !data.features.length) {
+            onComplete(null);
+            return;
+        }
+        // cache the data and set features to draw in ThreeLayer
+        var key = [tileCtx['z'], tileCtx['x'], tileCtx['y']].join();
+        cache[key] = data.features;
+
+        features = data.features;
+        threeLayer.redraw();
+        onComplete(null);
+    });
+};
+
+map.addLayer(canvasTile);
+
+var remove = true;
+// the ThreeLayer to draw buildings
+var threeLayer = new maptalks.ThreeLayer('t', { 'drawImmediate' : true });
+threeLayer.prepareToDraw = function (gl, scene, camera) {
+    var light = new THREE.PointLight(0xffffff, 0.8);
+    camera.add(light);
+};
+threeLayer.draw = function (gl, scene, camera) {
+    if (remove) {
+        for (var i = scene.children.length - 1; i >= 0; i--) {
+            if (scene.children[i] instanceof THREE.Mesh) {
+                scene.remove(scene.children[i]);
+            }
+        }
+        remove = false;
+    }
+    var me = this;
+    features.forEach(function (g) {
+        var heightPerLevel = 10;
+        var levels = g.properties.levels || 1;
+        var color = '#aaa';//getColor(num);
+
+        var m = new THREE.MeshPhongMaterial({color: color, opacity : 0.2});
+
+        var mesh = me.toExtrudeGeometry(maptalks.GeoJSON.toGeometry(g), levels * heightPerLevel, m);
+        if (Array.isArray(mesh)) {
+          scene.add.apply(scene, mesh);
+        } else {
+          scene.add(mesh);
+        }
+    });
+    features = [];
+};
+threeLayer.addTo(map);
+
+// remove old buildings and redraw the layer
+map.on('moveend zoomend', function (e) {
+    remove = true;
+    if (e.type === 'zoomend') {
+        cache = {};
+        return;
+    }
+    var preCached = cache;
+    cache = {};
+    var tiles = canvasTile.getTiles().tiles;
+    tiles.forEach(function (tile) {
+        var key = [tile['z'], tile['x'], tile['y']].join();
+        if (preCached[key]) {
+            cache[key] = preCached[key];
+        }
+    });
+    features = [];
+    for (var p in cache) {
+        features.push.apply(features, cache[p]);
+    }
+    threeLayer.redraw();
+});
+
+</script>
+</body>
+</html>
