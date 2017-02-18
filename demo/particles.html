@@ -33,7 +33,8 @@ const map = new maptalks.Map("map",{
         'subdomains'  : ['a','b','c','d','e']
     }),
     layers : [
-        new maptalks.VectorLayer('v')
+        new maptalks.VectorLayer('v'),
+        new maptalks.VectorLayer('links')
     ]
 });
 
@@ -45,34 +46,24 @@ const users = [
     //london
     [4.379829453124989,50.815104709180716],
     //madrid
-    [-0.12456507812501064,51.558774226918004]
-];
-const sites = [
+    [-0.12456507812501064,51.558774226918004],
+
     [13.3611484375,52.48492172703825],
     [2.0452304687500003,44.98282973148757],
     [8.48321875,47.37097595444764]
 ];
 
-const links = users.map((u, idx) => [idx, idx]);
 
 map.getLayer('v')
-    .addGeometry(links.map(
-        link => new maptalks.LineString([users[link[0]], sites[link[1]]], {
-            symbol : {
-                'lineColor' : '#fff',
-                'lineWidth' : 1
-            }
-        })
-    ))
     // draw users
     .addGeometry(users.map( (u, idx) => {
             const scale = map.getScale();
             emitter.add({
                 'count' : 1000,
-                'from'  : u,
-                'to'  : sites[links[idx][1]],
+                'from'  : map.getCenter(),
+                'to'  : u,
                 'color' : randomColor(),
-                'attractors' : sites.map((s, index) => {
+                'attractors' : users.map((s, index) => {
                     const p = map.coordinateToPoint(new maptalks.Coordinate(s), map.getMaxZoom());
                     return {
                         'x' : p.x,
@@ -92,32 +83,17 @@ map.getLayer('v')
                 }
             });
         }
-    ))
-    // draw sites
-    .addGeometry(sites.map( s => new maptalks.Marker(s, {
-        'symbol' : [
-            {
-                'markerType'  : 'ellipse',
-                'markerWidth' : 5,
-                'markerHeight' : 5,
-                'markerFillOpacity'   : 0,
-                'markerLineColor' : '#fff'
-            },
-            {
-                'markerType'  : 'ellipse',
-                'markerWidth' : 20,
-                'markerHeight' : 20,
-                'markerFillOpacity'   : 0,
-                'markerLineWidth' : 3,
-                'markerLineColor' : '#fff'
-            }
-        ]
-    })));
+    ));
 
 // emit particles
-map.on('click', function () {
+map.on('click', function (e) {
+    map.getLayer('links')
+        .clear()
+        .addGeometry(new maptalks.Marker(e.coordinate, { symbol : { 'markerType' : 'square', 'markerWidth' : 12, 'markerHeight' : 12, 'markerFill' : '#fff', 'markerLineColor' : '#fff' } }))
+        .addGeometry(users.map(u => new maptalks.LineString([u, e.coordinate], { symbol : { lineWidth : 1, lineColor : '#fff'} })));
     for (let i = 0; i < users.length; i++) {
-        emitter.emit(i, Math.round(20 * Math.random()) + 20);
+        emitter.lines[i].from = map.coordinateToPoint(e.coordinate, map.getMaxZoom());
+        emitter.emit(i, Math.round(20 * Math.random()) + 30);
     }
 });
 

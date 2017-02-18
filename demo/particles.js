@@ -18,7 +18,7 @@ class ParticleEmitter {
         const nx = -dx / d,
             ny = dy / d;
         // decides angle of the particle ejection area
-        const angle = 7;
+        const angle = 5;
         for (let i = 0; i < num; i++) {
             let speed = 20;
             if (i % 2 === 0) {
@@ -132,9 +132,9 @@ class ParticleEmitter {
           }
           var material = new THREE.PointsMaterial({
               sizeAttenuation : false,
-              size: 15,
+              size: 12,
               transparent: true,
-              opacity: 0.1,
+              opacity: 0.2,
               vertexColors: true,
               blending: THREE.AdditiveBlending
           });
@@ -361,7 +361,7 @@ class ParticleLine {
      * @param  {Number} m force multiplier
      */
     _attract(p, a, t, m) {
-        if (a.disabled) return;
+        if (!a || a.disabled) return;
 
         var dx = a.x - p.x;
         var dy = a.y - p.y;
