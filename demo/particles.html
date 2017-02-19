@@ -74,13 +74,24 @@ map.getLayer('v')
                 })
             });
             return new maptalks.Marker(u, {
-                'symbol' : {
-                    'markerType'  : 'ellipse',
-                    'markerWidth' : 16,
-                    'markerHeight' : 16,
-                    'markerFill'   : '#fff',
-                    'markerLineColor' : '#fff'
-                }
+                'symbol' : [
+                    {
+                        'markerType'  : 'ellipse',
+                        'markerWidth' : 16,
+                        'markerHeight' : 16,
+                        'markerFill'   : 'rgba(0, 0, 0, 0)',
+                        'markerLineColor' : '#fff',
+                        'markerLineWidth' : 1
+                    },
+                    {
+                        'markerType'  : 'ellipse',
+                        'markerWidth' : 4,
+                        'markerHeight' : 4,
+                        'markerFill'   : '#fff',
+                        'markerLineColor' : '#fff',
+                        'markerLineWidth' : 2
+                    }
+                ]
             });
         }
     ));
@@ -89,8 +100,8 @@ map.getLayer('v')
 map.on('click', function (e) {
     map.getLayer('links')
         .clear()
-        .addGeometry(new maptalks.Marker(e.coordinate, { symbol : { 'markerType' : 'square', 'markerWidth' : 12, 'markerHeight' : 12, 'markerFill' : '#fff', 'markerLineColor' : '#fff' } }))
-        .addGeometry(users.map(u => new maptalks.LineString([u, e.coordinate], { symbol : { lineWidth : 1, lineColor : '#fff'} })));
+        .addGeometry(new maptalks.Marker(e.coordinate, { symbol : { 'markerType' : 'square', 'markerWidth' : 10, 'markerHeight' : 10, 'markerFill' : '#fff', 'markerLineColor' : '#fff' } }))
+        .addGeometry(users.map(u => new maptalks.LineString([u, e.coordinate], { 'symbol' : { 'lineWidth' : 1, 'lineColor' : '#fff', 'lineOpacity' : 0.3 } })));
     for (let i = 0; i < users.length; i++) {
         emitter.lines[i].from = map.coordinateToPoint(e.coordinate, map.getMaxZoom());
         emitter.emit(i, Math.round(20 * Math.random()) + 30);
