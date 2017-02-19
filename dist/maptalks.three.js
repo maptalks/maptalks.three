@@ -137,7 +137,7 @@ var ThreeLayer = function (_maptalks$CanvasLayer) {
         return shape;
     };
 
-    ThreeLayer.prototype.toExtrudeGeometry = function toExtrudeGeometry(polygon, amount, material) {
+    ThreeLayer.prototype.toExtrudeGeometry = function toExtrudeGeometry(polygon, amount, material, removeDup) {
         var _this3 = this;
 
         if (!polygon) {
@@ -148,17 +148,39 @@ var ThreeLayer = function (_maptalks$CanvasLayer) {
                 return _this3.toExtrudeGeometry(c, amount, material);
             });
         }
+        if (removeDup) {
+            var rings = polygon.getCoordinates();
+            rings.forEach(function (ring) {
+                var length = ring.length;
+                for (var i = length - 1; i >= 1; i--) {
+                    if (ring[i].equals(ring[i - 1])) {
+                        ring.splice(i, 1);
+                    }
+                }
+            });
+            polygon.setCoordinates(rings);
+        }
         var shape = this.toShape(polygon);
         var center = this.coordinateToVector3(polygon.getCenter());
         amount = this.distanceToVector3(amount, amount).x;
         //{ amount: extrudeH, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 1, bevelThickness: 1 };
         var geom = new THREE.ExtrudeGeometry(shape, { 'amount': amount, 'bevelEnabled': true });
         var mesh = new THREE.Mesh(geom, material);
-        // mesh.translateZ(-amount - 1);
-        // mesh.translateX(center.x);
-        // mesh.translateY(center.y);
         mesh.position.set(center.x, center.y, -amount);
         return mesh;
+    };
+
+    ThreeLayer.prototype.clearMesh = function clearMesh() {
+        var scene = this.getScene();
+        if (!scene) {
+            return this;
+        }
+        for (var i = scene.children.length - 1; i >= 0; i--) {
+            if (scene.children[i] instanceof THREE.Mesh) {
+                scene.remove(scene.children[i]);
+            }
+        }
+        return this;
     };
 
     ThreeLayer.prototype.lookAt = function lookAt(vector) {

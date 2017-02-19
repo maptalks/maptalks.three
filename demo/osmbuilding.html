@@ -2,9 +2,8 @@
 <html>
 <head>
   <title>osm buildings demo</title>
-  <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks@0.19.1/dist/maptalks.css">
-  <script type="text/javascript" src="https://unpkg.com/maptalks@0.19.1/dist/maptalks.min.js"></script>
-  <!-- <script type="text/javascript" src="http://localhost:20000/maptalks.js"></script> -->
+  <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks@0.19.2/dist/maptalks.css">
+  <script type="text/javascript" src="https://unpkg.com/maptalks@0.19.2/dist/maptalks.min.js"></script>
   <script type="text/javascript" src="https://unpkg.com/three@0.84.0/build/three.min.js"></script>
   <script type="text/javascript" src="../dist/maptalks.three.js"></script>
   <style>
@@ -24,7 +23,7 @@ var map = new maptalks.Map("map",{
     center : [13.41261,52.529611],
     zoom   :  16,
     maxZoom : 16,
-    minZoom : 15,
+
     centerCross : true,
     doubleClickZoom : false,
     attributionControl : {
@@ -36,18 +35,18 @@ var map = new maptalks.Map("map",{
     })
 });
 
-// feature cache
+// features cache
 var cache = {};
 
 // features to draw
 var features = [];
 
-// a canvas tile layer to help fetch features
+// create a canvas tile layer to help fetch features.
 var canvasTile = new maptalks.CanvasTileLayer("tile",{
-    keepBuffer  : 1,
+    minZoom : 15,
+    // debug : true,
     urlTemplate : "https://{s}.data.osmbuildings.org/0.2/anonymous/tile/{z}/{x}/{y}.json",
-    subdomains  : ['a','b','c','d'],
-    tileSize    : { 'width' : 512, 'height' : 512 }
+    subdomains  : ['a','b','c','d']
 });
 canvasTile.drawTile=function(canvas, tileCtx, onComplete) {
     maptalks.Ajax.getJSON(tileCtx.url, function (err, data) {
@@ -64,34 +63,30 @@ canvasTile.drawTile=function(canvas, tileCtx, onComplete) {
         onComplete(null);
     });
 };
-
 map.addLayer(canvasTile);
+
 
 var remove = true;
 // the ThreeLayer to draw buildings
 var threeLayer = new maptalks.ThreeLayer('t', { 'drawImmediate' : true });
 threeLayer.prepareToDraw = function (gl, scene, camera) {
-    var light = new THREE.PointLight(0xffffff, 0.8);
+    var light = new THREE.PointLight(0xffffff);
     camera.add(light);
 };
 threeLayer.draw = function (gl, scene, camera) {
     if (remove) {
-        for (var i = scene.children.length - 1; i >= 0; i--) {
-            if (scene.children[i] instanceof THREE.Mesh) {
-                scene.remove(scene.children[i]);
-            }
-        }
+        this.clearMesh();
         remove = false;
     }
     var me = this;
     features.forEach(function (g) {
         var heightPerLevel = 10;
         var levels = g.properties.levels || 1;
-        var color = '#aaa';//getColor(num);
+        var color = getColor(levels);
 
         var m = new THREE.MeshPhongMaterial({color: color, opacity : 0.2});
 
-        var mesh = me.toExtrudeGeometry(maptalks.GeoJSON.toGeometry(g), levels * heightPerLevel, m);
+        var mesh = me.toExtrudeGeometry(maptalks.GeoJSON.toGeometry(g), levels * heightPerLevel, m, true);
         if (Array.isArray(mesh)) {
           scene.add.apply(scene, mesh);
         } else {
@@ -124,6 +119,17 @@ map.on('moveend zoomend', function (e) {
     }
     threeLayer.redraw();
 });
+
+function getColor(level) {
+    if (level < 2) {
+        return 0x2685a7;
+    } else if (level >= 2 && level <= 5) {
+        return 0xff5733;
+    } else {
+        return 0xff2e00;
+    }
+ }
+
 
 </script>
 </body>

@@ -97,12 +97,24 @@ export class ThreeLayer extends maptalks.CanvasLayer {
     }
 
 
-    toExtrudeGeometry(polygon, amount, material) {
+    toExtrudeGeometry(polygon, amount, material, removeDup) {
         if (!polygon) {
             return null;
         }
         if (polygon instanceof maptalks.MultiPolygon) {
             return polygon.getGeometries().map(c => this.toExtrudeGeometry(c, amount, material));
+        }
+        if (removeDup) {
+            const rings = polygon.getCoordinates();
+            rings.forEach( ring => {
+                const length = ring.length;
+                for (let i = length - 1; i >= 1; i--) {
+                    if (ring[i].equals(ring[i - 1])) {
+                        ring.splice(i, 1);
+                    }
+                }
+            });
+            polygon.setCoordinates(rings);
         }
         const shape = this.toShape(polygon);
         const center = this.coordinateToVector3(polygon.getCenter());
@@ -110,11 +122,21 @@ export class ThreeLayer extends maptalks.CanvasLayer {
         //{ amount: extrudeH, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 1, bevelThickness: 1 };
         const geom = new THREE.ExtrudeGeometry(shape, { 'amount': amount, 'bevelEnabled': true });
         const mesh = new THREE.Mesh(geom, material);
-        // mesh.translateZ(-amount - 1);
-        // mesh.translateX(center.x);
-        // mesh.translateY(center.y);
         mesh.position.set(center.x, center.y, -amount);
         return mesh;
+    }
+
+    clearMesh() {
+        const scene = this.getScene();
+        if (!scene) {
+            return this;
+        }
+        for (var i = scene.children.length - 1; i >= 0; i--) {
+            if (scene.children[i] instanceof THREE.Mesh) {
+                scene.remove(scene.children[i]);
+            }
+        }
+        return this;
     }
 
     lookAt(vector) {
