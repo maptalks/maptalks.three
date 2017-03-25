@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>maptalks.heatmap demo</title>
+  <!-- <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks@<2.0.0/dist/maptalks.css">
+  <script type="text/javascript" src="https://unpkg.com/maptalks@<2.0.0/dist/maptalks.min.js"></script>
+  <script type="text/javascript" src="https://unpkg.com/three@0.84.0/build/three.min.js"></script> -->
+  <script type="text/javascript" src="http://localhost:20000/maptalks.js"></script>
+  <script type="text/javascript" src="three.min.js"></script>
+  <script type="text/javascript" src="../dist/maptalks.three.js"></script>
+  <style>
+    html,body{
+        margin:0px;
+        height:100%;
+        width: 100%;
+    }
+    #map { width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+
+var map = new maptalks.Map("map",{
+    center : [21.660173581570717, 56.745022576039815],//[ 13.77314, 46.04137 ],
+    zoom   :  4,
+    centerCross : true,
+    attributionControl : {
+      'content' : '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    },
+    baseLayer : new maptalks.TileLayer('tile',{
+        'urlTemplate' : 'http://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png',
+        'subdomains'  : ['a','b','c','d','e']
+    })
+});
+
+maptalks.Ajax.getJSON(
+  'boundary.geojson',
+  function (err, countries) {
+    var threeLayer = new maptalks.ThreeLayer('t');
+    threeLayer.prepareToDraw = function (gl, scene, camera) {
+        var light = new THREE.PointLight(0xffffff, 0.8);
+        camera.add(light);
+        var me = this;
+        countries.features.forEach(function (g) {
+            var num = g.properties.population;
+            var color = getColor(num);
+
+            var m = new THREE.MeshPhongMaterial({color: color, opacity : 0.7});
+
+            var mesh = me.toExtrudeGeometry(maptalks.GeoJSON.toGeometry(g), num / 4E2, m);
+            if (Array.isArray(mesh)) {
+              scene.add.apply(scene, mesh);
+            } else {
+              scene.add(mesh);
+            }
+        });
+    };
+
+    map.addLayer(threeLayer);
+
+    // map.setBearing(60);
+    map.setPitch(60);
+  }
+);
+
+
+function getColor(num) {
+    if (num < 3E7) {
+        return 0x2685a7;
+    } else if (num >= 5E7 && num < 8E7) {
+        return 0xffff00;
+    } else {
+        return 0xff2e00;
+    }
+ }
+
+
+</script>
+</body>
+</html>
