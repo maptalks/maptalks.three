@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>osm buildings demo</title>
+<link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.min.js"></script>
+  <script type="text/javascript" src="https://unpkg.com/three@0.84.0/build/three.min.js"></script>
+  <script type="text/javascript" src="../dist/maptalks.three.js"></script>
+  <script type="text/javascript" src="buildings.js"></script>
+  <style>
+    html,body{
+        margin:0px;
+        height:100%;
+        width: 100%;
+    }
+    #map { width: 1000px; height: 700px; background-color : #000;}
+  </style>
+</head>
+<body>
+<div><a href="javascript:rotateL();">左旋</a> | <a href="javascript:rotateR();">右旋</a> | <a href="javascript:tiltUp();">上倾</a> | <a href="javascript:tiltDown();">下倾</a></div>
+<div id="map"></div>
+<script>
+
+var map = new maptalks.Map("map",{
+    center : [13.41261,52.529611],
+    zoom   :  17,
+    pitch : 60,
+    bearing : 150,
+
+    centerCross : true,
+    doubleClickZoom : false,
+    attribution : {
+      'content' : '<span style="padding:4px;">&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://osmbuilding.org">osmbuilding.org</a></span>'
+    },
+    baseLayer : new maptalks.TileLayer('tile',{
+        'urlTemplate' : 'http://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png',
+        'subdomains'  : ['a','b','c','d','e']
+    })
+});
+
+// features to draw
+var features = [];
+
+buildings.forEach(function (b) {
+    features = features.concat(b.features);
+});
+
+// the ThreeLayer to draw buildings
+var threeLayer = new maptalks.ThreeLayer('t');
+threeLayer.prepareToDraw = function (gl, scene, camera) {
+    var me = this;
+    var light = new THREE.PointLight(0xffffff);
+    camera.add(light);
+    features.forEach(function (g) {
+        var heightPerLevel = 10;
+        var levels = g.properties.levels || 1;
+        var color = getColor(levels);
+
+        var m = new THREE.MeshPhongMaterial({color: color, opacity : 0.2});
+
+        var mesh = me.toExtrudeGeometry(maptalks.GeoJSON.toGeometry(g), levels * heightPerLevel, m, true);
+        if (Array.isArray(mesh)) {
+          scene.add.apply(scene, mesh);
+        } else {
+          scene.add(mesh);
+        }
+    });
+};
+threeLayer.addTo(map);
+
+function getColor(level) {
+    if (level < 2) {
+        return 0x2685a7;
+    } else if (level >= 2 && level <= 5) {
+        return 0xff5733;
+    } else {
+        return 0xff2e00;
+    }
+ }
+
+
+function rotateL() {
+    var bearing = map.getBearing();
+    map.setBearing(bearing + 10);
+}
+
+function rotateR() {
+    var bearing = map.getBearing();
+    map.setBearing(bearing - 10);
+}
+
+function tiltUp() {
+    var pitch = map.getPitch();
+    map.setPitch(pitch + 5);
+}
+
+function tiltDown() {
+    var pitch = map.getPitch();
+    map.setPitch(pitch - 5);
+}
+
+</script>
+</body>
+</html>

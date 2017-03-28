@@ -145,7 +145,7 @@ class ParticleEmitter {
           return [points, line];
         };
 
-        layer.draw = function(gl, scene, camera, points, line) {
+        layer.draw = function(gl, view, scene, camera, points, line) {
           const center = layer.coordinateToVector3(map.getCenter());
           for (let i = 0; i < particles.length; i++) {
             let i2 = i * 2;

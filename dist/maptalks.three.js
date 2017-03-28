@@ -27,6 +27,8 @@ var options = {
     'glOptions': null
 };
 
+var RADIAN = Math.PI / 180;
+
 /**
  * A Layer to render with THREE.JS (http://threejs.org), the most popular library for WebGL. <br>
  *
@@ -90,7 +92,8 @@ var ThreeLayer = function (_maptalks$CanvasLayer) {
 
         var map = this.getMap();
         var scale = map.getScale();
-        var size = map.distanceToPixel(w, h)._multi(scale);
+        var fovRatio = this._getFovRatio();
+        var size = map.distanceToPixel(w, h)._multi(scale / fovRatio);
         return new THREE.Vector3(size.width, size.height, z);
     };
 
@@ -219,6 +222,20 @@ var ThreeLayer = function (_maptalks$CanvasLayer) {
         return null;
     };
 
+    /**
+     * To make map's 2d point's 1 pixel euqal with 1 pixel on XY plane in THREE's scene:
+     * 1. fov is 90 and camera's z is height / 2 * scale,
+     * 2. if fov is not 90, a ratio is caculated to transfer z to the equivalent when fov is 90
+     * @return {Number} fov ratio on z axis
+     */
+
+
+    ThreeLayer.prototype._getFovRatio = function _getFovRatio() {
+        var map = this.getMap();
+        var fov = map.getFov();
+        return Math.tan(fov / 2 * RADIAN);
+    };
+
     return ThreeLayer;
 }(maptalks.CanvasLayer);
 
@@ -279,15 +296,11 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
         gl.canvas = this.canvas;
         this.context = gl;
         var maxScale = map.getScale(map.getMinZoom()) / map.getScale(map.getMaxZoom());
+        var farZ = maxScale * size.height / 2 / this.layer._getFovRatio();
         // scene
         var scene = this.scene = new THREE.Scene();
-        // const camera = this.camera =  new THREE.PerspectiveCamera(90, size.width / size.height, 1, maxScale * 10000);
-
-        var altitude = map.getAltitude();
-        var fov = 2 * Math.atan(1 / altitude) * 180 / Math.PI;
-        fov = 70;
-        var camera = this.camera = new THREE.PerspectiveCamera(fov, size.width / size.height, 1, maxScale * 10000);
-        // camera.matrixAutoUpdate = false;
+        var fov = map.getFov();
+        var camera = this.camera = new THREE.PerspectiveCamera(fov, size.width / size.height, 1, farZ);
         this.onCanvasCreate();
         this.layer.onCanvasCreate(this.context, this.scene, this.camera);
         scene.add(camera);
@@ -351,38 +364,31 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
 
     ThreeRenderer.prototype._locateCamera = function _locateCamera() {
         var map = this.getMap();
-        var fullExtent = map.getFullExtent();
         var size = map.getSize();
         var scale = map.getScale();
         var camera = this.camera;
-        var center = map.getCenter();
-        var center2D = map.coordinateToPoint(center, map.getMaxZoom());
-        var fov = camera.fov;
-        var ratio = Math.tan(fov / 2 * Math.PI / 180);
-        var z = -scale * size.height / 2;
-        camera.position.set(center2D.x, center2D.y, z / ratio);
-        camera.up.set(0, fullExtent['top'] >= fullExtent['bottom'] ? -1 : 1, 0);
-        // console.log('camera', camera.matrix.elements.join());
-        // console.log('camMat', camMat.join());
-        // const m = new THREE.Matrix4();
-        // m.set.apply(m, camMat);
-        // m.multiplyMatrices(m, camera.matrix);
-        // console.log('testing', m.elements.join());
-        // m.getInverse(m);
-        // camera.applyMatrix(m);
+        // 1. camera is always looking at map's center
+        // 2. camera's distance from map's center doesn't change when rotating and tilting.
+        var center2D = map.coordinateToPoint(map.getCenter(), map.getMaxZoom());
+        var pitch = map.getPitch() * RADIAN;
+        var bearing = map.getBearing() * RADIAN;
+
+        var ratio = this.layer._getFovRatio();
+        var z = -scale * size.height / 2 / ratio;
+
+        // when map tilts, camera's position should be lower in Z axis
+        camera.position.z = z * Math.cos(pitch);
+        // and [dist] away from map's center on XY plane to tilt the scene.
+        var dist = Math.sin(pitch) * z;
+        // when map rotates, the camera's xy position is rotating with the given bearing and still keeps [dist] away from map's center
+        camera.position.x = center2D.x + dist * Math.sin(bearing);
+        camera.position.y = center2D.y - dist * Math.cos(bearing);
+
+        // when map rotates, camera's up axis is pointing to south direction of map
+        camera.up.set(Math.sin(bearing), -Math.cos(bearing), 0);
+
+        // look at to the center of map
         camera.lookAt(new THREE.Vector3(center2D.x, center2D.y, 0));
-        camera.rotation.z -= map.getBearing() * Math.PI / 180;
-        var pitch = map.getPitch() * Math.PI / 180;
-        if (pitch) {
-            var dy = Math.sin(pitch) * z / ratio;
-            camera.position.y -= dy;
-            camera.position.z = z / ratio * Math.cos(pitch);
-
-            // const dy = Math.tan(pitch) * z / ratio;
-            // camera.position.y -= dy;
-
-            camera.lookAt(new THREE.Vector3(center2D.x, center2D.y, 0));
-        }
         camera.updateProjectionMatrix();
     };
 

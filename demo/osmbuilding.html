@@ -2,8 +2,9 @@
 <html>
 <head>
   <title>osm buildings demo</title>
-  <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks@0.19.3/dist/maptalks.css">
-  <script type="text/javascript" src="https://unpkg.com/maptalks@0.19.3/dist/maptalks.min.js"></script>
+<!--   <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks@0.19.3/dist/maptalks.css">
+  <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.min.js"></script> -->
+  <script type="text/javascript" src="http://localhost:20000/maptalks.js"></script>
   <script type="text/javascript" src="https://unpkg.com/three@0.84.0/build/three.min.js"></script>
   <script type="text/javascript" src="../dist/maptalks.three.js"></script>
   <style>
@@ -26,7 +27,7 @@ var map = new maptalks.Map("map",{
 
     centerCross : true,
     doubleClickZoom : false,
-    attributionControl : {
+    attribution : {
       'content' : '<span style="padding:4px;">&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://osmbuilding.org">osmbuilding.org</a></span>'
     },
     baseLayer : new maptalks.TileLayer('tile',{
@@ -73,7 +74,7 @@ threeLayer.prepareToDraw = function (gl, scene, camera) {
     var light = new THREE.PointLight(0xffffff);
     camera.add(light);
 };
-threeLayer.draw = function (gl, scene, camera) {
+threeLayer.draw = function (gl, view, scene, camera) {
     if (remove) {
         this.clearMesh();
         remove = false;
