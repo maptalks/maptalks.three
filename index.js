@@ -2,6 +2,7 @@ import * as maptalks from 'maptalks';
 import THREE from 'three';
 
 const options = {
+    'drawImmediate' : true,
     'renderOnMoving' : true,
     'renderOnZooming' : true,
     'renderer' : 'webgl',
