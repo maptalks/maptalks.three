@@ -48,7 +48,7 @@ export class ThreeLayer extends maptalks.CanvasLayer {
         if (!map) {
             return null;
         }
-        const p = map.coordinateToPoint(coordinate, map.getMaxZoom());
+        const p = map.coordinateToPoint(coordinate, map.getMaxNativeZoom());
         return new THREE.Vector3(p.x, p.y, z);
     }
 
@@ -121,7 +121,9 @@ export class ThreeLayer extends maptalks.CanvasLayer {
         amount = this.distanceToVector3(amount, amount).x;
         //{ amount: extrudeH, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 1, bevelThickness: 1 };
         const geom = new THREE.ExtrudeGeometry(shape, { 'amount': amount, 'bevelEnabled': true });
-        const mesh = new THREE.Mesh(geom, material);
+        const buffGeom = new THREE.BufferGeometry();
+        buffGeom.fromGeometry(geom);
+        const mesh = new THREE.Mesh(buffGeom, material);
         mesh.position.set(center.x, center.y, -amount);
         return mesh;
     }
@@ -241,7 +243,7 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         gl.setClearColor(new THREE.Color(1, 1, 1), 0);
         gl.canvas = this.canvas;
         this.context = gl;
-        const maxScale = map.getScale(map.getMinZoom()) / map.getScale(map.getMaxZoom());
+        const maxScale = map.getScale(map.getMinZoom()) / map.getScale(map.getMaxNativeZoom());
         const farZ = maxScale * size.height / 2 / this.layer._getFovRatio();
         // scene
         const scene = this.scene = new THREE.Scene();
@@ -316,7 +318,7 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         const camera = this.camera;
         // 1. camera is always looking at map's center
         // 2. camera's distance from map's center doesn't change when rotating and tilting.
-        const center2D = map.coordinateToPoint(map.getCenter(), map.getMaxZoom());
+        const center2D = map.coordinateToPoint(map.getCenter(), map.getMaxNativeZoom());
         const pitch = map.getPitch() * RADIAN;
         const bearing = map.getBearing() * RADIAN;
 
