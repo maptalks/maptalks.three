@@ -64,7 +64,6 @@ new maptalks.ThreeLayer(id, options)
 ```
 
 * id **String** layer id
-* data **Marker[]** layer data, an array of maptalks.Marker
 * options **Object** options
     * glOptions **Object** options when creating webgl context, null by default
     * doubleBuffer **Boolean** whether the layer canvas is painted with double buffer, true by default
