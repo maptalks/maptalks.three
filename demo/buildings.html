@@ -17,13 +17,12 @@
   </style>
 </head>
 <body>
-<div><a href="javascript:rotateL();">左旋</a> | <a href="javascript:rotateR();">右旋</a> | <a href="javascript:tiltUp();">上倾</a> | <a href="javascript:tiltDown();">下倾</a></div>
 <div id="map"></div>
 <script>
 
 var map = new maptalks.Map("map",{
     center : [13.41261,52.529611],
-    zoom   :  17,
+    zoom   :  15,
     pitch : 60,
     bearing : 150,
 
@@ -46,17 +45,21 @@ buildings.forEach(function (b) {
 });
 
 // the ThreeLayer to draw buildings
-var threeLayer = new maptalks.ThreeLayer('t');
+var threeLayer = new maptalks.ThreeLayer('t', {
+    forceRenderOnMoving : true,
+    forceRenderOnDragRotating : true
+});
 threeLayer.prepareToDraw = function (gl, scene, camera) {
     var me = this;
     var light = new THREE.PointLight(0xffffff);
     camera.add(light);
+
     features.forEach(function (g) {
         var heightPerLevel = 10;
         var levels = g.properties.levels || 1;
         var color = getColor(levels);
 
-        var m = new THREE.MeshPhongMaterial({color: color, opacity : 0.2});
+        var m = new THREE.MeshPhongMaterial({color: color, opacity : 0.7});
 
         var mesh = me.toExtrudeGeometry(maptalks.GeoJSON.toGeometry(g), levels * heightPerLevel, m, true);
         if (Array.isArray(mesh)) {
@@ -78,26 +81,6 @@ function getColor(level) {
     }
  }
 
-
-function rotateL() {
-    var bearing = map.getBearing();
-    map.setBearing(bearing + 10);
-}
-
-function rotateR() {
-    var bearing = map.getBearing();
-    map.setBearing(bearing - 10);
-}
-
-function tiltUp() {
-    var pitch = map.getPitch();
-    map.setPitch(pitch + 5);
-}
-
-function tiltDown() {
-    var pitch = map.getPitch();
-    map.setPitch(pitch - 5);
-}
 
 </script>
 </body>

@@ -2,9 +2,6 @@ import * as maptalks from 'maptalks';
 import THREE from 'three';
 
 const options = {
-    'drawImmediate' : true,
-    'renderOnMoving' : true,
-    'renderOnZooming' : true,
     'renderer' : 'webgl',
     'doubleBuffer' : true,
     'glOptions' : null
@@ -36,7 +33,21 @@ const RADIAN = Math.PI / 180;
  * @param {Object} options - options defined in [options]{@link maptalks.ThreeLayer#options}
  */
 export class ThreeLayer extends maptalks.CanvasLayer {
+    /**
+     * Draw method of ThreeLayer
+     * In default, it calls renderScene, refresh the camera and the scene
+     */
+    draw() {
+        this.renderScene();
+    }
 
+    /**
+     * Draw method of ThreeLayer when map is interacting
+     * In default, it calls renderScene, refresh the camera and the scene
+     */
+    drawOnInteracting() {
+        this.renderScene();
+    }
     /**
      * Convert a geographic coordinate to THREE Vector3
      * @param  {maptalks.Coordinate} coordinate - coordinate
@@ -301,15 +312,6 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         delete this._drawContext;
         super.remove();
     }
-
-    isRenderOnMoving() {
-        return this.layer.options['renderOnMoving'];
-    }
-
-    isRenderOnZooming() {
-        return this.layer.options['renderOnZooming'];
-    }
-
 
     _locateCamera() {
         const map = this.getMap();
