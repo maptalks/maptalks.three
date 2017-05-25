@@ -20,9 +20,6 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : _defaults(subClass, superClass); }
 
 var options = {
-    'drawImmediate': true,
-    'renderOnMoving': true,
-    'renderOnZooming': true,
     'renderer': 'webgl',
     'doubleBuffer': true,
     'glOptions': null
@@ -63,11 +60,30 @@ var ThreeLayer = function (_maptalks$CanvasLayer) {
     }
 
     /**
+     * Draw method of ThreeLayer
+     * In default, it calls renderScene, refresh the camera and the scene
+     */
+    ThreeLayer.prototype.draw = function draw() {
+        this.renderScene();
+    };
+
+    /**
+     * Draw method of ThreeLayer when map is interacting
+     * In default, it calls renderScene, refresh the camera and the scene
+     */
+
+
+    ThreeLayer.prototype.drawOnInteracting = function drawOnInteracting() {
+        this.renderScene();
+    };
+    /**
      * Convert a geographic coordinate to THREE Vector3
      * @param  {maptalks.Coordinate} coordinate - coordinate
      * @param {Number} [z=0] z value
      * @return {THREE.Vector3}
      */
+
+
     ThreeLayer.prototype.coordinateToVector3 = function coordinateToVector3(coordinate) {
         var z = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
 
@@ -75,7 +91,7 @@ var ThreeLayer = function (_maptalks$CanvasLayer) {
         if (!map) {
             return null;
         }
-        var p = map.coordinateToPoint(coordinate, map.getMaxZoom());
+        var p = map.coordinateToPoint(coordinate, map.getMaxNativeZoom());
         return new THREE.Vector3(p.x, p.y, z);
     };
 
@@ -165,7 +181,9 @@ var ThreeLayer = function (_maptalks$CanvasLayer) {
         amount = this.distanceToVector3(amount, amount).x;
         //{ amount: extrudeH, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 1, bevelThickness: 1 };
         var geom = new THREE.ExtrudeGeometry(shape, { 'amount': amount, 'bevelEnabled': true });
-        var mesh = new THREE.Mesh(geom, material);
+        var buffGeom = new THREE.BufferGeometry();
+        buffGeom.fromGeometry(geom);
+        var mesh = new THREE.Mesh(buffGeom, material);
         mesh.position.set(center.x, center.y, -amount);
         return mesh;
     };
@@ -296,7 +314,7 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
         gl.setClearColor(new THREE.Color(1, 1, 1), 0);
         gl.canvas = this.canvas;
         this.context = gl;
-        var maxScale = map.getScale(map.getMinZoom()) / map.getScale(map.getMaxZoom());
+        var maxScale = map.getScale(map.getMinZoom()) / map.getScale(map.getMaxNativeZoom());
         var farZ = maxScale * size.height / 2 / this.layer._getFovRatio();
         // scene
         var scene = this.scene = new THREE.Scene();
@@ -355,14 +373,6 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
         _maptalks$renderer$Ca.prototype.remove.call(this);
     };
 
-    ThreeRenderer.prototype.isRenderOnMoving = function isRenderOnMoving() {
-        return this.layer.options['renderOnMoving'];
-    };
-
-    ThreeRenderer.prototype.isRenderOnZooming = function isRenderOnZooming() {
-        return this.layer.options['renderOnZooming'];
-    };
-
     ThreeRenderer.prototype._locateCamera = function _locateCamera() {
         var map = this.getMap();
         var size = map.getSize();
@@ -370,7 +380,7 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
         var camera = this.camera;
         // 1. camera is always looking at map's center
         // 2. camera's distance from map's center doesn't change when rotating and tilting.
-        var center2D = map.coordinateToPoint(map.getCenter(), map.getMaxZoom());
+        var center2D = map.coordinateToPoint(map.getCenter(), map.getMaxNativeZoom());
         var pitch = map.getPitch() * RADIAN;
         var bearing = map.getBearing() * RADIAN;
 
