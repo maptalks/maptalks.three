@@ -1,5 +1,5 @@
 /*!
- * maptalks.three v0.1.0
+ * maptalks.three v0.2.0
  * LICENSE : MIT
  * (c) 2016-2017 maptalks.org
  */
@@ -153,7 +153,7 @@ var ThreeLayer = function (_maptalks$CanvasLayer) {
         return shape;
     };
 
-    ThreeLayer.prototype.toExtrudeGeometry = function toExtrudeGeometry(polygon, amount, material, removeDup) {
+    ThreeLayer.prototype.toExtrudeMesh = function toExtrudeMesh(polygon, amount, material, removeDup) {
         var _this3 = this;
 
         if (!polygon) {
