@@ -61,7 +61,7 @@ threeLayer.prepareToDraw = function (gl, scene, camera) {
 
         var m = new THREE.MeshPhongMaterial({color: color, opacity : 0.7});
 
-        var mesh = me.toExtrudeGeometry(maptalks.GeoJSON.toGeometry(g), levels * heightPerLevel, m, true);
+        var mesh = me.toExtrudeMesh(maptalks.GeoJSON.toGeometry(g), levels * heightPerLevel, m, true);
         if (Array.isArray(mesh)) {
           scene.add.apply(scene, mesh);
         } else {

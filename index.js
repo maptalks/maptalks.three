@@ -108,7 +108,7 @@ export class ThreeLayer extends maptalks.CanvasLayer {
     }
 
 
-    toExtrudeGeometry(polygon, amount, material, removeDup) {
+    toExtrudeMesh(polygon, amount, material, removeDup) {
         if (!polygon) {
             return null;
         }
