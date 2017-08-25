@@ -1,6 +1,6 @@
 # maptalks.three
 
-[![CircleCI](https://circleci.com/gh/maptalks/maptalks.three.svg?style=shield)](https://circleci.com/gh/maptalks/maptalks.three)
+[![CircleCI](https://circleci.com/gh/maptalks/maptalks.three/tree/master.svg?style=shield)](https://circleci.com/gh/maptalks/maptalks.three)
 [![NPM Version](https://img.shields.io/npm/v/maptalks.three.svg)](https://github.com/maptalks/maptalks.three)
 
 A maptalks Layer to render with THREE.js
