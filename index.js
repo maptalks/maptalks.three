@@ -59,7 +59,7 @@ export class ThreeLayer extends maptalks.CanvasLayer {
         if (!map) {
             return null;
         }
-        const p = map.coordinateToPoint(coordinate, map.getMaxNativeZoom());
+        const p = map.coordinateToPoint(coordinate, getTargetZoom(map));
         return new THREE.Vector3(p.x, p.y, z);
     }
 
@@ -67,15 +67,18 @@ export class ThreeLayer extends maptalks.CanvasLayer {
      * Convert geographic distance to THREE Vector3
      * @param  {Number} w - width
      * @param  {Number} h - height
-     * @param {Number} [z=0] z value
      * @return {THREE.Vector3}
      */
-    distanceToVector3(w, h, z = 0) {
+    distanceToVector3(w, h, coord) {
         const map = this.getMap();
-        const scale = map.getScale();
-        const fovRatio = this._getFovRatio();
-        const size = map.distanceToPixel(w, h)._multi(scale / fovRatio);
-        return new THREE.Vector3(size.width, size.height, z);
+        const zoom = getTargetZoom(map),
+            center = coord || map.getCenter(),
+            target = map.locate(center, w, h);
+        const p0 = map.coordinateToPoint(center, zoom),
+            p1 = map.coordinateToPoint(target, zoom);
+        const x = Math.abs(p1.x - p0.x) * maptalks.Util.sign(w);
+        const y = Math.abs(p1.y - p0.y) * maptalks.Util.sign(h);
+        return new THREE.Vector3(x, y, 0);
     }
 
     /**
@@ -254,7 +257,7 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         gl.setClearColor(new THREE.Color(1, 1, 1), 0);
         gl.canvas = this.canvas;
         this.context = gl;
-        const maxScale = map.getScale(map.getMinZoom()) / map.getScale(map.getMaxNativeZoom());
+        const maxScale = map.getScale(map.getMinZoom()) / map.getScale(getTargetZoom(map));
         const farZ = maxScale * size.height / 2 / this.layer._getFovRatio();
         // scene
         const scene = this.scene = new THREE.Scene();
@@ -320,7 +323,7 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         const camera = this.camera;
         // 1. camera is always looking at map's center
         // 2. camera's distance from map's center doesn't change when rotating and tilting.
-        const center2D = map.coordinateToPoint(map.getCenter(), map.getMaxNativeZoom());
+        const center2D = map.coordinateToPoint(map.getCenter(), getTargetZoom(map));
         const pitch = map.getPitch() * RADIAN;
         const bearing = map.getBearing() * RADIAN;
 
@@ -346,3 +349,7 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
 
 ThreeLayer.registerRenderer('canvas', ThreeRenderer);
 ThreeLayer.registerRenderer('webgl', ThreeRenderer);
+
+function getTargetZoom(map) {
+    return map.getMaxNativeZoom();
+}
