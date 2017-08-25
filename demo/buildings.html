@@ -47,7 +47,7 @@ buildings.forEach(function (b) {
 // the ThreeLayer to draw buildings
 var threeLayer = new maptalks.ThreeLayer('t', {
     forceRenderOnMoving : true,
-    forceRenderOnDragRotating : true
+    forceRenderOnRotating : true
 });
 threeLayer.prepareToDraw = function (gl, scene, camera) {
     var me = this;

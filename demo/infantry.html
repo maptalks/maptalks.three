@@ -44,7 +44,7 @@ var mtlLoaded = false;
 var threeLayer = new maptalks.ThreeLayer('t', {
     forceRenderOnMoving : true,
     forceRenderOnZooming : true,
-    forceRenderOnDragRotating : true,
+    forceRenderOnRotating : true,
 });
 // prepare data, load mtl into three scene.
 threeLayer.prepareToDraw = function (gl, scene, camera) {
