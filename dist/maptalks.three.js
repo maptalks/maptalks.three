@@ -1,5 +1,5 @@
 /*!
- * maptalks.three v0.2.0
+ * maptalks.three v0.2.1
  * LICENSE : MIT
  * (c) 2016-2017 maptalks.org
  */
@@ -91,7 +91,7 @@ var ThreeLayer = function (_maptalks$CanvasLayer) {
         if (!map) {
             return null;
         }
-        var p = map.coordinateToPoint(coordinate, map.getMaxNativeZoom());
+        var p = map.coordinateToPoint(coordinate, getTargetZoom(map));
         return new THREE.Vector3(p.x, p.y, z);
     };
 
@@ -99,19 +99,20 @@ var ThreeLayer = function (_maptalks$CanvasLayer) {
      * Convert geographic distance to THREE Vector3
      * @param  {Number} w - width
      * @param  {Number} h - height
-     * @param {Number} [z=0] z value
      * @return {THREE.Vector3}
      */
 
 
-    ThreeLayer.prototype.distanceToVector3 = function distanceToVector3(w, h) {
-        var z = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-
+    ThreeLayer.prototype.distanceToVector3 = function distanceToVector3(w, h, coord) {
         var map = this.getMap();
-        var scale = map.getScale();
-        var fovRatio = this._getFovRatio();
-        var size = map.distanceToPixel(w, h)._multi(scale / fovRatio);
-        return new THREE.Vector3(size.width, size.height, z);
+        var zoom = getTargetZoom(map),
+            center = coord || map.getCenter(),
+            target = map.locate(center, w, h);
+        var p0 = map.coordinateToPoint(center, zoom),
+            p1 = map.coordinateToPoint(target, zoom);
+        var x = Math.abs(p1.x - p0.x) * maptalks.Util.sign(w);
+        var y = Math.abs(p1.y - p0.y) * maptalks.Util.sign(h);
+        return new THREE.Vector3(x, y, 0);
     };
 
     /**
@@ -314,7 +315,7 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
         gl.setClearColor(new THREE.Color(1, 1, 1), 0);
         gl.canvas = this.canvas;
         this.context = gl;
-        var maxScale = map.getScale(map.getMinZoom()) / map.getScale(map.getMaxNativeZoom());
+        var maxScale = map.getScale(map.getMinZoom()) / map.getScale(getTargetZoom(map));
         var farZ = maxScale * size.height / 2 / this.layer._getFovRatio();
         // scene
         var scene = this.scene = new THREE.Scene();
@@ -380,7 +381,7 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
         var camera = this.camera;
         // 1. camera is always looking at map's center
         // 2. camera's distance from map's center doesn't change when rotating and tilting.
-        var center2D = map.coordinateToPoint(map.getCenter(), map.getMaxNativeZoom());
+        var center2D = map.coordinateToPoint(map.getCenter(), getTargetZoom(map));
         var pitch = map.getPitch() * RADIAN;
         var bearing = map.getBearing() * RADIAN;
 
@@ -408,6 +409,10 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
 
 ThreeLayer.registerRenderer('canvas', ThreeRenderer);
 ThreeLayer.registerRenderer('webgl', ThreeRenderer);
+
+function getTargetZoom(map) {
+    return map.getMaxNativeZoom();
+}
 
 exports.ThreeLayer = ThreeLayer;
 exports.ThreeRenderer = ThreeRenderer;
