@@ -8,7 +8,6 @@ const karmaConfig = require('./karma.config');
 
 gulp.task('build', () => {
     const rollupConfig = bundleHelper.getDefaultRollupConfig();
-    rollupConfig['sourceMap'] = false;
     rollupConfig['external'].push('three');
     return bundleHelper.bundle('index.js', rollupConfig);
 });
