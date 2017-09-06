@@ -6,13 +6,8 @@
 /*!
  * requires maptalks@>=0.25.1 
  */
-(function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('maptalks'), require('three')) :
-	typeof define === 'function' && define.amd ? define(['exports', 'maptalks', 'three'], factory) :
-	(factory((global.maptalks = global.maptalks || {}),global.maptalks,global.THREE));
-}(this, (function (exports,maptalks,THREE) { 'use strict';
-
-THREE = THREE && THREE.hasOwnProperty('default') ? THREE['default'] : THREE;
+import { Browser, Canvas, CanvasLayer, MultiPolygon, Util, renderer } from 'maptalks';
+import THREE from 'three';
 
 function _defaults(obj, defaults) { var keys = Object.getOwnPropertyNames(defaults); for (var i = 0; i < keys.length; i++) { var key = keys[i]; var value = Object.getOwnPropertyDescriptor(defaults, key); if (value && value.configurable && obj[key] === undefined) { Object.defineProperty(obj, key, value); } } return obj; }
 
@@ -113,8 +108,8 @@ var ThreeLayer = function (_maptalks$CanvasLayer) {
             target = map.locate(center, w, h);
         var p0 = map.coordinateToPoint(center, zoom),
             p1 = map.coordinateToPoint(target, zoom);
-        var x = Math.abs(p1.x - p0.x) * maptalks.Util.sign(w);
-        var y = Math.abs(p1.y - p0.y) * maptalks.Util.sign(h);
+        var x = Math.abs(p1.x - p0.x) * Util.sign(w);
+        var y = Math.abs(p1.y - p0.y) * Util.sign(h);
         return new THREE.Vector3(x, y, 0);
     };
 
@@ -131,7 +126,7 @@ var ThreeLayer = function (_maptalks$CanvasLayer) {
         if (!polygon) {
             return null;
         }
-        if (polygon instanceof maptalks.MultiPolygon) {
+        if (polygon instanceof MultiPolygon) {
             return polygon.getGeometries().map(function (c) {
                 return _this2.toShape(c);
             });
@@ -163,7 +158,7 @@ var ThreeLayer = function (_maptalks$CanvasLayer) {
         if (!polygon) {
             return null;
         }
-        if (polygon instanceof maptalks.MultiPolygon) {
+        if (polygon instanceof MultiPolygon) {
             return polygon.getGeometries().map(function (c) {
                 return _this3.toExtrudeGeometry(c, amount, material);
             });
@@ -260,7 +255,7 @@ var ThreeLayer = function (_maptalks$CanvasLayer) {
     };
 
     return ThreeLayer;
-}(maptalks.CanvasLayer);
+}(CanvasLayer);
 
 ThreeLayer.mergeOptions(options);
 
@@ -296,12 +291,12 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
         }
         var map = this.getMap();
         var size = map.getSize();
-        var r = maptalks.Browser.retina ? 2 : 1;
-        this.canvas = maptalks.Canvas.createCanvas(r * size['width'], r * size['height']);
+        var r = Browser.retina ? 2 : 1;
+        this.canvas = Canvas.createCanvas(r * size['width'], r * size['height']);
         var renderer$$1 = this.layer.options['renderer'];
         var gl;
         if (renderer$$1 === 'webgl') {
-            gl = new THREE.WebGLRenderer(maptalks.Util.extend({
+            gl = new THREE.WebGLRenderer(Util.extend({
                 'canvas': this.canvas,
                 'alpha': true,
                 'preserveDrawingBuffer': true
@@ -309,7 +304,7 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
             gl.autoClear = false;
             gl.clear();
         } else if (renderer$$1 === 'canvas') {
-            gl = new THREE.CanvasRenderer(maptalks.Util.extend({
+            gl = new THREE.CanvasRenderer(Util.extend({
                 'canvas': this.canvas,
                 'alpha': true
             }, this.layer.options['glOptions']));
@@ -339,7 +334,7 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
         } else {
             size = canvasSize;
         }
-        var r = maptalks.Browser.retina ? 2 : 1;
+        var r = Browser.retina ? 2 : 1;
         //retina support
         this.canvas.height = r * size['height'];
         this.canvas.width = r * size['width'];
@@ -408,7 +403,7 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
     };
 
     return ThreeRenderer;
-}(maptalks.renderer.CanvasLayerRenderer);
+}(renderer.CanvasLayerRenderer);
 
 ThreeLayer.registerRenderer('canvas', ThreeRenderer);
 ThreeLayer.registerRenderer('webgl', ThreeRenderer);
@@ -417,11 +412,6 @@ function getTargetZoom(map) {
     return map.getMaxNativeZoom();
 }
 
-exports.ThreeLayer = ThreeLayer;
-exports.ThreeRenderer = ThreeRenderer;
-
-Object.defineProperty(exports, '__esModule', { value: true });
+export { ThreeLayer, ThreeRenderer };
 
 typeof console !== 'undefined' && console.log('maptalks.three v0.3.0, requires maptalks@>=0.25.1.');
-
-})));
