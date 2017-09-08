@@ -1,5 +1,5 @@
 /*!
- * maptalks.three v0.3.0
+ * maptalks.three v0.3.1
  * LICENSE : MIT
  * (c) 2016-2017 maptalks.org
  */
@@ -11,8 +11,6 @@
 	typeof define === 'function' && define.amd ? define(['exports', 'maptalks', 'three'], factory) :
 	(factory((global.maptalks = global.maptalks || {}),global.maptalks,global.THREE));
 }(this, (function (exports,maptalks,THREE) { 'use strict';
-
-THREE = THREE && THREE.hasOwnProperty('default') ? THREE['default'] : THREE;
 
 function _defaults(obj, defaults) { var keys = Object.getOwnPropertyNames(defaults); for (var i = 0; i < keys.length; i++) { var key = keys[i]; var value = Object.getOwnPropertyDescriptor(defaults, key); if (value && value.configurable && obj[key] === undefined) { Object.defineProperty(obj, key, value); } } return obj; }
 
@@ -422,6 +420,6 @@ exports.ThreeRenderer = ThreeRenderer;
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-typeof console !== 'undefined' && console.log('maptalks.three v0.3.0, requires maptalks@>=0.25.1.');
+typeof console !== 'undefined' && console.log('maptalks.three v0.3.1, requires maptalks@>=0.25.1.');
 
 })));
