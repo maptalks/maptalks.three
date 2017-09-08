@@ -1,5 +1,5 @@
 import * as maptalks from 'maptalks';
-import THREE from 'three';
+import * as THREE from 'three';
 
 const options = {
     'renderer' : 'webgl',
