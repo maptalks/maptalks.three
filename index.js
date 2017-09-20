@@ -229,14 +229,13 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         return false;
     }
 
-    createCanvas() {
-        if (this.canvas) {
-            return;
-        }
+    onCanvasCreate() {
+        this.layer.onCanvasCreate(this.context, this.scene, this.camera);
+    }
+
+    initContext() {
         const map = this.getMap();
         const size = map.getSize();
-        const r = maptalks.Browser.retina ? 2 : 1;
-        this.canvas = maptalks.Canvas.createCanvas(r * size['width'], r * size['height']);
         const renderer = this.layer.options['renderer'];
         var gl;
         if (renderer === 'webgl') {
@@ -263,8 +262,6 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         const scene = this.scene = new THREE.Scene();
         const fov = map.getFov();
         const camera = this.camera =  new THREE.PerspectiveCamera(fov, size.width / size.height, 1, farZ);
-        this.onCanvasCreate();
-        this.layer.onCanvasCreate(this.context, this.scene, this.camera);
         scene.add(camera);
     }
 
