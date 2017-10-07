@@ -49,6 +49,23 @@ map.addLayer(threeLayer);
 </script>
 ```
 
+With ES Modules:
+
+```javascript
+import * as maptalks from 'maptalks';
+import { ThreeLayer } from 'maptalks.three';
+
+const map = new maptalks.Map('map', { /* options */ });
+
+const threeLayer = new ThreeLayer('t');
+threeLayer.prepareToDraw = function (gl, scene, camera) {
+    var light = new THREE.PointLight(0xffffff, 0.8);
+    //...
+};
+
+threeLayer.addTo(map);
+```
+
 ## Supported Browsers
 
 IE 11, Chrome, Firefox, other modern and mobile browsers that support WebGL;
