@@ -2,9 +2,9 @@
 <html>
 <head>
   <title>osm buildings demo</title>
-<link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
-    <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.min.js"></script>
-  <script type="text/javascript" src="https://unpkg.com/three@0.84.0/build/three.min.js"></script>
+<link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.84.0/build/three.min.js"></script>
   <script type="text/javascript" src="../dist/maptalks.three.js"></script>
   <script type="text/javascript" src="buildings.js"></script>
   <style>
@@ -32,8 +32,8 @@ var map = new maptalks.Map("map",{
       'content' : '<span style="padding:4px;">&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://osmbuilding.org">osmbuilding.org</a></span>'
     },
     baseLayer : new maptalks.TileLayer('tile',{
-        'urlTemplate' : 'http://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png',
-        'subdomains'  : ['a','b','c','d','e']
+        'urlTemplate' : 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png',
+        'subdomains'  : ['a','b','c','d']
     })
 });
 
