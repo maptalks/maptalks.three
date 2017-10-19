@@ -60,7 +60,7 @@ export class ThreeLayer extends maptalks.CanvasLayer {
             return null;
         }
         const p = map.coordinateToPoint(coordinate, getTargetZoom(map));
-        return new THREE.Vector3(p.x, p.y, z);
+        return new THREE.Vector3(p.x, p.y, -z);
     }
 
     /**
@@ -230,6 +230,7 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
     }
 
     onCanvasCreate() {
+        super.onCanvasCreate();
         this.layer.onCanvasCreate(this.context, this.scene, this.camera);
     }
 
