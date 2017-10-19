@@ -1,5 +1,5 @@
 /*!
- * maptalks.three v0.4.0
+ * maptalks.three v0.4.1
  * LICENSE : MIT
  * (c) 2016-2017 maptalks.org
  */
@@ -21,7 +21,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : _defaults(subClass, superClass); }
 
 var options = {
-    'renderer': 'webgl',
+    'renderer': 'gl',
     'doubleBuffer': true,
     'glOptions': null
 };
@@ -407,7 +407,7 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
 }(maptalks.renderer.CanvasLayerRenderer);
 
 ThreeLayer.registerRenderer('canvas', ThreeRenderer);
-ThreeLayer.registerRenderer('webgl', ThreeRenderer);
+ThreeLayer.registerRenderer('gl', ThreeRenderer);
 
 function getTargetZoom(map) {
     return map.getMaxNativeZoom();
@@ -418,6 +418,6 @@ exports.ThreeRenderer = ThreeRenderer;
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-typeof console !== 'undefined' && console.log('maptalks.three v0.4.0, requires maptalks@>=0.25.1.');
+typeof console !== 'undefined' && console.log('maptalks.three v0.4.1, requires maptalks@>=0.25.1.');
 
 })));
