@@ -2,7 +2,7 @@ import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 
 const options = {
-    'renderer' : 'webgl',
+    'renderer' : 'gl',
     'doubleBuffer' : true,
     'glOptions' : null
 };
@@ -346,7 +346,7 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
 }
 
 ThreeLayer.registerRenderer('canvas', ThreeRenderer);
-ThreeLayer.registerRenderer('webgl', ThreeRenderer);
+ThreeLayer.registerRenderer('gl', ThreeRenderer);
 
 function getTargetZoom(map) {
     return map.getMaxNativeZoom();
