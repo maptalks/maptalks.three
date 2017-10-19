@@ -1,5 +1,5 @@
 /*!
- * maptalks.three v0.3.1
+ * maptalks.three v0.4.0
  * LICENSE : MIT
  * (c) 2016-2017 maptalks.org
  */
@@ -93,7 +93,7 @@ var ThreeLayer = function (_maptalks$CanvasLayer) {
             return null;
         }
         var p = map.coordinateToPoint(coordinate, getTargetZoom(map));
-        return new THREE.Vector3(p.x, p.y, z);
+        return new THREE.Vector3(p.x, p.y, -z);
     };
 
     /**
@@ -288,14 +288,14 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
         return false;
     };
 
-    ThreeRenderer.prototype.createCanvas = function createCanvas() {
-        if (this.canvas) {
-            return;
-        }
+    ThreeRenderer.prototype.onCanvasCreate = function onCanvasCreate() {
+        _maptalks$renderer$Ca.prototype.onCanvasCreate.call(this);
+        this.layer.onCanvasCreate(this.context, this.scene, this.camera);
+    };
+
+    ThreeRenderer.prototype.initContext = function initContext() {
         var map = this.getMap();
         var size = map.getSize();
-        var r = maptalks.Browser.retina ? 2 : 1;
-        this.canvas = maptalks.Canvas.createCanvas(r * size['width'], r * size['height']);
         var renderer$$1 = this.layer.options['renderer'];
         var gl;
         if (renderer$$1 === 'webgl') {
@@ -322,8 +322,6 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
         var scene = this.scene = new THREE.Scene();
         var fov = map.getFov();
         var camera = this.camera = new THREE.PerspectiveCamera(fov, size.width / size.height, 1, farZ);
-        this.onCanvasCreate();
-        this.layer.onCanvasCreate(this.context, this.scene, this.camera);
         scene.add(camera);
     };
 
@@ -420,6 +418,6 @@ exports.ThreeRenderer = ThreeRenderer;
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-typeof console !== 'undefined' && console.log('maptalks.three v0.3.1, requires maptalks@>=0.25.1.');
+typeof console !== 'undefined' && console.log('maptalks.three v0.4.0, requires maptalks@>=0.25.1.');
 
 })));

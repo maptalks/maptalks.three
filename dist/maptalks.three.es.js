@@ -1,12 +1,12 @@
 /*!
- * maptalks.three v0.3.1
+ * maptalks.three v0.4.0
  * LICENSE : MIT
  * (c) 2016-2017 maptalks.org
  */
 /*!
  * requires maptalks@>=0.25.1 
  */
-import { Browser, Canvas, CanvasLayer, MultiPolygon, Util, renderer } from 'maptalks';
+import { Browser, CanvasLayer, MultiPolygon, Util, renderer } from 'maptalks';
 import { BufferGeometry, CanvasRenderer, Color, ExtrudeGeometry, Mesh, PerspectiveCamera, Scene, Shape, Vector3, WebGLRenderer } from 'three';
 
 function _defaults(obj, defaults) { var keys = Object.getOwnPropertyNames(defaults); for (var i = 0; i < keys.length; i++) { var key = keys[i]; var value = Object.getOwnPropertyDescriptor(defaults, key); if (value && value.configurable && obj[key] === undefined) { Object.defineProperty(obj, key, value); } } return obj; }
@@ -90,7 +90,7 @@ var ThreeLayer = function (_maptalks$CanvasLayer) {
             return null;
         }
         var p = map.coordinateToPoint(coordinate, getTargetZoom(map));
-        return new Vector3(p.x, p.y, z);
+        return new Vector3(p.x, p.y, -z);
     };
 
     /**
@@ -285,14 +285,14 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
         return false;
     };
 
-    ThreeRenderer.prototype.createCanvas = function createCanvas() {
-        if (this.canvas) {
-            return;
-        }
+    ThreeRenderer.prototype.onCanvasCreate = function onCanvasCreate() {
+        _maptalks$renderer$Ca.prototype.onCanvasCreate.call(this);
+        this.layer.onCanvasCreate(this.context, this.scene, this.camera);
+    };
+
+    ThreeRenderer.prototype.initContext = function initContext() {
         var map = this.getMap();
         var size = map.getSize();
-        var r = Browser.retina ? 2 : 1;
-        this.canvas = Canvas.createCanvas(r * size['width'], r * size['height']);
         var renderer$$1 = this.layer.options['renderer'];
         var gl;
         if (renderer$$1 === 'webgl') {
@@ -319,8 +319,6 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
         var scene = this.scene = new Scene();
         var fov = map.getFov();
         var camera = this.camera = new PerspectiveCamera(fov, size.width / size.height, 1, farZ);
-        this.onCanvasCreate();
-        this.layer.onCanvasCreate(this.context, this.scene, this.camera);
         scene.add(camera);
     };
 
@@ -414,4 +412,4 @@ function getTargetZoom(map) {
 
 export { ThreeLayer, ThreeRenderer };
 
-typeof console !== 'undefined' && console.log('maptalks.three v0.3.1, requires maptalks@>=0.25.1.');
+typeof console !== 'undefined' && console.log('maptalks.three v0.4.0, requires maptalks@>=0.25.1.');
