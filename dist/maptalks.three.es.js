@@ -1,5 +1,5 @@
 /*!
- * maptalks.three v0.4.1
+ * maptalks.three v0.4.2
  * LICENSE : MIT
  * (c) 2016-2017 maptalks.org
  */
@@ -295,7 +295,7 @@ var ThreeRenderer = function (_maptalks$renderer$Ca) {
         var size = map.getSize();
         var renderer$$1 = this.layer.options['renderer'];
         var gl;
-        if (renderer$$1 === 'webgl') {
+        if (renderer$$1 === 'gl') {
             gl = new WebGLRenderer(Util.extend({
                 'canvas': this.canvas,
                 'alpha': true,
@@ -412,4 +412,4 @@ function getTargetZoom(map) {
 
 export { ThreeLayer, ThreeRenderer };
 
-typeof console !== 'undefined' && console.log('maptalks.three v0.4.1, requires maptalks@>=0.25.1.');
+typeof console !== 'undefined' && console.log('maptalks.three v0.4.2, requires maptalks@>=0.25.1.');
