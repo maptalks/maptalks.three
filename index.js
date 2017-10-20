@@ -239,7 +239,7 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         const size = map.getSize();
         const renderer = this.layer.options['renderer'];
         var gl;
-        if (renderer === 'webgl') {
+        if (renderer === 'gl') {
             gl = new THREE.WebGLRenderer(maptalks.Util.extend({
                 'canvas' : this.canvas,
                 'alpha' : true,
