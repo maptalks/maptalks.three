@@ -16,7 +16,9 @@
     "lint": "eslint index.js test/**/*.js",
     "test": "gulp test",
     "pretest": "npm run lint",
-    "prepublish": "npm run lint && gulp minify"
+    "prepublish": "npm run lint && gulp minify",
+    "dev" : "gulp watch",
+    "tdd" : "gulp tdd"
   },
   "devDependencies": {
     "babel-eslint": "^7.1.1",
