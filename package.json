@@ -1,6 +1,6 @@
 {
   "name": "maptalks.three",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "A maptalks Layer to render with THREE.js.",
   "license": "MIT",
   "repository": {
@@ -17,8 +17,8 @@
     "test": "gulp test",
     "pretest": "npm run lint",
     "prepublish": "npm run lint && gulp minify",
-    "dev" : "gulp watch",
-    "tdd" : "gulp tdd"
+    "dev": "gulp watch",
+    "tdd": "gulp tdd"
   },
   "devDependencies": {
     "babel-eslint": "^7.1.1",
