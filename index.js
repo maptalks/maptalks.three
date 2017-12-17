@@ -229,12 +229,37 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         return false;
     }
 
-    onCanvasCreate() {
-        super.onCanvasCreate();
-        this.layer.onCanvasCreate(this.context, this.scene, this.camera);
+    createCanvas() {
+        if (this.canvas) {
+            return;
+        }
+        const map = this.getMap();
+        const size = map.getSize();
+        const r = maptalks.Browser.retina ? 2 : 1,
+            w = r * size.width,
+            h = r * size.height;
+        if (this.layer._canvas) {
+            const canvas = this.layer._canvas;
+            canvas.width = w;
+            canvas.height = h;
+            if (canvas.style) {
+                canvas.style.width = size.width + 'px';
+                canvas.style.height = size.height + 'px';
+            }
+            this.canvas = this.layer._canvas;
+        } else {
+            this.canvas = maptalks.Canvas.createCanvas(w, h);
+        }
+        this._initThreeRenderer();
+        this.onCanvasCreate();
+
+        this.layer.fire('canvascreate', {
+            'context' : this.context,
+            'gl' : this.gl
+        });
     }
 
-    initContext() {
+    _initThreeRenderer() {
         const map = this.getMap();
         const size = map.getSize();
         const renderer = this.layer.options['renderer'];
@@ -264,6 +289,11 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         const fov = map.getFov();
         const camera = this.camera =  new THREE.PerspectiveCamera(fov, size.width / size.height, 1, farZ);
         scene.add(camera);
+    }
+
+    onCanvasCreate() {
+        super.onCanvasCreate();
+        this.layer.onCanvasCreate(this.context, this.scene, this.camera);
     }
 
     resizeCanvas(canvasSize) {
