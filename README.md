@@ -72,7 +72,7 @@ IE 11, Chrome, Firefox, other modern and mobile browsers that support WebGL;
 
 ## API Reference
 
-```ThreeLayer``` is a subclass of [maptalks.CanvasLayer](http://maptalks.github.io/docs/api/CanvasLayer.html) and inherits all the methods of its parent.
+```ThreeLayer``` is a subclass of [maptalks.CanvasLayer](http://maptalks.github.io/maptalks.js/api/0.x/CanvasLayer.html) and inherits all the methods of its parent.
 
 ### `Constructor`
 
@@ -84,7 +84,7 @@ new maptalks.ThreeLayer(id, options)
 * options **Object** options
     * glOptions **Object** options when creating webgl context, null by default
     * doubleBuffer **Boolean** whether the layer canvas is painted with double buffer, true by default
-    * Other options defined in [maptalks.CanvasLayer](http://maptalks.github.io/docs/api/CanvasLayer.html)
+    * Other options defined in [maptalks.CanvasLayer](http://maptalks.github.io/maptalks.js/api/0.x/CanvasLayer.html)
 
 ## Contributing
 
