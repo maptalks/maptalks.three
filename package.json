@@ -18,6 +18,7 @@
     "pretest": "npm run lint",
     "prepublish": "npm run lint && gulp minify",
     "dev": "gulp watch",
+    "build" : "gulp minify",
     "tdd": "gulp tdd"
   },
   "devDependencies": {
