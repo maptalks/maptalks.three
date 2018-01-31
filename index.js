@@ -111,30 +111,29 @@ export class ThreeLayer extends maptalks.CanvasLayer {
     }
 
 
-    toExtrudeMesh(polygon, amount, material, removeDup) {
+    toExtrudeMesh(polygon, altitude, material, height) {
         if (!polygon) {
             return null;
         }
         if (polygon instanceof maptalks.MultiPolygon) {
-            return polygon.getGeometries().map(c => this.toExtrudeGeometry(c, amount, material));
+            return polygon.getGeometries().map(c => this.toExtrudeGeometry(c, altitude, material, height));
         }
-        if (removeDup) {
-            const rings = polygon.getCoordinates();
-            rings.forEach(ring => {
-                const length = ring.length;
-                for (let i = length - 1; i >= 1; i--) {
-                    if (ring[i].equals(ring[i - 1])) {
-                        ring.splice(i, 1);
-                    }
+        const rings = polygon.getCoordinates();
+        rings.forEach(ring => {
+            const length = ring.length;
+            for (let i = length - 1; i >= 1; i--) {
+                if (ring[i].equals(ring[i - 1])) {
+                    ring.splice(i, 1);
                 }
-            });
-            polygon.setCoordinates(rings);
-        }
+            }
+        });
+        polygon.setCoordinates(rings);
         const shape = this.toShape(polygon);
         const center = this.coordinateToVector3(polygon.getCenter());
-        amount = this.distanceToVector3(amount, amount).x;
+        height = maptalks.Util.isNumber(height) ? this.distanceToVector3(height, height).x : altitude;
+        const amount = this.distanceToVector3(altitude, altitude).x;
         //{ amount: extrudeH, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 1, bevelThickness: 1 };
-        const geom = new THREE.ExtrudeGeometry(shape, { 'amount': amount, 'bevelEnabled': true });
+        const geom = new THREE.ExtrudeGeometry(shape, { 'amount': height, 'bevelEnabled': true });
         const buffGeom = new THREE.BufferGeometry();
         buffGeom.fromGeometry(geom);
         const mesh = new THREE.Mesh(buffGeom, material);
