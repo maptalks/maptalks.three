@@ -16,7 +16,7 @@
 <body>
 <div id="map"></div>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.min.js"></script>
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.84.0/build/three.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.97.0/build/three.min.js"></script>
 <script type="text/javascript" src="../dist/maptalks.three.js"></script>
 <script type="text/javascript" src="js/OBJLoader.js"></script>
 <script src="js/DDSLoader.js"></script>
@@ -53,10 +53,11 @@ threeLayer.prepareToDraw = function (gl, scene, camera) {
     mtlLoader.setPath( 'obj/' );
     mtlLoader.load( 'male02.mtl', function( materials ) {
         materials.preload();
-        for (const p in materials.materials) {
-            //change material's side to BackSide
-            materials.materials[p].side = THREE.BackSide;
-        }
+        //change to back side with THREE <= v0.94
+        // for (const p in materials.materials) {
+        //     //change material's side to BackSide
+        //     materials.materials[p].side = THREE.BackSide;
+        // }
         var objLoader = new THREE.OBJLoader();
         objLoader.setMaterials( materials );
         objLoader.setPath( 'obj/' );
