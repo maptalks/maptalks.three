@@ -34,8 +34,9 @@ As a plugin, `maptalks.three` must be loaded after `maptalks.js` and `THREE.js` 
 <script>
 var threeLayer = new maptalks.ThreeLayer('t');
 threeLayer.prepareToDraw = function (gl, scene, camera) {
-    var light = new THREE.PointLight(0xffffff, 0.8);
-    camera.add(light);
+    var light = new THREE.DirectionalLight(0xffffff);
+    light.position.set(0, -10, -10).normalize();
+    scene.add(light);
     var me = this;
     countries.features.forEach(function (g) {
         var num = g.properties.population;
@@ -59,6 +60,7 @@ map.addLayer(threeLayer);
 With ES Modules:
 
 ```javascript
+import * as THREE from 'three';
 import * as maptalks from 'maptalks';
 import { ThreeLayer } from 'maptalks.three';
 
@@ -66,7 +68,9 @@ const map = new maptalks.Map('map', { /* options */ });
 
 const threeLayer = new ThreeLayer('t');
 threeLayer.prepareToDraw = function (gl, scene, camera) {
-    var light = new THREE.PointLight(0xffffff, 0.8);
+    const light = new THREE.DirectionalLight(0xffffff);
+    light.position.set(0, -10, -10).normalize();
+    scene.add(light);
     //...
 };
 
@@ -112,22 +116,12 @@ $ npm install
 
 * Watch source changes and generate runnable bundle repeatedly
 ```shell
-$ gulp watch
-```
-
-* Tests
-```shell
-$ npm test
-```
-
-* Watch source changes and run tests repeatedly
-```shell
-$ gulp tdd
+$ npm run dev
 ```
 
 * Package and generate minified bundles to dist directory
 ```shell
-$ gulp minify
+$ npm run build
 ```
 
 * Lint
