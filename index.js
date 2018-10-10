@@ -96,13 +96,13 @@ export class ThreeLayer extends maptalks.CanvasLayer {
         const center = polygon.getCenter();
         const centerPt = this.coordinateToVector3(center);
         const shell = polygon.getShell();
-        const outer = shell.map(c => this.coordinateToVector3(c).sub(centerPt));
+        const outer = shell.map(c => this.coordinateToVector3(c).sub(centerPt)).reverse();
         const shape = new THREE.Shape(outer);
         const holes = polygon.getHoles();
 
         if (holes && holes.length > 0) {
             shape.holes = holes.map(item => {
-                var pts = item.map(c => this.coordinateToVector3(c).sub(centerPt));
+                const pts = item.map(c => this.coordinateToVector3(c).sub(centerPt));
                 return new THREE.Shape(pts);
             });
         }
@@ -134,7 +134,7 @@ export class ThreeLayer extends maptalks.CanvasLayer {
         height = this.distanceToVector3(height, height).x;
         const amount = this.distanceToVector3(altitude, altitude).x;
         //{ amount: extrudeH, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 1, bevelThickness: 1 };
-        const config = { 'bevelEnabled': false };
+        const config = { 'bevelEnabled': false, 'bevelSize' : 1 };
         const name = parseInt(THREE.REVISION) >= 93 ? 'depth' : 'amount';
         config[name] = height;
         const geom = new THREE.ExtrudeGeometry(shape, config);

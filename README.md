@@ -20,8 +20,9 @@ A maptalks Layer to render with THREE.js
 ## Changes of v0.6.0
 
 * Re-implementated locateCamera, sync with map's projMatrix and viewMatrix
-* Support for THREE >= 0.93, but extruded mesh is not corrent now with THREE <= 0.84
-* Support for GroupGLLayer
+* Because direction of camera changes, material's side need to set to THREE.BackSide or THREE.DoublSide to render correctly
+* Add support for THREE >= 0.93
+* Add support for GroupGLLayer
 
 ## Usage
 

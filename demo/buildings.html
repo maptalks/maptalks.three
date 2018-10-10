@@ -4,7 +4,7 @@
   <title>osm buildings demo</title>
 <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.min.js"></script>
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.93.0/build/three.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.94.0/build/three.min.js"></script>
   <script type="text/javascript" src="../dist/maptalks.three.js"></script>
   <script type="text/javascript" src="buildings.js"></script>
   <style>
@@ -22,9 +22,9 @@
 
 var map = new maptalks.Map("map",{
     center : [13.416935229170008, 52.529564137540376],
-    zoom   :  17,
-    pitch : 80,
-    bearing : 165,
+    zoom   :  15,
+    pitch : 70,
+    bearing : 0,
 
     centerCross : true,
     doubleClickZoom : false,
@@ -52,7 +52,8 @@ var threeLayer = new maptalks.ThreeLayer('t', {
 threeLayer.prepareToDraw = function (gl, scene, camera) {
     var me = this;
     var light = new THREE.DirectionalLight(0xffffff);
-    camera.add(light);
+    light.position.set(0, -10, -10).normalize();
+    scene.add(light);
 
     features.forEach(function (g) {
         var heightPerLevel = 10;
@@ -60,6 +61,8 @@ threeLayer.prepareToDraw = function (gl, scene, camera) {
         var color = getColor(levels);
 
         var m = new THREE.MeshPhongMaterial({color: color, opacity : 0.7});
+        //change to back side
+        m.side = THREE.BackSide;
 
         var mesh = me.toExtrudeMesh(maptalks.GeoJSON.toGeometry(g), levels * heightPerLevel, m, levels * heightPerLevel);
         if (Array.isArray(mesh)) {
