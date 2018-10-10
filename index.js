@@ -3,7 +3,7 @@ import * as THREE from 'three';
 
 const options = {
     'renderer' : 'gl',
-    'doubleBuffer' : true,
+    'doubleBuffer' : false,
     'glOptions' : null
 };
 
@@ -60,7 +60,7 @@ export class ThreeLayer extends maptalks.CanvasLayer {
             return null;
         }
         const p = map.coordinateToPoint(coordinate, getTargetZoom(map));
-        return new THREE.Vector3(p.x, p.y, -z);
+        return new THREE.Vector3(p.x, p.y, z);
     }
 
     /**
@@ -130,14 +130,18 @@ export class ThreeLayer extends maptalks.CanvasLayer {
         polygon.setCoordinates(rings);
         const shape = this.toShape(polygon);
         const center = this.coordinateToVector3(polygon.getCenter());
-        height = maptalks.Util.isNumber(height) ? this.distanceToVector3(height, height).x : altitude;
+        height = maptalks.Util.isNumber(height) ? height : altitude;
+        height = this.distanceToVector3(height, height).x;
         const amount = this.distanceToVector3(altitude, altitude).x;
         //{ amount: extrudeH, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 1, bevelThickness: 1 };
-        const geom = new THREE.ExtrudeGeometry(shape, { 'amount': height, 'bevelEnabled': true });
+        const config = { 'bevelEnabled': false };
+        const name = parseInt(THREE.REVISION) >= 93 ? 'depth' : 'amount';
+        config[name] = height;
+        const geom = new THREE.ExtrudeGeometry(shape, config);
         const buffGeom = new THREE.BufferGeometry();
         buffGeom.fromGeometry(geom);
-        const mesh = new THREE.Mesh(buffGeom, material);
-        mesh.position.set(center.x, center.y, -amount);
+        const mesh = new THREE.Mesh(geom, material);
+        mesh.position.set(center.x, center.y, amount - height);
         return mesh;
     }
 
@@ -229,89 +233,64 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
     }
 
     createCanvas() {
-        if (this.canvas) {
-            return;
-        }
-        const map = this.getMap();
-        const size = map.getSize();
-        const r = maptalks.Browser.retina ? 2 : 1,
-            w = r * size.width,
-            h = r * size.height;
-        if (this.layer._canvas) {
-            const canvas = this.layer._canvas;
-            canvas.width = w;
-            canvas.height = h;
-            if (canvas.style) {
-                canvas.style.width = size.width + 'px';
-                canvas.style.height = size.height + 'px';
-            }
-            this.canvas = this.layer._canvas;
+        super.createCanvas();
+        this.createContext();
+    }
+
+    createContext() {
+        if (this.canvas.gl && this.canvas.gl.wrap) {
+            this.gl = this.canvas.gl.wrap();
         } else {
-            this.canvas = maptalks.Canvas.createCanvas(w, h);
+            const layer = this.layer;
+            const attributes = layer.options.glOptions || {
+                alpha: true,
+                depth: true,
+                antialias: true,
+                stencil : true
+            };
+            attributes.preserveDrawingBuffer = true;
+            this.gl = this.gl || this._createGLContext(this.canvas, attributes);
         }
         this._initThreeRenderer();
-        this.onCanvasCreate();
-
-        this.layer.fire('canvascreate', {
-            'context' : this.context,
-            'gl' : this.gl
-        });
+        this.layer.onCanvasCreate(this.context, this.scene, this.camera);
     }
 
     _initThreeRenderer() {
-        const map = this.getMap();
-        const size = map.getSize();
-        const renderer = this.layer.options['renderer'];
-        var gl;
-        if (renderer === 'gl') {
-            gl = new THREE.WebGLRenderer(maptalks.Util.extend({
-                'canvas' : this.canvas,
-                'alpha' : true,
-                'preserveDrawingBuffer' : true
-            }, this.layer.options['glOptions']));
-            gl.autoClear = false;
-            gl.clear();
-        } else if (renderer === 'canvas') {
-            gl = new THREE.CanvasRenderer(maptalks.Util.extend({
-                'canvas' : this.canvas,
-                'alpha' : true
-            }, this.layer.options['glOptions']));
-        }
-        gl.setSize(this.canvas.width, this.canvas.height);
-        gl.setClearColor(new THREE.Color(1, 1, 1), 0);
-        gl.canvas = this.canvas;
-        this.context = gl;
-        const maxScale = map.getScale(map.getMinZoom()) / map.getScale(getTargetZoom(map));
-        const farZ = maxScale * size.height / 2 / this.layer._getFovRatio();
-        // scene
+        const renderer = new THREE.WebGLRenderer({ 'context' : this.gl, alpha : true });
+        renderer.autoClear = false;
+        renderer.setClearColor(new THREE.Color(1, 1, 1), 0);
+        renderer.setSize(this.canvas.width, this.canvas.height);
+        renderer.clear();
+        renderer.canvas = this.canvas;
+        this.context = renderer;
+
         const scene = this.scene = new THREE.Scene();
-        const fov = map.getFov();
-        const camera = this.camera =  new THREE.PerspectiveCamera(fov, size.width / size.height, 1, farZ);
+        const camera = this.camera =  new THREE.Camera();
+        camera.matrixAutoUpdate = false;
         scene.add(camera);
     }
 
     onCanvasCreate() {
         super.onCanvasCreate();
-        this.layer.onCanvasCreate(this.context, this.scene, this.camera);
+
     }
 
     resizeCanvas(canvasSize) {
         if (!this.canvas) {
             return;
         }
-        var size;
+        let size;
         if (!canvasSize) {
             size = this.getMap().getSize();
         } else {
             size = canvasSize;
         }
         const r = maptalks.Browser.retina ? 2 : 1;
+        const canvas = this.canvas;
         //retina support
-        this.canvas.height = r * size['height'];
-        this.canvas.width = r * size['width'];
-        this.camera.aspect = this.canvas.width / this.canvas.height;
-        this.camera.updateProjectionMatrix();
-        this.context.setSize(this.canvas.width, this.canvas.height);
+        canvas.height = r * size['height'];
+        canvas.width = r * size['width'];
+        this.context.setSize(canvas.width, canvas.height);
     }
 
     clearCanvas() {
@@ -345,38 +324,29 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
 
     _locateCamera() {
         const map = this.getMap();
-        const size = map.getSize();
-        const scale = map.getScale();
-        const camera = this.camera;
-        // 1. camera is always looking at map's center
-        // 2. camera's distance from map's center doesn't change when rotating and tilting.
-        const center2D = map.coordinateToPoint(map.getCenter(), getTargetZoom(map));
-        const pitch = map.getPitch() * RADIAN;
-        const bearing = map.getBearing() * RADIAN;
+        this.camera.matrix.elements = map.cameraWorldMatrix;
+        this.camera.projectionMatrix.elements = map.projMatrix;
+    }
 
-        const ratio = this.layer._getFovRatio();
-        const z = -scale * size.height / 2 / ratio;
-
-        // when map tilts, camera's position should be lower in Z axis
-        camera.position.z = z * Math.cos(pitch);
-        // and [dist] away from map's center on XY plane to tilt the scene.
-        const dist = Math.sin(pitch) * z;
-        // when map rotates, the camera's xy position is rotating with the given bearing and still keeps [dist] away from map's center
-        camera.position.x = center2D.x + dist * Math.sin(bearing);
-        camera.position.y = center2D.y - dist * Math.cos(bearing);
-
-        // when map rotates, camera's up axis is pointing to south direction of map
-        camera.up.set(Math.sin(bearing), -Math.cos(bearing), 0);
-
-        // look at to the center of map
-        camera.lookAt(new THREE.Vector3(center2D.x, center2D.y, 0));
-        camera.updateProjectionMatrix();
+    _createGLContext(canvas, options) {
+        const names = ['webgl', 'experimental-webgl'];
+        let context = null;
+        /* eslint-disable no-empty */
+        for (let i = 0; i < names.length; ++i) {
+            try {
+                context = canvas.getContext(names[i], options);
+            } catch (e) {}
+            if (context) {
+                break;
+            }
+        }
+        return context;
+        /* eslint-enable no-empty */
     }
 }
 
-ThreeLayer.registerRenderer('canvas', ThreeRenderer);
 ThreeLayer.registerRenderer('gl', ThreeRenderer);
 
 function getTargetZoom(map) {
-    return map.getMaxNativeZoom();
+    return map.getGLZoom();
 }

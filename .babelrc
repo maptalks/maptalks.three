@@ -1,9 +1,6 @@
 {
   "presets": [
-    ["es2015", { "loose" : true, "modules" : false }]
-  ],
-  "plugins" : [
-    "transform-proto-to-assign"
+    ["@babel/env", { "loose" : true, "modules" : false }]
   ],
   "ignore": [
     "dist/*.js"

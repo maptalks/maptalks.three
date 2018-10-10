@@ -9,13 +9,19 @@ A maptalks Layer to render with THREE.js
 ## Examples
 
 * [Extrude Buildings](https://maptalks.github.io/maptalks.three/demo/buildings.html).
-* [Load MTL Model](https://maptalks.github.io/maptalks.three/demo/obj.html).
+* [Load MTL Model](https://maptalks.github.io/maptalks.three/demo/infantry.html).
 
 ## Install
   
 * Install with npm: ```npm install maptalks.three```. 
 * Download from [dist directory](https://github.com/maptalks/maptalks.three/tree/gh-pages/dist).
 * Use unpkg CDN: `https://unpkg.com/maptalks.three/dist/maptalks.three.min.js`
+
+## Changes of v0.6.0
+
+* Re-implementated locateCamera, sync with map's projMatrix and viewMatrix
+* Support for THREE >= 0.93, but extruded mesh is not corrent now with THREE <= 0.84
+* Support for GroupGLLayer
 
 ## Usage
 

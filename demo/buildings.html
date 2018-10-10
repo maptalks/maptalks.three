@@ -51,7 +51,7 @@ var threeLayer = new maptalks.ThreeLayer('t', {
 });
 threeLayer.prepareToDraw = function (gl, scene, camera) {
     var me = this;
-    var light = new THREE.PointLight(0xffffff);
+    var light = new THREE.DirectionalLight(0xffffff);
     camera.add(light);
 
     features.forEach(function (g) {
@@ -61,7 +61,7 @@ threeLayer.prepareToDraw = function (gl, scene, camera) {
 
         var m = new THREE.MeshPhongMaterial({color: color, opacity : 0.7});
 
-        var mesh = me.toExtrudeMesh(maptalks.GeoJSON.toGeometry(g), levels * heightPerLevel, m, true);
+        var mesh = me.toExtrudeMesh(maptalks.GeoJSON.toGeometry(g), levels * heightPerLevel, m, levels * heightPerLevel);
         if (Array.isArray(mesh)) {
           scene.add.apply(scene, mesh);
         } else {
