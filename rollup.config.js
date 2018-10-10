@@ -4,12 +4,6 @@ const commonjs = require('rollup-plugin-commonjs');
 const uglify = require('rollup-plugin-uglify').uglify;
 const pkg = require('./package.json');
 
-const production = process.env.BUILD === 'production';
-const outputFile = production ? 'dist/maptalks.three.min.js' : 'dist/maptalks.three.js';
-const plugins = production ? [
-    uglify({
-    })] : [];
-
 const banner = `/*!\n * ${pkg.name} v${pkg.version}\n * LICENSE : ${pkg.license}\n * (c) 2016-${new Date().getFullYear()} maptalks.org\n */`;
 const basePlugins = [
     resolve({
@@ -26,10 +20,10 @@ const basePlugins = [
 module.exports = [
     {
         input: 'index.js',
-        plugins: basePlugins.concat(plugins),
+        plugins: basePlugins.concat([uglify()]),
         external : ['maptalks', 'three'],
         output: {
-            'sourcemap': production ? false : 'inline',
+            'sourcemap': false,
             'format': 'umd',
             'name': 'maptalks',
             'banner': banner,
@@ -38,7 +32,24 @@ module.exports = [
                 'maptalks' : 'maptalks',
                 'THREE' : 'three'
             },
-            'file': outputFile
+            'file': 'dist/maptalks.three.min.js'
+        }
+    },
+    {
+        input: 'index.js',
+        plugins: basePlugins,
+        external : ['maptalks', 'three'],
+        output: {
+            'sourcemap': false,
+            'format': 'umd',
+            'name': 'maptalks',
+            'banner': banner,
+            'extend' : true,
+            'globals' : {
+                'maptalks' : 'maptalks',
+                'THREE' : 'three'
+            },
+            'file': 'dist/maptalks.three.js'
         }
     },
 
