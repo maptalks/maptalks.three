@@ -5,6 +5,14 @@ const uglify = require('rollup-plugin-uglify').uglify;
 const pkg = require('./package.json');
 
 const banner = `/*!\n * ${pkg.name} v${pkg.version}\n * LICENSE : ${pkg.license}\n * (c) 2016-${new Date().getFullYear()} maptalks.org\n */`;
+
+let outro = pkg.name + ' v' + pkg.version;
+if (pkg.peerDependencies && pkg.peerDependencies['maptalks']) {
+    outro += `, requires maptalks@${pkg.peerDependencies.maptalks}.`;
+}
+
+outro = `typeof console !== 'undefined' && console.log('${outro}');`;
+
 const basePlugins = [
     resolve({
         module : true,
@@ -27,6 +35,7 @@ module.exports = [
             'format': 'umd',
             'name': 'maptalks',
             'banner': banner,
+            'outro' : outro,
             'extend' : true,
             'globals' : {
                 'maptalks' : 'maptalks',
@@ -44,6 +53,7 @@ module.exports = [
             'format': 'umd',
             'name': 'maptalks',
             'banner': banner,
+            'outro' : outro,
             'extend' : true,
             'globals' : {
                 'maptalks' : 'maptalks',
@@ -61,6 +71,7 @@ module.exports = [
             'sourcemap': false,
             'format': 'es',
             'banner': banner,
+            'outro' : outro,
             'file': pkg.module
         }
     }
