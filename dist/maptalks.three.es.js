@@ -1,30 +1,23 @@
 /*!
- * maptalks.three v0.5.0
+ * maptalks.three v0.6.0
  * LICENSE : MIT
- * (c) 2016-2017 maptalks.org
+ * (c) 2016-2018 maptalks.org
  */
-/*!
- * requires maptalks@>=0.36.2 
- */
-import { Browser, Canvas, CanvasLayer, MultiPolygon, Util, renderer } from 'maptalks';
-import { BufferGeometry, CanvasRenderer, Color, ExtrudeGeometry, Mesh, PerspectiveCamera, Scene, Shape, Vector3, WebGLRenderer } from 'three';
+import { Util, MultiPolygon, CanvasLayer, Browser, renderer } from 'maptalks';
+import { Vector3, Shape, REVISION, ExtrudeGeometry, BufferGeometry, Mesh, WebGLRenderer, Color, Scene, Camera } from 'three';
 
-function _defaults(obj, defaults) { var keys = Object.getOwnPropertyNames(defaults); for (var i = 0; i < keys.length; i++) { var key = keys[i]; var value = Object.getOwnPropertyDescriptor(defaults, key); if (value && value.configurable && obj[key] === undefined) { Object.defineProperty(obj, key, value); } } return obj; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : _defaults(subClass, superClass); }
+function _inheritsLoose(subClass, superClass) {
+  subClass.prototype = Object.create(superClass.prototype);
+  subClass.prototype.constructor = subClass;
+  subClass.__proto__ = superClass;
+}
 
 var options = {
-    'renderer': 'gl',
-    'doubleBuffer': true,
-    'glOptions': null
+  'renderer': 'gl',
+  'doubleBuffer': false,
+  'glOptions': null
 };
-
 var RADIAN = Math.PI / 180;
-
 /**
  * A Layer to render with THREE.JS (http://threejs.org), the most popular library for WebGL. <br>
  *
@@ -48,398 +41,406 @@ var RADIAN = Math.PI / 180;
  * @param {String|Number} id - layer's id
  * @param {Object} options - options defined in [options]{@link maptalks.ThreeLayer#options}
  */
-var ThreeLayer = function (_maptalks$CanvasLayer) {
-    _inherits(ThreeLayer, _maptalks$CanvasLayer);
 
-    function ThreeLayer() {
-        _classCallCheck(this, ThreeLayer);
+var ThreeLayer =
+/*#__PURE__*/
+function (_maptalks$CanvasLayer) {
+  _inheritsLoose(ThreeLayer, _maptalks$CanvasLayer);
 
-        return _possibleConstructorReturn(this, _maptalks$CanvasLayer.apply(this, arguments));
+  function ThreeLayer() {
+    return _maptalks$CanvasLayer.apply(this, arguments) || this;
+  }
+
+  var _proto = ThreeLayer.prototype;
+
+  /**
+   * Draw method of ThreeLayer
+   * In default, it calls renderScene, refresh the camera and the scene
+   */
+  _proto.draw = function draw() {
+    this.renderScene();
+  };
+  /**
+   * Draw method of ThreeLayer when map is interacting
+   * In default, it calls renderScene, refresh the camera and the scene
+   */
+
+
+  _proto.drawOnInteracting = function drawOnInteracting() {
+    this.renderScene();
+  };
+  /**
+   * Convert a geographic coordinate to THREE Vector3
+   * @param  {maptalks.Coordinate} coordinate - coordinate
+   * @param {Number} [z=0] z value
+   * @return {THREE.Vector3}
+   */
+
+
+  _proto.coordinateToVector3 = function coordinateToVector3(coordinate, z) {
+    if (z === void 0) {
+      z = 0;
     }
 
-    /**
-     * Draw method of ThreeLayer
-     * In default, it calls renderScene, refresh the camera and the scene
-     */
-    ThreeLayer.prototype.draw = function draw() {
-        this.renderScene();
-    };
+    var map = this.getMap();
 
-    /**
-     * Draw method of ThreeLayer when map is interacting
-     * In default, it calls renderScene, refresh the camera and the scene
-     */
+    if (!map) {
+      return null;
+    }
 
-
-    ThreeLayer.prototype.drawOnInteracting = function drawOnInteracting() {
-        this.renderScene();
-    };
-    /**
-     * Convert a geographic coordinate to THREE Vector3
-     * @param  {maptalks.Coordinate} coordinate - coordinate
-     * @param {Number} [z=0] z value
-     * @return {THREE.Vector3}
-     */
+    var p = map.coordinateToPoint(coordinate, getTargetZoom(map));
+    return new Vector3(p.x, p.y, z);
+  };
+  /**
+   * Convert geographic distance to THREE Vector3
+   * @param  {Number} w - width
+   * @param  {Number} h - height
+   * @return {THREE.Vector3}
+   */
 
 
-    ThreeLayer.prototype.coordinateToVector3 = function coordinateToVector3(coordinate) {
-        var z = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-
-        var map = this.getMap();
-        if (!map) {
-            return null;
-        }
-        var p = map.coordinateToPoint(coordinate, getTargetZoom(map));
-        return new Vector3(p.x, p.y, -z);
-    };
-
-    /**
-     * Convert geographic distance to THREE Vector3
-     * @param  {Number} w - width
-     * @param  {Number} h - height
-     * @return {THREE.Vector3}
-     */
-
-
-    ThreeLayer.prototype.distanceToVector3 = function distanceToVector3(w, h, coord) {
-        var map = this.getMap();
-        var zoom = getTargetZoom(map),
-            center = coord || map.getCenter(),
-            target = map.locate(center, w, h);
-        var p0 = map.coordinateToPoint(center, zoom),
-            p1 = map.coordinateToPoint(target, zoom);
-        var x = Math.abs(p1.x - p0.x) * Util.sign(w);
-        var y = Math.abs(p1.y - p0.y) * Util.sign(h);
-        return new Vector3(x, y, 0);
-    };
-
-    /**
-     * Convert a Polygon or a MultiPolygon to THREE shape
-     * @param  {maptalks.Polygon|maptalks.MultiPolygon} polygon - polygon or multipolygon
-     * @return {THREE.Shape}
-     */
+  _proto.distanceToVector3 = function distanceToVector3(w, h, coord) {
+    var map = this.getMap();
+    var zoom = getTargetZoom(map),
+        center = coord || map.getCenter(),
+        target = map.locate(center, w, h);
+    var p0 = map.coordinateToPoint(center, zoom),
+        p1 = map.coordinateToPoint(target, zoom);
+    var x = Math.abs(p1.x - p0.x) * Util.sign(w);
+    var y = Math.abs(p1.y - p0.y) * Util.sign(h);
+    return new Vector3(x, y, 0);
+  };
+  /**
+   * Convert a Polygon or a MultiPolygon to THREE shape
+   * @param  {maptalks.Polygon|maptalks.MultiPolygon} polygon - polygon or multipolygon
+   * @return {THREE.Shape}
+   */
 
 
-    ThreeLayer.prototype.toShape = function toShape(polygon) {
-        var _this2 = this;
+  _proto.toShape = function toShape(polygon) {
+    var _this = this;
 
-        if (!polygon) {
-            return null;
-        }
-        if (polygon instanceof MultiPolygon) {
-            return polygon.getGeometries().map(function (c) {
-                return _this2.toShape(c);
-            });
-        }
-        var center = polygon.getCenter();
-        var centerPt = this.coordinateToVector3(center);
-        var shell = polygon.getShell();
-        var outer = shell.map(function (c) {
-            return _this2.coordinateToVector3(c).sub(centerPt);
+    if (!polygon) {
+      return null;
+    }
+
+    if (polygon instanceof MultiPolygon) {
+      return polygon.getGeometries().map(function (c) {
+        return _this.toShape(c);
+      });
+    }
+
+    var center = polygon.getCenter();
+    var centerPt = this.coordinateToVector3(center);
+    var shell = polygon.getShell();
+    var outer = shell.map(function (c) {
+      return _this.coordinateToVector3(c).sub(centerPt);
+    }).reverse();
+    var shape = new Shape(outer);
+    var holes = polygon.getHoles();
+
+    if (holes && holes.length > 0) {
+      shape.holes = holes.map(function (item) {
+        var pts = item.map(function (c) {
+          return _this.coordinateToVector3(c).sub(centerPt);
         });
-        var shape = new Shape(outer);
-        var holes = polygon.getHoles();
+        return new Shape(pts);
+      });
+    }
 
-        if (holes && holes.length > 0) {
-            shape.holes = holes.map(function (item) {
-                var pts = item.map(function (c) {
-                    return _this2.coordinateToVector3(c).sub(centerPt);
-                });
-                return new Shape(pts);
-            });
+    return shape;
+  };
+
+  _proto.toExtrudeMesh = function toExtrudeMesh(polygon, altitude, material, height) {
+    var _this2 = this;
+
+    if (!polygon) {
+      return null;
+    }
+
+    if (polygon instanceof MultiPolygon) {
+      return polygon.getGeometries().map(function (c) {
+        return _this2.toExtrudeGeometry(c, altitude, material, height);
+      });
+    }
+
+    var rings = polygon.getCoordinates();
+    rings.forEach(function (ring) {
+      var length = ring.length;
+
+      for (var i = length - 1; i >= 1; i--) {
+        if (ring[i].equals(ring[i - 1])) {
+          ring.splice(i, 1);
         }
+      }
+    });
+    polygon.setCoordinates(rings);
+    var shape = this.toShape(polygon);
+    var center = this.coordinateToVector3(polygon.getCenter());
+    height = Util.isNumber(height) ? height : altitude;
+    height = this.distanceToVector3(height, height).x;
+    var amount = this.distanceToVector3(altitude, altitude).x; //{ amount: extrudeH, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 1, bevelThickness: 1 };
 
-        return shape;
+    var config = {
+      'bevelEnabled': false,
+      'bevelSize': 1
     };
+    var name = parseInt(REVISION) >= 93 ? 'depth' : 'amount';
+    config[name] = height;
+    var geom = new ExtrudeGeometry(shape, config);
+    var buffGeom = new BufferGeometry();
+    buffGeom.fromGeometry(geom);
+    var mesh = new Mesh(geom, material);
+    mesh.position.set(center.x, center.y, amount - height);
+    return mesh;
+  };
 
-    ThreeLayer.prototype.toExtrudeMesh = function toExtrudeMesh(polygon, amount, material, removeDup) {
-        var _this3 = this;
+  _proto.clearMesh = function clearMesh() {
+    var scene = this.getScene();
 
-        if (!polygon) {
-            return null;
-        }
-        if (polygon instanceof MultiPolygon) {
-            return polygon.getGeometries().map(function (c) {
-                return _this3.toExtrudeGeometry(c, amount, material);
-            });
-        }
-        if (removeDup) {
-            var rings = polygon.getCoordinates();
-            rings.forEach(function (ring) {
-                var length = ring.length;
-                for (var i = length - 1; i >= 1; i--) {
-                    if (ring[i].equals(ring[i - 1])) {
-                        ring.splice(i, 1);
-                    }
-                }
-            });
-            polygon.setCoordinates(rings);
-        }
-        var shape = this.toShape(polygon);
-        var center = this.coordinateToVector3(polygon.getCenter());
-        amount = this.distanceToVector3(amount, amount).x;
-        //{ amount: extrudeH, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 1, bevelThickness: 1 };
-        var geom = new ExtrudeGeometry(shape, { 'amount': amount, 'bevelEnabled': true });
-        var buffGeom = new BufferGeometry();
-        buffGeom.fromGeometry(geom);
-        var mesh = new Mesh(buffGeom, material);
-        mesh.position.set(center.x, center.y, -amount);
-        return mesh;
-    };
+    if (!scene) {
+      return this;
+    }
 
-    ThreeLayer.prototype.clearMesh = function clearMesh() {
-        var scene = this.getScene();
-        if (!scene) {
-            return this;
-        }
-        for (var i = scene.children.length - 1; i >= 0; i--) {
-            if (scene.children[i] instanceof Mesh) {
-                scene.remove(scene.children[i]);
-            }
-        }
-        return this;
-    };
+    for (var i = scene.children.length - 1; i >= 0; i--) {
+      if (scene.children[i] instanceof Mesh) {
+        scene.remove(scene.children[i]);
+      }
+    }
 
-    ThreeLayer.prototype.lookAt = function lookAt(vector) {
-        var renderer$$1 = this._getRenderer();
-        if (renderer$$1) {
-            renderer$$1.context.lookAt(vector);
-        }
-        return this;
-    };
+    return this;
+  };
 
-    ThreeLayer.prototype.getCamera = function getCamera() {
-        var renderer$$1 = this._getRenderer();
-        if (renderer$$1) {
-            return renderer$$1.camera;
-        }
-        return null;
-    };
+  _proto.lookAt = function lookAt(vector) {
+    var renderer$$1 = this._getRenderer();
 
-    ThreeLayer.prototype.getScene = function getScene() {
-        var renderer$$1 = this._getRenderer();
-        if (renderer$$1) {
-            return renderer$$1.scene;
-        }
-        return null;
-    };
+    if (renderer$$1) {
+      renderer$$1.context.lookAt(vector);
+    }
 
-    ThreeLayer.prototype.renderScene = function renderScene() {
-        var renderer$$1 = this._getRenderer();
-        if (renderer$$1) {
-            return renderer$$1.renderScene();
-        }
-        return this;
-    };
+    return this;
+  };
 
-    ThreeLayer.prototype.getThreeRenderer = function getThreeRenderer() {
-        var renderer$$1 = this._getRenderer();
-        if (renderer$$1) {
-            return renderer$$1.context;
-        }
-        return null;
-    };
+  _proto.getCamera = function getCamera() {
+    var renderer$$1 = this._getRenderer();
 
-    /**
-     * To make map's 2d point's 1 pixel euqal with 1 pixel on XY plane in THREE's scene:
-     * 1. fov is 90 and camera's z is height / 2 * scale,
-     * 2. if fov is not 90, a ratio is caculated to transfer z to the equivalent when fov is 90
-     * @return {Number} fov ratio on z axis
-     */
+    if (renderer$$1) {
+      return renderer$$1.camera;
+    }
+
+    return null;
+  };
+
+  _proto.getScene = function getScene() {
+    var renderer$$1 = this._getRenderer();
+
+    if (renderer$$1) {
+      return renderer$$1.scene;
+    }
+
+    return null;
+  };
+
+  _proto.renderScene = function renderScene() {
+    var renderer$$1 = this._getRenderer();
+
+    if (renderer$$1) {
+      return renderer$$1.renderScene();
+    }
+
+    return this;
+  };
+
+  _proto.getThreeRenderer = function getThreeRenderer() {
+    var renderer$$1 = this._getRenderer();
+
+    if (renderer$$1) {
+      return renderer$$1.context;
+    }
+
+    return null;
+  };
+  /**
+   * To make map's 2d point's 1 pixel euqal with 1 pixel on XY plane in THREE's scene:
+   * 1. fov is 90 and camera's z is height / 2 * scale,
+   * 2. if fov is not 90, a ratio is caculated to transfer z to the equivalent when fov is 90
+   * @return {Number} fov ratio on z axis
+   */
 
 
-    ThreeLayer.prototype._getFovRatio = function _getFovRatio() {
-        var map = this.getMap();
-        var fov = map.getFov();
-        return Math.tan(fov / 2 * RADIAN);
-    };
+  _proto._getFovRatio = function _getFovRatio() {
+    var map = this.getMap();
+    var fov = map.getFov();
+    return Math.tan(fov / 2 * RADIAN);
+  };
 
-    return ThreeLayer;
+  return ThreeLayer;
 }(CanvasLayer);
-
 ThreeLayer.mergeOptions(options);
+var ThreeRenderer =
+/*#__PURE__*/
+function (_maptalks$renderer$Ca) {
+  _inheritsLoose(ThreeRenderer, _maptalks$renderer$Ca);
 
-var ThreeRenderer = function (_maptalks$renderer$Ca) {
-    _inherits(ThreeRenderer, _maptalks$renderer$Ca);
+  function ThreeRenderer() {
+    return _maptalks$renderer$Ca.apply(this, arguments) || this;
+  }
 
-    function ThreeRenderer() {
-        _classCallCheck(this, ThreeRenderer);
+  var _proto2 = ThreeRenderer.prototype;
 
-        return _possibleConstructorReturn(this, _maptalks$renderer$Ca.apply(this, arguments));
+  _proto2.getPrepareParams = function getPrepareParams() {
+    return [this.scene, this.camera];
+  };
+
+  _proto2.getDrawParams = function getDrawParams() {
+    return [this.scene, this.camera];
+  };
+
+  _proto2._drawLayer = function _drawLayer() {
+    _maptalks$renderer$Ca.prototype._drawLayer.apply(this, arguments);
+
+    this.renderScene();
+  };
+
+  _proto2.hitDetect = function hitDetect() {
+    return false;
+  };
+
+  _proto2.createCanvas = function createCanvas() {
+    _maptalks$renderer$Ca.prototype.createCanvas.call(this);
+
+    this.createContext();
+  };
+
+  _proto2.createContext = function createContext() {
+    if (this.canvas.gl && this.canvas.gl.wrap) {
+      this.gl = this.canvas.gl.wrap();
+    } else {
+      var layer = this.layer;
+      var attributes = layer.options.glOptions || {
+        alpha: true,
+        depth: true,
+        antialias: true,
+        stencil: true
+      };
+      attributes.preserveDrawingBuffer = true;
+      this.gl = this.gl || this._createGLContext(this.canvas, attributes);
     }
 
-    ThreeRenderer.prototype.getPrepareParams = function getPrepareParams() {
-        return [this.scene, this.camera];
-    };
+    this._initThreeRenderer();
 
-    ThreeRenderer.prototype.getDrawParams = function getDrawParams() {
-        return [this.scene, this.camera];
-    };
+    this.layer.onCanvasCreate(this.context, this.scene, this.camera);
+  };
 
-    ThreeRenderer.prototype._drawLayer = function _drawLayer() {
-        _maptalks$renderer$Ca.prototype._drawLayer.apply(this, arguments);
-        this.renderScene();
-    };
+  _proto2._initThreeRenderer = function _initThreeRenderer() {
+    var renderer$$1 = new WebGLRenderer({
+      'context': this.gl,
+      alpha: true
+    });
+    renderer$$1.autoClear = false;
+    renderer$$1.setClearColor(new Color(1, 1, 1), 0);
+    renderer$$1.setSize(this.canvas.width, this.canvas.height);
+    renderer$$1.clear();
+    renderer$$1.canvas = this.canvas;
+    this.context = renderer$$1;
+    var scene = this.scene = new Scene();
+    var camera = this.camera = new Camera();
+    camera.matrixAutoUpdate = false;
+    scene.add(camera);
+  };
 
-    ThreeRenderer.prototype.hitDetect = function hitDetect() {
-        return false;
-    };
+  _proto2.onCanvasCreate = function onCanvasCreate() {
+    _maptalks$renderer$Ca.prototype.onCanvasCreate.call(this);
+  };
 
-    ThreeRenderer.prototype.createCanvas = function createCanvas() {
-        if (this.canvas) {
-            return;
-        }
-        var map = this.getMap();
-        var size = map.getSize();
-        var r = Browser.retina ? 2 : 1,
-            w = r * size.width,
-            h = r * size.height;
-        if (this.layer._canvas) {
-            var canvas = this.layer._canvas;
-            canvas.width = w;
-            canvas.height = h;
-            if (canvas.style) {
-                canvas.style.width = size.width + 'px';
-                canvas.style.height = size.height + 'px';
-            }
-            this.canvas = this.layer._canvas;
-        } else {
-            this.canvas = Canvas.createCanvas(w, h);
-        }
-        this._initThreeRenderer();
-        this.onCanvasCreate();
+  _proto2.resizeCanvas = function resizeCanvas(canvasSize) {
+    if (!this.canvas) {
+      return;
+    }
 
-        this.layer.fire('canvascreate', {
-            'context': this.context,
-            'gl': this.gl
-        });
-    };
+    var size;
 
-    ThreeRenderer.prototype._initThreeRenderer = function _initThreeRenderer() {
-        var map = this.getMap();
-        var size = map.getSize();
-        var renderer$$1 = this.layer.options['renderer'];
-        var gl;
-        if (renderer$$1 === 'gl') {
-            gl = new WebGLRenderer(Util.extend({
-                'canvas': this.canvas,
-                'alpha': true,
-                'preserveDrawingBuffer': true
-            }, this.layer.options['glOptions']));
-            gl.autoClear = false;
-            gl.clear();
-        } else if (renderer$$1 === 'canvas') {
-            gl = new CanvasRenderer(Util.extend({
-                'canvas': this.canvas,
-                'alpha': true
-            }, this.layer.options['glOptions']));
-        }
-        gl.setSize(this.canvas.width, this.canvas.height);
-        gl.setClearColor(new Color(1, 1, 1), 0);
-        gl.canvas = this.canvas;
-        this.context = gl;
-        var maxScale = map.getScale(map.getMinZoom()) / map.getScale(getTargetZoom(map));
-        var farZ = maxScale * size.height / 2 / this.layer._getFovRatio();
-        // scene
-        var scene = this.scene = new Scene();
-        var fov = map.getFov();
-        var camera = this.camera = new PerspectiveCamera(fov, size.width / size.height, 1, farZ);
-        scene.add(camera);
-    };
+    if (!canvasSize) {
+      size = this.getMap().getSize();
+    } else {
+      size = canvasSize;
+    }
 
-    ThreeRenderer.prototype.onCanvasCreate = function onCanvasCreate() {
-        _maptalks$renderer$Ca.prototype.onCanvasCreate.call(this);
-        this.layer.onCanvasCreate(this.context, this.scene, this.camera);
-    };
+    var r = Browser.retina ? 2 : 1;
+    var canvas = this.canvas; //retina support
 
-    ThreeRenderer.prototype.resizeCanvas = function resizeCanvas(canvasSize) {
-        if (!this.canvas) {
-            return;
-        }
-        var size;
-        if (!canvasSize) {
-            size = this.getMap().getSize();
-        } else {
-            size = canvasSize;
-        }
-        var r = Browser.retina ? 2 : 1;
-        //retina support
-        this.canvas.height = r * size['height'];
-        this.canvas.width = r * size['width'];
-        this.camera.aspect = this.canvas.width / this.canvas.height;
-        this.camera.updateProjectionMatrix();
-        this.context.setSize(this.canvas.width, this.canvas.height);
-    };
+    canvas.height = r * size['height'];
+    canvas.width = r * size['width'];
+    this.context.setSize(canvas.width, canvas.height);
+  };
 
-    ThreeRenderer.prototype.clearCanvas = function clearCanvas() {
-        if (!this.canvas) {
-            return;
-        }
+  _proto2.clearCanvas = function clearCanvas() {
+    if (!this.canvas) {
+      return;
+    }
 
-        this.context.clear();
-    };
+    this.context.clear();
+  };
 
-    ThreeRenderer.prototype.prepareCanvas = function prepareCanvas() {
-        if (!this.canvas) {
-            this.createCanvas();
-        } else {
-            this.clearCanvas();
-        }
-        this.layer.fire('renderstart', { 'context': this.context });
-        return null;
-    };
+  _proto2.prepareCanvas = function prepareCanvas() {
+    if (!this.canvas) {
+      this.createCanvas();
+    } else {
+      this.clearCanvas();
+    }
 
-    ThreeRenderer.prototype.renderScene = function renderScene() {
-        this._locateCamera();
-        this.context.render(this.scene, this.camera);
-        this.completeRender();
-    };
+    this.layer.fire('renderstart', {
+      'context': this.context
+    });
+    return null;
+  };
 
-    ThreeRenderer.prototype.remove = function remove() {
-        delete this._drawContext;
-        _maptalks$renderer$Ca.prototype.remove.call(this);
-    };
+  _proto2.renderScene = function renderScene() {
+    this._locateCamera();
 
-    ThreeRenderer.prototype._locateCamera = function _locateCamera() {
-        var map = this.getMap();
-        var size = map.getSize();
-        var scale = map.getScale();
-        var camera = this.camera;
-        // 1. camera is always looking at map's center
-        // 2. camera's distance from map's center doesn't change when rotating and tilting.
-        var center2D = map.coordinateToPoint(map.getCenter(), getTargetZoom(map));
-        var pitch = map.getPitch() * RADIAN;
-        var bearing = map.getBearing() * RADIAN;
+    this.context.render(this.scene, this.camera);
+    this.completeRender();
+  };
 
-        var ratio = this.layer._getFovRatio();
-        var z = -scale * size.height / 2 / ratio;
+  _proto2.remove = function remove() {
+    delete this._drawContext;
 
-        // when map tilts, camera's position should be lower in Z axis
-        camera.position.z = z * Math.cos(pitch);
-        // and [dist] away from map's center on XY plane to tilt the scene.
-        var dist = Math.sin(pitch) * z;
-        // when map rotates, the camera's xy position is rotating with the given bearing and still keeps [dist] away from map's center
-        camera.position.x = center2D.x + dist * Math.sin(bearing);
-        camera.position.y = center2D.y - dist * Math.cos(bearing);
+    _maptalks$renderer$Ca.prototype.remove.call(this);
+  };
 
-        // when map rotates, camera's up axis is pointing to south direction of map
-        camera.up.set(Math.sin(bearing), -Math.cos(bearing), 0);
+  _proto2._locateCamera = function _locateCamera() {
+    var map = this.getMap();
+    this.camera.matrix.elements = map.cameraWorldMatrix;
+    this.camera.projectionMatrix.elements = map.projMatrix;
+  };
 
-        // look at to the center of map
-        camera.lookAt(new Vector3(center2D.x, center2D.y, 0));
-        camera.updateProjectionMatrix();
-    };
+  _proto2._createGLContext = function _createGLContext(canvas, options) {
+    var names = ['webgl', 'experimental-webgl'];
+    var context = null;
+    /* eslint-disable no-empty */
 
-    return ThreeRenderer;
+    for (var i = 0; i < names.length; ++i) {
+      try {
+        context = canvas.getContext(names[i], options);
+      } catch (e) {}
+
+      if (context) {
+        break;
+      }
+    }
+
+    return context;
+    /* eslint-enable no-empty */
+  };
+
+  return ThreeRenderer;
 }(renderer.CanvasLayerRenderer);
-
-ThreeLayer.registerRenderer('canvas', ThreeRenderer);
 ThreeLayer.registerRenderer('gl', ThreeRenderer);
 
 function getTargetZoom(map) {
-    return map.getMaxNativeZoom();
+  return map.getGLZoom();
 }
 
 export { ThreeLayer, ThreeRenderer };
 
-typeof console !== 'undefined' && console.log('maptalks.three v0.5.0, requires maptalks@>=0.36.2.');
+typeof console !== 'undefined' && console.log('maptalks.three v0.6.0, requires maptalks@>=0.39.0.');
