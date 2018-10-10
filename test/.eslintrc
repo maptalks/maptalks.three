@@ -5,7 +5,8 @@
   "globals": {
     "expect" : true,
     "sinon": true,
-    "happen": true
+    "happen": true,
+    "maptalks" : true
   },
   "plugins": ["mocha"]
 }
