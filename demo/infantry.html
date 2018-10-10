@@ -26,7 +26,7 @@ var map = new maptalks.Map("map",{
     center : [13.41261,52.529611],
     zoom   :  19,
     pitch : 0,
-    bearing : 0,
+    bearing : 180,
     attribution : {
       'content' : '<span style="padding:4px;">&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://osmbuilding.org">osmbuilding.org</a></span>'
     },
@@ -48,14 +48,15 @@ var threeLayer = new maptalks.ThreeLayer('t', {
 });
 // prepare data, load mtl into three scene.
 threeLayer.prepareToDraw = function (gl, scene, camera) {
-    var light = new THREE.PointLight( 0xffffff );
-    light.position.copy(camera.position);
-    scene.add(light);
     scene.add(new THREE.AmbientLight(0xffffff));// soft white light
     var mtlLoader = new THREE.MTLLoader();
     mtlLoader.setPath( 'obj/' );
     mtlLoader.load( 'male02.mtl', function( materials ) {
         materials.preload();
+        for (const p in materials.materials) {
+            //change material's side to BackSide
+            materials.materials[p].side = THREE.BackSide;
+        }
         var objLoader = new THREE.OBJLoader();
         objLoader.setMaterials( materials );
         objLoader.setPath( 'obj/' );
@@ -92,7 +93,8 @@ function createInfantry(obj) {
         var object = obj.clone();
         object.traverse( function ( child ) {
             if ( child instanceof THREE.Mesh ) {
-              child.rotation.set(Math.PI * 3 / 2, 0, 0);
+              child.rotation.set(Math.PI * 1 / 2, 0, 0);
+              child.scale.set(0.002, 0.002, 0.002);
             }
         });
         // var x = extent.xmin + Math.random() * extent.getWidth();
