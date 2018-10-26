@@ -1,10 +1,10 @@
 /*!
- * maptalks.three v0.6.0
+ * maptalks.three v0.6.1
  * LICENSE : MIT
  * (c) 2016-2018 maptalks.org
  */
 import { Util, MultiPolygon, CanvasLayer, Browser, renderer } from 'maptalks';
-import { Vector3, Shape, REVISION, ExtrudeGeometry, BufferGeometry, Mesh, WebGLRenderer, Color, Scene, Camera } from 'three';
+import { Vector3, Shape, REVISION, ExtrudeGeometry, BufferGeometry, Mesh, WebGLRenderer, Color, Scene, PerspectiveCamera } from 'three';
 
 function _inheritsLoose(subClass, superClass) {
   subClass.prototype = Object.create(superClass.prototype);
@@ -344,8 +344,13 @@ function (_maptalks$renderer$Ca) {
     renderer$$1.canvas = this.canvas;
     this.context = renderer$$1;
     var scene = this.scene = new Scene();
-    var camera = this.camera = new Camera();
+    var map = this.layer.getMap();
+    var fov = map.getFov() * Math.PI / 180;
+    var camera = this.camera = new PerspectiveCamera(fov, map.width / map.height, map.cameraNear, map.cameraFar);
     camera.matrixAutoUpdate = false;
+
+    this._syncCamera();
+
     scene.add(camera);
   };
 
@@ -396,7 +401,7 @@ function (_maptalks$renderer$Ca) {
   };
 
   _proto2.renderScene = function renderScene() {
-    this._locateCamera();
+    this._syncCamera();
 
     this.context.render(this.scene, this.camera);
     this.completeRender();
@@ -408,7 +413,7 @@ function (_maptalks$renderer$Ca) {
     _maptalks$renderer$Ca.prototype.remove.call(this);
   };
 
-  _proto2._locateCamera = function _locateCamera() {
+  _proto2._syncCamera = function _syncCamera() {
     var map = this.getMap();
     this.camera.matrix.elements = map.cameraWorldMatrix;
     this.camera.projectionMatrix.elements = map.projMatrix;
@@ -443,4 +448,4 @@ function getTargetZoom(map) {
 
 export { ThreeLayer, ThreeRenderer };
 
-typeof console !== 'undefined' && console.log('maptalks.three v0.6.0, requires maptalks@>=0.39.0.');
+typeof console !== 'undefined' && console.log('maptalks.three v0.6.1, requires maptalks@>=0.39.0.');

@@ -1,5 +1,5 @@
 /*!
- * maptalks.three v0.6.0
+ * maptalks.three v0.6.1
  * LICENSE : MIT
  * (c) 2016-2018 maptalks.org
  */
@@ -347,8 +347,13 @@
       renderer.canvas = this.canvas;
       this.context = renderer;
       var scene = this.scene = new THREE.Scene();
-      var camera = this.camera = new THREE.Camera();
+      var map = this.layer.getMap();
+      var fov = map.getFov() * Math.PI / 180;
+      var camera = this.camera = new THREE.PerspectiveCamera(fov, map.width / map.height, map.cameraNear, map.cameraFar);
       camera.matrixAutoUpdate = false;
+
+      this._syncCamera();
+
       scene.add(camera);
     };
 
@@ -399,7 +404,7 @@
     };
 
     _proto2.renderScene = function renderScene() {
-      this._locateCamera();
+      this._syncCamera();
 
       this.context.render(this.scene, this.camera);
       this.completeRender();
@@ -411,7 +416,7 @@
       _maptalks$renderer$Ca.prototype.remove.call(this);
     };
 
-    _proto2._locateCamera = function _locateCamera() {
+    _proto2._syncCamera = function _syncCamera() {
       var map = this.getMap();
       this.camera.matrix.elements = map.cameraWorldMatrix;
       this.camera.projectionMatrix.elements = map.projMatrix;
@@ -449,6 +454,6 @@
 
   Object.defineProperty(exports, '__esModule', { value: true });
 
-  typeof console !== 'undefined' && console.log('maptalks.three v0.6.0, requires maptalks@>=0.39.0.');
+  typeof console !== 'undefined' && console.log('maptalks.three v0.6.1, requires maptalks@>=0.39.0.');
 
 })));
