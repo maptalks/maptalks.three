@@ -265,8 +265,11 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         this.context = renderer;
 
         const scene = this.scene = new THREE.Scene();
-        const camera = this.camera =  new THREE.Camera();
+        const map = this.layer.getMap();
+        const fov = map.getFov() * Math.PI / 180;
+        const camera = this.camera =  new THREE.PerspectiveCamera(fov, map.width / map.height, map.cameraNear, map.cameraFar);
         camera.matrixAutoUpdate = false;
+        this._syncCamera();
         scene.add(camera);
     }
 
@@ -312,7 +315,7 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
     }
 
     renderScene() {
-        this._locateCamera();
+        this._syncCamera();
         this.context.render(this.scene, this.camera);
         this.completeRender();
     }
@@ -322,7 +325,7 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         super.remove();
     }
 
-    _locateCamera() {
+    _syncCamera() {
         const map = this.getMap();
         this.camera.matrix.elements = map.cameraWorldMatrix;
         this.camera.projectionMatrix.elements = map.projMatrix;
