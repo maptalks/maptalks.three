@@ -74,6 +74,28 @@ threeLayer.prepareToDraw = function (gl, scene, camera) {
 };
 threeLayer.addTo(map);
 
+//select buildings by mouse click
+var raycaster = new THREE.Raycaster();
+
+document.addEventListener('click', function (event) {
+    event.preventDefault();
+    var mouse = new THREE.Vector2();
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    var objects = [];
+    threeLayer.getScene().children.forEach(child => {
+        if (child instanceof THREE.Mesh) {
+           objects.push(child);
+        }
+    })
+    raycaster.setFromCamera(mouse, threeLayer.getCamera());
+    var intersects = raycaster.intersectObjects(objects);
+    if (intersects.length > 0) {
+        alert('Mesh : ' + intersects[0].object.uuid);
+    }
+}, false);
+
 function getColor(level) {
     if (level < 2) {
         return 0x2685a7;
