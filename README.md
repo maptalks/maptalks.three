@@ -17,9 +17,10 @@ A maptalks Layer to render with THREE.js
 * Download from [dist directory](https://github.com/maptalks/maptalks.three/tree/gh-pages/dist).
 * Use unpkg CDN: `https://unpkg.com/maptalks.three/dist/maptalks.three.min.js`
 
-## Changes of v0.6.0
+## Migration from <=v0.5.x to v0.6.0
 
-* Re-implementated locateCamera, sync with map's projMatrix and viewMatrix
+* Re-implementated locateCamera, sync with map's projMatrix and viewMatrix.
+* Model's z position is reversed from v0.5.0. So if you have models rendered with v0.5.x, rotation needs to be updated.
 * For THREE <= 0.94, material's side need to set to THREE.BackSide or THREE.DoubleSide to render correctly
     * THREE >= 0.95 doesn't need, maybe due to [#14379](https://github.com/mrdoob/three.js/pull/14379)
 * Add support for THREE >= 0.93
