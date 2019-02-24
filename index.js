@@ -116,7 +116,7 @@ export class ThreeLayer extends maptalks.CanvasLayer {
             return null;
         }
         if (polygon instanceof maptalks.MultiPolygon) {
-            return polygon.getGeometries().map(c => this.toExtrudeGeometry(c, altitude, material, height));
+            return polygon.getGeometries().map(c => this.toExtrudeMesh(c, altitude, material, height));
         }
         const rings = polygon.getCoordinates();
         rings.forEach(ring => {
