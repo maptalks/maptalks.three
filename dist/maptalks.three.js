@@ -1,7 +1,7 @@
 /*!
- * maptalks.three v0.6.1
+ * maptalks.three v0.6.2
  * LICENSE : MIT
- * (c) 2016-2018 maptalks.org
+ * (c) 2016-2019 maptalks.org
  */
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('maptalks'), require('three')) :
@@ -163,7 +163,7 @@
 
       if (polygon instanceof maptalks.MultiPolygon) {
         return polygon.getGeometries().map(function (c) {
-          return _this2.toExtrudeGeometry(c, altitude, material, height);
+          return _this2.toExtrudeMesh(c, altitude, material, height);
         });
       }
 
@@ -454,6 +454,6 @@
 
   Object.defineProperty(exports, '__esModule', { value: true });
 
-  typeof console !== 'undefined' && console.log('maptalks.three v0.6.1, requires maptalks@>=0.39.0.');
+  typeof console !== 'undefined' && console.log('maptalks.three v0.6.2, requires maptalks@>=0.39.0.');
 
 })));
