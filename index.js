@@ -22,7 +22,7 @@ const RADIAN = Math.PI / 180;
  *      return [size.width, size.height]
  *  };
  *
- *  layer.draw = function (gl,extend,scene, camera, width,height) {
+ *  layer.draw = function (gl,view,scene, camera, width,height) {
  *      //...
  *  };
  *  layer.addTo(map);
