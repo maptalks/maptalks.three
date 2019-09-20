@@ -140,7 +140,7 @@ export class ThreeLayer extends maptalks.CanvasLayer {
         const geom = new THREE.ExtrudeGeometry(shape, config);
         const buffGeom = new THREE.BufferGeometry();
         buffGeom.fromGeometry(geom);
-        const mesh = new THREE.Mesh(geom, material);
+        const mesh = new THREE.Mesh(buffGeom, material);
         mesh.position.set(center.x, center.y, amount - height);
         return mesh;
     }
