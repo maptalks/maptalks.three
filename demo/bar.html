@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>bar test World Population Visualization</title>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.97.0/build/three.min.js"></script>
+    <script type="text/javascript" src="../dist/maptalks.three.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 700px;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            center: [19.06325670775459, 42.16842479475318],
+            zoom: 6,
+            pitch: 60,
+            // bearing: 180,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+
+
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+        });
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+
+            addBars(scene);
+
+        };
+        threeLayer.addTo(map);
+
+
+        function addBars(scene) {
+            var material = new THREE.MeshBasicMaterial({ color: '#fff' });
+            fetch('./data/population.json').then((function (res) {
+                return res.json();
+            })).then(function (json) {
+                var bars = json.filter(function (dataItem) {
+                    return dataItem[2] > 50;
+                }).map(function (dataItem) {
+                    return {
+                        coordinate: dataItem.slice(0, 2),
+                        height: dataItem[2]
+                    }
+                }).map(function (d) {
+                    return threeLayer.toBar(d.coordinate, {
+                        height: d.height * 400,
+                        radius: 15000,
+                        topColor: '#fff',
+                        // radialSegments: 4
+                    }, material)
+                });
+
+                console.log(bars);
+                bars.forEach(function (bar) {
+                    scene.add(bar.getObject3d());
+                });
+                threeLayer.renderScene();
+            })
+        }
+
+    </script>
+</body>
+
+</html>
