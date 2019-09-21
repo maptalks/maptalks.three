@@ -1,5 +1,6 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
+import Bar from './src/Bar';
 
 const options = {
     'renderer' : 'gl',
@@ -59,6 +60,9 @@ export class ThreeLayer extends maptalks.CanvasLayer {
         if (!map) {
             return null;
         }
+        if (!(coordinate instanceof maptalks.Coordinate)) {
+            coordinate = new maptalks.Coordinate(coordinate);
+        }
         const p = map.coordinateToPoint(coordinate, getTargetZoom(map));
         return new THREE.Vector3(p.x, p.y, z);
     }
@@ -71,9 +75,12 @@ export class ThreeLayer extends maptalks.CanvasLayer {
      */
     distanceToVector3(w, h, coord) {
         const map = this.getMap();
-        const zoom = getTargetZoom(map),
-            center = coord || map.getCenter(),
-            target = map.locate(center, w, h);
+        const zoom = getTargetZoom(map);
+        let center = coord || map.getCenter();
+        if (!(center instanceof maptalks.Coordinate)) {
+            center = new maptalks.Coordinate(center);
+        }
+        const target = map.locate(center, w, h);
         const p0 = map.coordinateToPoint(center, zoom),
             p1 = map.coordinateToPoint(target, zoom);
         const x = Math.abs(p1.x - p0.x) * maptalks.Util.sign(w);
@@ -111,6 +118,13 @@ export class ThreeLayer extends maptalks.CanvasLayer {
     }
 
 
+    /**
+     * todo   This should also be extracted as a component
+     * @param {*} polygon 
+     * @param {*} altitude 
+     * @param {*} material 
+     * @param {*} height 
+     */
     toExtrudeMesh(polygon, altitude, material, height) {
         if (!polygon) {
             return null;
@@ -144,6 +158,18 @@ export class ThreeLayer extends maptalks.CanvasLayer {
         mesh.position.set(center.x, center.y, amount - height);
         return mesh;
     }
+
+
+    /**
+     * 
+     * @param {maptalks.Coordinate} coordinate 
+     * @param {Object} options 
+     * @param {THREE.Material} material 
+     */
+    toBar(coordinate, options, material) {
+        return new Bar(coordinate, options, material, this);
+    }
+
 
     clearMesh() {
         const scene = this.getScene();
