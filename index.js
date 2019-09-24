@@ -1,5 +1,6 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
+import BaseObject from './src/BaseObject';
 import Bar from './src/Bar';
 
 const options = {
@@ -222,6 +223,52 @@ export class ThreeLayer extends maptalks.CanvasLayer {
             return renderer.context;
         }
         return null;
+    }
+
+    /**
+     * add object3ds
+     * @param {BaseObject} meshs 
+     */
+    addMesh(meshs) {
+        if (!meshs) return this;
+        if (!Array.isArray(meshs)) {
+            meshs = [meshs];
+        }
+        const scene = this.getScene();
+        meshs.forEach(mesh => {
+            if (mesh instanceof BaseObject) {
+                scene.add(mesh.getObject3d());
+            } else {
+                if (mesh instanceof THREE.Object3D) {
+                    scene.add(mesh);
+                }
+            }
+        });
+        this.renderScene();
+        return this;
+    }
+
+    /**
+     * remove object3ds
+     * @param {BaseObject} meshs 
+     */
+    removeMesh(meshs) {
+        if (!meshs) return this;
+        if (!Array.isArray(meshs)) {
+            meshs = [meshs];
+        }
+        const scene = this.getScene();
+        meshs.forEach(mesh => {
+            if (mesh instanceof BaseObject) {
+                scene.remove(mesh.getObject3d());
+            } else {
+                if (mesh instanceof THREE.Object3D) {
+                    scene.remove(mesh);
+                }
+            }
+        });
+        this.renderScene();
+        return this;
     }
 
     /**
