@@ -227,21 +227,19 @@ export class ThreeLayer extends maptalks.CanvasLayer {
 
     /**
      * add object3ds
-     * @param {BaseObject} meshs 
+     * @param {BaseObject} meshes 
      */
-    addMesh(meshs) {
-        if (!meshs) return this;
-        if (!Array.isArray(meshs)) {
-            meshs = [meshs];
+    addMesh(meshes) {
+        if (!meshes) return this;
+        if (!Array.isArray(meshes)) {
+            meshes = [meshes];
         }
         const scene = this.getScene();
-        meshs.forEach(mesh => {
+        meshes.forEach(mesh => {
             if (mesh instanceof BaseObject) {
                 scene.add(mesh.getObject3d());
-            } else {
-                if (mesh instanceof THREE.Object3D) {
-                    scene.add(mesh);
-                }
+            } else if (mesh instanceof THREE.Object3D) {
+                scene.add(mesh);
             }
         });
         this.renderScene();
@@ -250,21 +248,19 @@ export class ThreeLayer extends maptalks.CanvasLayer {
 
     /**
      * remove object3ds
-     * @param {BaseObject} meshs 
+     * @param {BaseObject} meshes 
      */
-    removeMesh(meshs) {
-        if (!meshs) return this;
-        if (!Array.isArray(meshs)) {
-            meshs = [meshs];
+    removeMesh(meshes) {
+        if (!meshes) return this;
+        if (!Array.isArray(meshes)) {
+            meshes = [meshes];
         }
         const scene = this.getScene();
-        meshs.forEach(mesh => {
+        meshes.forEach(mesh => {
             if (mesh instanceof BaseObject) {
                 scene.remove(mesh.getObject3d());
-            } else {
-                if (mesh instanceof THREE.Object3D) {
-                    scene.remove(mesh);
-                }
+            } else if (mesh instanceof THREE.Object3D) {
+                scene.remove(mesh);
             }
         });
         this.renderScene();
