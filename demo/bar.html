@@ -7,6 +7,7 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.97.0/build/three.min.js"></script>
     <script type="text/javascript" src="../dist/maptalks.three.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
     <style>
         html,
         body {
@@ -47,7 +48,8 @@
         // the ThreeLayer to draw buildings
         var threeLayer = new maptalks.ThreeLayer('t', {
             forceRenderOnMoving: true,
-            forceRenderOnRotating: true
+            forceRenderOnRotating: true,
+            animation: true
         });
         threeLayer.prepareToDraw = function (gl, scene, camera) {
             var light = new THREE.DirectionalLight(0xffffff);
@@ -60,12 +62,13 @@
         threeLayer.addTo(map);
 
 
+        var bars;
         function addBars(scene) {
             var material = new THREE.MeshBasicMaterial({ color: '#fff' });
             fetch('./data/population.json').then((function (res) {
                 return res.json();
             })).then(function (json) {
-                var bars = json.filter(function (dataItem) {
+                bars = json.filter(function (dataItem) {
                     return dataItem[2] > 50;
                 }).map(function (dataItem) {
                     return {
@@ -82,11 +85,28 @@
                 });
 
                 console.log(bars);
-                bars.forEach(function (bar) {
-                    scene.add(bar.getObject3d());
-                });
-                threeLayer.renderScene();
+                // bars.forEach(function (bar) {
+                //     scene.add(bar.getObject3d());
+                // });
+                // threeLayer.renderScene();
+                threeLayer.addMesh(bars);
+                initGui();
             })
+        }
+
+        function initGui() {
+            var params = {
+                'bar': true
+            };
+
+            var gui = new dat.GUI();
+            gui.add(params, 'bar').name('bars').onChange(function () {
+                if (params.bar) {
+                    threeLayer.addMesh(bars);
+                } else {
+                    threeLayer.removeMesh(bars);
+                }
+            });
         }
 
     </script>
