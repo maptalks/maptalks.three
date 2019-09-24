@@ -277,15 +277,32 @@ export class ThreeLayer extends maptalks.CanvasLayer {
 
     /**
      *
-     * @param {map event result} e
-     * @param {Function} callback
+     * @param {Coordinate} e
+     * @param {Object} options
+     * @return {Array}
      */
-    identify(e, callback) {
-        if (!e || !callback || !maptalks.Util.isFunction(callback)) {
-            return this;
+    identify(e, options) {
+        if (!e) {
+            console.error('e  is null,it should be Coordinate');
+            return [];
         }
+        let x, y;
         const containerPoint = e.containerPoint;
-        if (!containerPoint) return this;
+        if (containerPoint) {
+            x = containerPoint.x;
+            y = containerPoint.y;
+        } else {
+            if (Array.isArray(e)) {
+                e = new maptalks.Coordinate(e);
+            }
+            if (!(e instanceof maptalks.Coordinate)) {
+                console.error('e type is error,it should be Coordinate');
+                return [];
+            }
+            const p = this.getMap().coordinateToPoint(e);
+            x = p.x;
+            y = p.y;
+        }
         this._initRaycaster();
         const raycaster = this._raycaster,
             mouse = this._mouse,
@@ -294,8 +311,8 @@ export class ThreeLayer extends maptalks.CanvasLayer {
             size = this.getMap().getSize();
         const width = size.width,
             height = size.height;
-        mouse.x = (containerPoint.x / width) * 2 - 1;
-        mouse.y = -(containerPoint.y / height) * 2 + 1;
+        mouse.x = (x / width) * 2 - 1;
+        mouse.y = -(y / height) * 2 + 1;
         raycaster.setFromCamera(mouse, camera);
 
         const children = [];
@@ -316,8 +333,9 @@ export class ThreeLayer extends maptalks.CanvasLayer {
                 return intersect.object.__parent || intersect.object;
             });
         }
-        callback(baseObjects);
-        return this;
+        options = maptalks.Util.extend({}, options);
+        const count = options.count;
+        return (maptalks.Util.isNumber(count) && count > 0 ? baseObjects.slice(0, count) : baseObjects);
     }
 
     /**

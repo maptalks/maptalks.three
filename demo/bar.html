@@ -112,14 +112,13 @@
 
 
         function addEvents() {
-            map.on('mousemove', e => {
+            map.on('mousemove', function (e) {
                 map.resetCursor('default');
-                threeLayer.identify(e, function (objects) {
-                    console.log(objects);
-                    if(objects.length){
-                        map.setCursor(`pointer`);
-                    }
-                })
+                var objects = threeLayer.identify(e);
+                console.log(objects);
+                if (objects.length) {
+                    map.setCursor(`pointer`);
+                }
             })
         }
 
