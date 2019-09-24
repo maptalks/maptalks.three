@@ -63,17 +63,20 @@
             var material = new THREE.MeshBasicMaterial({ color: '#3e35cf' });
             material.vertexColors = THREE.VertexColors;
 
+            var meshs = [];
             features.forEach(function (g) {
                 var heightPerLevel = 10;
                 var levels = g.properties.levels || 1;
                 var mesh = threeLayer.toExtrudeMesh(maptalks.GeoJSON.toGeometry(g), levels * heightPerLevel, material, levels * heightPerLevel);
                 initVertexColors(mesh.geometry, '#2d2f61', '#fff');
-                if (Array.isArray(mesh)) {
-                    scene.add.apply(scene, mesh);
-                } else {
-                    scene.add(mesh);
-                }
+                meshs.push(mesh);
+                // if (Array.isArray(mesh)) {
+                //     scene.add.apply(scene, mesh);
+                // } else {
+                //     scene.add(mesh);
+                // }
             });
+            threeLayer.addMesh(meshs);
         };
         threeLayer.addTo(map);
 
