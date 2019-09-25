@@ -299,7 +299,7 @@ export class ThreeLayer extends maptalks.CanvasLayer {
                 console.error('e type is error,it should be Coordinate');
                 return [];
             }
-            const p = this.getMap().coordinateToPoint(e);
+            const p = this.getMap().coordToContainerPoint(e);
             x = p.x;
             y = p.y;
         }
