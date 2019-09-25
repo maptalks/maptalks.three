@@ -277,32 +277,24 @@ export class ThreeLayer extends maptalks.CanvasLayer {
 
     /**
      *
-     * @param {Coordinate} e
+     * @param {Coordinate} coordinate
      * @param {Object} options
      * @return {Array}
      */
-    identify(e, options) {
-        if (!e) {
-            console.error('e  is null,it should be Coordinate');
+    identify(coordinate, options) {
+        if (!coordinate) {
+            console.error('coordinate is null,it should be Coordinate');
             return [];
         }
-        let x, y;
-        const containerPoint = e.containerPoint;
-        if (containerPoint) {
-            x = containerPoint.x;
-            y = containerPoint.y;
-        } else {
-            if (Array.isArray(e)) {
-                e = new maptalks.Coordinate(e);
-            }
-            if (!(e instanceof maptalks.Coordinate)) {
-                console.error('e type is error,it should be Coordinate');
-                return [];
-            }
-            const p = this.getMap().coordToContainerPoint(e);
-            x = p.x;
-            y = p.y;
+        if (Array.isArray(coordinate)) {
+            coordinate = new maptalks.Coordinate(coordinate);
         }
+        if (!(coordinate instanceof maptalks.Coordinate)) {
+            console.error('coordinate type is error,it should be Coordinate');
+            return [];
+        }
+        const p = this.getMap().coordToContainerPoint(coordinate);
+        const { x, y } = p;
         this._initRaycaster();
         const raycaster = this._raycaster,
             mouse = this._mouse,
