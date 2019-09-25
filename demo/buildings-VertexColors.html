@@ -106,7 +106,7 @@
         function addEvents() {
             map.on('mousemove', function (e) {
                 map.resetCursor('default');
-                var objects = threeLayer.identify(e, { count: 2 });
+                var objects = threeLayer.identify(e.coordinate, { count: 2 });
                 console.log(objects);
                 if (objects.length) {
                     map.setCursor(`pointer`);
