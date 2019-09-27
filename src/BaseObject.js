@@ -139,11 +139,13 @@ class BaseObject {
 
     _createMesh(geometry, material) {
         this.object3d = new THREE.Mesh(geometry, material);
+        this.object3d.__parent = this;
         return this;
     }
 
     _createGroup() {
         this.object3d = new THREE.Group();
+        this.object3d.__parent = this;
         return this;
     }
 

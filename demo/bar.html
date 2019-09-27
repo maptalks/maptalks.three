@@ -91,6 +91,7 @@
                 // threeLayer.renderScene();
                 threeLayer.addMesh(bars);
                 initGui();
+                addEvents();
             })
         }
 
@@ -107,6 +108,18 @@
                     threeLayer.removeMesh(bars);
                 }
             });
+        }
+
+
+        function addEvents() {
+            map.on('mousemove', function (e) {
+                map.resetCursor('default');
+                var objects = threeLayer.identify(e.coordinate);
+                console.log(objects);
+                if (objects.length) {
+                    map.setCursor(`pointer`);
+                }
+            })
         }
 
     </script>

@@ -77,6 +77,7 @@
                 // }
             });
             threeLayer.addMesh(meshs);
+            addEvents();
         };
         threeLayer.addTo(map);
 
@@ -98,6 +99,19 @@
             }
             geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3, true));
             return colors;
+        }
+
+
+
+        function addEvents() {
+            map.on('mousemove', function (e) {
+                map.resetCursor('default');
+                var objects = threeLayer.identify(e.coordinate, { count: 2 });
+                console.log(objects);
+                if (objects.length) {
+                    map.setCursor(`pointer`);
+                }
+            })
         }
 
 

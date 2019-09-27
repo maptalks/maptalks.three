@@ -4,9 +4,9 @@ import BaseObject from './src/BaseObject';
 import Bar from './src/Bar';
 
 const options = {
-    'renderer' : 'gl',
-    'doubleBuffer' : false,
-    'glOptions' : null
+    'renderer': 'gl',
+    'doubleBuffer': false,
+    'glOptions': null
 };
 
 const RADIAN = Math.PI / 180;
@@ -121,10 +121,10 @@ export class ThreeLayer extends maptalks.CanvasLayer {
 
     /**
      * todo   This should also be extracted as a component
-     * @param {*} polygon 
-     * @param {*} altitude 
-     * @param {*} material 
-     * @param {*} height 
+     * @param {*} polygon
+     * @param {*} altitude
+     * @param {*} material
+     * @param {*} height
      */
     toExtrudeMesh(polygon, altitude, material, height) {
         if (!polygon) {
@@ -149,7 +149,7 @@ export class ThreeLayer extends maptalks.CanvasLayer {
         height = this.distanceToVector3(height, height).x;
         const amount = this.distanceToVector3(altitude, altitude).x;
         //{ amount: extrudeH, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 1, bevelThickness: 1 };
-        const config = { 'bevelEnabled': false, 'bevelSize' : 1 };
+        const config = { 'bevelEnabled': false, 'bevelSize': 1 };
         const name = parseInt(THREE.REVISION) >= 93 ? 'depth' : 'amount';
         config[name] = height;
         const geom = new THREE.ExtrudeGeometry(shape, config);
@@ -162,10 +162,10 @@ export class ThreeLayer extends maptalks.CanvasLayer {
 
 
     /**
-     * 
-     * @param {maptalks.Coordinate} coordinate 
-     * @param {Object} options 
-     * @param {THREE.Material} material 
+     *
+     * @param {maptalks.Coordinate} coordinate
+     * @param {Object} options
+     * @param {THREE.Material} material
      */
     toBar(coordinate, options, material) {
         return new Bar(coordinate, options, material, this);
@@ -227,7 +227,7 @@ export class ThreeLayer extends maptalks.CanvasLayer {
 
     /**
      * add object3ds
-     * @param {BaseObject} meshes 
+     * @param {BaseObject} meshes
      */
     addMesh(meshes) {
         if (!meshes) return this;
@@ -248,7 +248,7 @@ export class ThreeLayer extends maptalks.CanvasLayer {
 
     /**
      * remove object3ds
-     * @param {BaseObject} meshes 
+     * @param {BaseObject} meshes
      */
     removeMesh(meshes) {
         if (!meshes) return this;
@@ -265,6 +265,69 @@ export class ThreeLayer extends maptalks.CanvasLayer {
         });
         this.renderScene();
         return this;
+    }
+
+    _initRaycaster() {
+        if (!this._raycaster) {
+            this._raycaster = new THREE.Raycaster();
+            this._mouse = new THREE.Vector2();
+        }
+        return this;
+    }
+
+    /**
+     *
+     * @param {Coordinate} coordinate
+     * @param {Object} options
+     * @return {Array}
+     */
+    identify(coordinate, options) {
+        if (!coordinate) {
+            console.error('coordinate is null,it should be Coordinate');
+            return [];
+        }
+        if (Array.isArray(coordinate)) {
+            coordinate = new maptalks.Coordinate(coordinate);
+        }
+        if (!(coordinate instanceof maptalks.Coordinate)) {
+            console.error('coordinate type is error,it should be Coordinate');
+            return [];
+        }
+        const p = this.getMap().coordToContainerPoint(coordinate);
+        const { x, y } = p;
+        this._initRaycaster();
+        const raycaster = this._raycaster,
+            mouse = this._mouse,
+            camera = this.getCamera(),
+            scene = this.getScene(),
+            size = this.getMap().getSize();
+        const width = size.width,
+            height = size.height;
+        mouse.x = (x / width) * 2 - 1;
+        mouse.y = -(y / height) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+
+        const children = [];
+        scene.children.forEach(mesh => {
+            if (mesh.__parent && mesh.__parent.getOptions) {
+                const interactive = mesh.__parent.getOptions().interactive;
+                if (interactive) {
+                    children.push(mesh);
+                }
+            } else if (mesh instanceof THREE.Mesh) {
+                children.push(mesh);
+            }
+        });
+        let baseObjects = [];
+        const intersects = raycaster.intersectObjects(children, true);
+        if (intersects && Array.isArray(intersects) && intersects.length) {
+            baseObjects = intersects.map(intersect => {
+                return intersect.object.__parent || intersect.object;
+            });
+        }
+        options = maptalks.Util.extend({}, options);
+        const count = options.count;
+        return (maptalks.Util.isNumber(count) && count > 0 ? baseObjects.slice(0, count) : baseObjects);
     }
 
     /**
@@ -315,7 +378,7 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
                 alpha: true,
                 depth: true,
                 antialias: true,
-                stencil : true
+                stencil: true
             };
             attributes.preserveDrawingBuffer = true;
             this.gl = this.gl || this._createGLContext(this.canvas, attributes);
@@ -325,7 +388,7 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
     }
 
     _initThreeRenderer() {
-        const renderer = new THREE.WebGLRenderer({ 'context' : this.gl, alpha : true });
+        const renderer = new THREE.WebGLRenderer({ 'context': this.gl, alpha: true });
         renderer.autoClear = false;
         renderer.setClearColor(new THREE.Color(1, 1, 1), 0);
         renderer.setSize(this.canvas.width, this.canvas.height);
@@ -336,7 +399,7 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         const scene = this.scene = new THREE.Scene();
         const map = this.layer.getMap();
         const fov = map.getFov() * Math.PI / 180;
-        const camera = this.camera =  new THREE.PerspectiveCamera(fov, map.width / map.height, map.cameraNear, map.cameraFar);
+        const camera = this.camera = new THREE.PerspectiveCamera(fov, map.width / map.height, map.cameraNear, map.cameraFar);
         camera.matrixAutoUpdate = false;
         this._syncCamera();
         scene.add(camera);
@@ -379,7 +442,7 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         } else {
             this.clearCanvas();
         }
-        this.layer.fire('renderstart', { 'context' : this.context });
+        this.layer.fire('renderstart', { 'context': this.context });
         return null;
     }
 
@@ -407,7 +470,7 @@ export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         for (let i = 0; i < names.length; ++i) {
             try {
                 context = canvas.getContext(names[i], options);
-            } catch (e) {}
+            } catch (e) { }
             if (context) {
                 break;
             }
