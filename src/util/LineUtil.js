@@ -19,7 +19,7 @@ export function getLinePosition(lineString, layer) {
         if (Array.isArray(lineString)) lineString = new maptalks.LineString(lineString);
         if (!lineString || !(lineString instanceof maptalks.LineString)) return;
         const z = 0;
-        const coordinates = polyline.getCoordinates();
+        const coordinates = lineString.getCoordinates();
         for (let i = 0, len = coordinates.length; i < len; i++) {
             let coordinate = coordinates[i];
             if (Array.isArray(coordinate))
