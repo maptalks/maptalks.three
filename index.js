@@ -2,6 +2,7 @@ import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './src/BaseObject';
 import Bar from './src/Bar';
+import Line from './src/Line';
 
 const options = {
     'renderer': 'gl',
@@ -10,6 +11,21 @@ const options = {
 };
 
 const RADIAN = Math.PI / 180;
+
+const LINEPRECISIONS = [
+    [4000, 220],
+    [2000, 100],
+    [1000, 30],
+    [500, 15],
+    [100, 5],
+    [50, 2],
+    [10, 1],
+    [5, 0.7],
+    [2, 0.1],
+    [1, 0.05],
+    [0.5, 0.02]
+];
+
 
 /**
  * A Layer to render with THREE.JS (http://threejs.org), the most popular library for WebGL. <br>
@@ -172,6 +188,17 @@ export class ThreeLayer extends maptalks.CanvasLayer {
     }
 
 
+    /**
+    *
+    * @param {maptalks.LineString} lineString
+    * @param {Object} options
+    * @param {THREE.LineMaterial} material
+    */
+    toLine(lineString, options, material) {
+        return new Line(lineString, options, material, this);
+    }
+
+
     clearMesh() {
         const scene = this.getScene();
         if (!scene) {
@@ -306,7 +333,8 @@ export class ThreeLayer extends maptalks.CanvasLayer {
         mouse.x = (x / width) * 2 - 1;
         mouse.y = -(y / height) * 2 + 1;
         raycaster.setFromCamera(mouse, camera);
-
+        //set linePrecision for THREE.Line
+        raycaster.linePrecision = this._getLinePrecision(this.getMap().getResolution());
         const children = [];
         scene.children.forEach(mesh => {
             if (mesh.__parent && mesh.__parent.getOptions) {
@@ -328,6 +356,17 @@ export class ThreeLayer extends maptalks.CanvasLayer {
         options = maptalks.Util.extend({}, options);
         const count = options.count;
         return (maptalks.Util.isNumber(count) && count > 0 ? baseObjects.slice(0, count) : baseObjects);
+    }
+
+    //get Line Precision by Resolution
+    _getLinePrecision(res = 10) {
+        for (let i = 0, len = LINEPRECISIONS.length; i < len; i++) {
+            const [resLevel, precision] = LINEPRECISIONS[i];
+            if (res > resLevel) {
+                return precision;
+            }
+        }
+        return 0.01;
     }
 
     /**
