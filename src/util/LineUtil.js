@@ -1,5 +1,19 @@
 import * as THREE from 'three';
 import * as maptalks from 'maptalks';
+/**
+ * rep: https://github.com/pissang/geometry-extrude
+ * 
+ * should import { extrudePolyline } from 'geometry-extrude';
+ * 
+ * geometry-extrude npm Can't be parsed
+ * 
+ * from gulify-js error: Unexpected token: keyword «const» 
+ * 
+ * issue  https://github.com/pissang/geometry-extrude/issues/2
+ * 
+ * 
+ */
+import { extrudePolyline } from './geometry-extrude/main';
 
 /**
  *
@@ -33,4 +47,33 @@ export function getLinePosition(lineString, layer) {
         positions: positions,
         positionsV: positionsV
     }
+}
+
+
+
+/**
+ * 
+ * @param {maptalks.LineString} lineString 
+ * @param {Number} lineWidth 
+ * @param {Number} depth 
+ * @param {ThreeLayer} layer 
+ */
+export function getExtrudeLineGeometry(lineString, lineWidth = 1, depth = 1, layer) {
+    const positions = getLinePosition(lineString, layer).positionsV;
+    const ps = positions.map(p => {
+        return [p.x, p.y];
+    })
+    const {
+        indices,
+        position,
+        normal
+    } = extrudePolyline([ps], {
+        lineWidth,
+        depth
+    });
+    const geometry = new THREE.BufferGeometry();
+    geometry.addAttribute('position', new THREE.Float32BufferAttribute(position, 3));
+    geometry.addAttribute('normal', new THREE.Float32BufferAttribute(normal, 3));
+    geometry.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
+    return geometry;
 }

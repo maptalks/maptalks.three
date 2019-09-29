@@ -36,5 +36,7 @@
   "peerDependencies": {
     "maptalks": ">=0.39.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "earcut": "^2.2.1"
+  }
 }
