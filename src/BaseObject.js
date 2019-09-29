@@ -151,10 +151,10 @@ class BaseObject {
 
 
     _createLine(geometry, material) {
-
-        /**
-         * todo line
-         */
+        this.object3d = new THREE.Line(geometry, material);
+        this.object3d.computeLineDistances();
+        this.object3d.__parent = this;
+        return this;
     }
 
 
