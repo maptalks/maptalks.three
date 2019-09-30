@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import BaseObject from './src/BaseObject';
 import Bar from './src/Bar';
 import Line from './src/Line';
+import ExtrudeLine from './src/ExtrudeLine';
 
 const options = {
     'renderer': 'gl',
@@ -196,6 +197,17 @@ export class ThreeLayer extends maptalks.CanvasLayer {
     */
     toLine(lineString, options, material) {
         return new Line(lineString, options, material, this);
+    }
+
+
+    /**
+     *
+     * @param {maptalks.LineString} lineString
+     * @param {Object} options
+     * @param {THREE.Material} material
+     */
+    toExtrudeLine(lineString, options, material) {
+        return new ExtrudeLine(lineString, options, material, this);
     }
 
 
