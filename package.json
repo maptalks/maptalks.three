@@ -37,6 +37,6 @@
     "maptalks": ">=0.39.0"
   },
   "dependencies": {
-    "earcut": "^2.2.1"
+    "geometry-extrude": "^0.1.2"
   }
 }

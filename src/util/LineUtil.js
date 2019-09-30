@@ -1,19 +1,6 @@
 import * as THREE from 'three';
 import * as maptalks from 'maptalks';
-/**
- * rep: https://github.com/pissang/geometry-extrude
- * 
- * should import { extrudePolyline } from 'geometry-extrude';
- * 
- * geometry-extrude npm Can't be parsed
- * 
- * from gulify-js error: Unexpected token: keyword «const» 
- * 
- * issue  https://github.com/pissang/geometry-extrude/issues/2
- * 
- * 
- */
-import { extrudePolyline } from './geometry-extrude/main';
+import { extrudePolyline } from 'geometry-extrude';
 
 /**
  *
