@@ -64,14 +64,17 @@
             scene.add(light);
 
             var material = new THREE.MeshBasicMaterial({ color: '#3e35cf' });
-            material.vertexColors = THREE.VertexColors;
+            // material.vertexColors = THREE.VertexColors;
 
             var meshs = [];
             features.forEach(function (g) {
                 var heightPerLevel = 10;
                 var levels = g.properties.levels || 1;
-                var mesh = threeLayer.toExtrudeMesh(maptalks.GeoJSON.toGeometry(g), levels * heightPerLevel, material, levels * heightPerLevel);
-                initVertexColors(mesh.geometry, '#2d2f61', '#fff');
+                var mesh = threeLayer.toExtrudeMesh(maptalks.GeoJSON.toGeometry(g), {
+                    height: heightPerLevel * levels,
+                    topColor: '#fff'
+                }, material);
+                // initVertexColors(mesh.geometry, '#2d2f61', '#fff');
                 meshs.push(mesh);
                 // if (Array.isArray(mesh)) {
                 //     scene.add.apply(scene, mesh);
@@ -128,25 +131,6 @@
             })
         }
 
-
-        function initVertexColors(geometry, color, topColor) {
-            // geometry should be a BufferGeometry
-            var position = geometry.attributes.position.array;
-            var len = position.length;
-            var bottomColor = (color instanceof THREE.Color ? color : new THREE.Color(color));
-            topColor = new THREE.Color(topColor);
-            var colors = [];
-            for (var i = 0; i < len; i += 3) {
-                var z = position[i + 2];
-                if (z > 0) {
-                    colors.push(topColor.r, topColor.r, topColor.b);
-                } else {
-                    colors.push(bottomColor.r, bottomColor.r, bottomColor.b);
-                }
-            }
-            geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3, true));
-            return colors;
-        }
 
         function addEvents() {
             map.on('mousemove', function (e) {
