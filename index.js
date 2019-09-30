@@ -4,6 +4,7 @@ import BaseObject from './src/BaseObject';
 import Bar from './src/Bar';
 import Line from './src/Line';
 import ExtrudeLine from './src/ExtrudeLine';
+import ExtrudePolygon from './src/ExtrudePolygon';
 
 const options = {
     'renderer': 'gl',
@@ -175,6 +176,17 @@ export class ThreeLayer extends maptalks.CanvasLayer {
         const mesh = new THREE.Mesh(buffGeom, material);
         mesh.position.set(center.x, center.y, amount - height);
         return mesh;
+    }
+
+
+    /**
+     *
+     * @param {maptalks.Polygon|maptalks.MultiPolygon} polygon
+     * @param {Object} options
+     * @param {THREE.Material} material
+     */
+    toExtrudePolygon(polygon, options, material) {
+        return new ExtrudePolygon(polygon, options, material, this);
     }
 
 
