@@ -4,7 +4,7 @@ import BaseObject from './src/BaseObject';
 import Bar from './src/Bar';
 import Line from './src/Line';
 import ExtrudeLine from './src/ExtrudeLine';
-import ExtrudeMesh from './src/ExtrudeMesh';
+import ExtrudePolygon from './src/ExtrudePolygon';
 
 const options = {
     'renderer': 'gl',
@@ -137,46 +137,46 @@ export class ThreeLayer extends maptalks.CanvasLayer {
     }
 
 
-    // /**
-    //  * todo   This should also be extracted as a component
-    //  * @param {*} polygon
-    //  * @param {*} altitude
-    //  * @param {*} material
-    //  * @param {*} height
-    //  */
-    // toExtrudeMesh(polygon, altitude, material, height) {
-    //     if (!polygon) {
-    //         return null;
-    //     }
-    //     if (polygon instanceof maptalks.MultiPolygon) {
-    //         return polygon.getGeometries().map(c => this.toExtrudeMesh(c, altitude, material, height));
-    //     }
-    //     const rings = polygon.getCoordinates();
-    //     rings.forEach(ring => {
-    //         const length = ring.length;
-    //         for (let i = length - 1; i >= 1; i--) {
-    //             if (ring[i].equals(ring[i - 1])) {
-    //                 ring.splice(i, 1);
-    //             }
-    //         }
-    //     });
-    //     polygon.setCoordinates(rings);
-    //     const shape = this.toShape(polygon);
-    //     const center = this.coordinateToVector3(polygon.getCenter());
-    //     height = maptalks.Util.isNumber(height) ? height : altitude;
-    //     height = this.distanceToVector3(height, height).x;
-    //     const amount = this.distanceToVector3(altitude, altitude).x;
-    //     //{ amount: extrudeH, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 1, bevelThickness: 1 };
-    //     const config = { 'bevelEnabled': false, 'bevelSize': 1 };
-    //     const name = parseInt(THREE.REVISION) >= 93 ? 'depth' : 'amount';
-    //     config[name] = height;
-    //     const geom = new THREE.ExtrudeGeometry(shape, config);
-    //     const buffGeom = new THREE.BufferGeometry();
-    //     buffGeom.fromGeometry(geom);
-    //     const mesh = new THREE.Mesh(buffGeom, material);
-    //     mesh.position.set(center.x, center.y, amount - height);
-    //     return mesh;
-    // }
+    /**
+     * todo   This should also be extracted as a component
+     * @param {*} polygon
+     * @param {*} altitude
+     * @param {*} material
+     * @param {*} height
+     */
+    toExtrudeMesh(polygon, altitude, material, height) {
+        if (!polygon) {
+            return null;
+        }
+        if (polygon instanceof maptalks.MultiPolygon) {
+            return polygon.getGeometries().map(c => this.toExtrudeMesh(c, altitude, material, height));
+        }
+        const rings = polygon.getCoordinates();
+        rings.forEach(ring => {
+            const length = ring.length;
+            for (let i = length - 1; i >= 1; i--) {
+                if (ring[i].equals(ring[i - 1])) {
+                    ring.splice(i, 1);
+                }
+            }
+        });
+        polygon.setCoordinates(rings);
+        const shape = this.toShape(polygon);
+        const center = this.coordinateToVector3(polygon.getCenter());
+        height = maptalks.Util.isNumber(height) ? height : altitude;
+        height = this.distanceToVector3(height, height).x;
+        const amount = this.distanceToVector3(altitude, altitude).x;
+        //{ amount: extrudeH, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 1, bevelThickness: 1 };
+        const config = { 'bevelEnabled': false, 'bevelSize': 1 };
+        const name = parseInt(THREE.REVISION) >= 93 ? 'depth' : 'amount';
+        config[name] = height;
+        const geom = new THREE.ExtrudeGeometry(shape, config);
+        const buffGeom = new THREE.BufferGeometry();
+        buffGeom.fromGeometry(geom);
+        const mesh = new THREE.Mesh(buffGeom, material);
+        mesh.position.set(center.x, center.y, amount - height);
+        return mesh;
+    }
 
 
     /**
@@ -184,18 +184,9 @@ export class ThreeLayer extends maptalks.CanvasLayer {
      * @param {maptalks.Polygon|maptalks.MultiPolygon} polygon
      * @param {Object} options
      * @param {THREE.Material} material
-     * @param {*} height
      */
-    toExtrudeMesh(polygon, options, material, height = 1) {
-        //Old usage methods provide compatibility,options is altitude
-        if (maptalks.Util.isNumber(options)) {
-            options = {
-                height,
-                altitude: 0
-            };
-            return new ExtrudeMesh(polygon, options, material, this).getObject3d();
-        }
-        return new ExtrudeMesh(polygon, options, material, this);
+    toExtrudePolygon(polygon, options, material) {
+        return new ExtrudePolygon(polygon, options, material, this);
     }
 
 

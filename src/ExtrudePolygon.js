@@ -96,7 +96,7 @@ const OPTIONS = {
 /**
  * 
  */
-class ExtrudeMesh extends BaseObject {
+class ExtrudePolygon extends BaseObject {
     constructor(polygon, options, material, layer) {
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, polygon });
         super();
@@ -113,4 +113,4 @@ class ExtrudeMesh extends BaseObject {
     }
 }
 
-export default ExtrudeMesh;
+export default ExtrudePolygon;
