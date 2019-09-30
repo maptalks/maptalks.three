@@ -61,7 +61,7 @@
             features.forEach(function (g) {
                 var heightPerLevel = 10;
                 var levels = g.properties.levels || 1;
-                var mesh = threeLayer.toExtrudeMesh(maptalks.GeoJSON.toGeometry(g), {
+                var mesh = threeLayer.toExtrudePolygon(maptalks.GeoJSON.toGeometry(g), {
                     height: heightPerLevel * levels,
                     topColor: '#fff'
                 }, material);
