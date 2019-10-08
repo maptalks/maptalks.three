@@ -3,6 +3,7 @@
 
 <head>
     <title>line test</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
     <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.97.0/build/three.min.js"></script>
@@ -44,6 +45,29 @@
             })
         });
 
+        var point = new maptalks.Marker(
+            [-0.113049, 51.498568],
+            {
+                visible: true,
+                editable: true,
+                cursor: 'pointer',
+                shadowBlur: 0,
+                shadowColor: 'black',
+                draggable: false,
+                dragShadow: false, // display a shadow during dragging
+                drawOnAxis: null,  // force dragging stick on a axis, can be: x, y
+                symbol: {
+                    'textFaceName': 'sans-serif',
+                    'textName': 'MapTalks',
+                    'textFill': '#34495e',
+                    'textHorizontalAlignment': 'right',
+                    'textSize': 40
+                }
+            }
+        );
+
+        new maptalks.VectorLayer('vector', point).addTo(map);
+
         // features to draw
         var features = [];
 
@@ -54,7 +78,8 @@
         // the ThreeLayer to draw buildings
         var threeLayer = new maptalks.ThreeLayer('t', {
             forceRenderOnMoving: true,
-            forceRenderOnRotating: true
+            forceRenderOnRotating: true,
+            animation: true
         });
 
 
@@ -74,6 +99,16 @@
                     height: heightPerLevel * levels,
                     topColor: '#fff'
                 }, material);
+                //event test
+                ['click', 'mousemove', 'mouseout'].forEach(function (eventType) {
+                    mesh.on(eventType, function (e) {
+                        console.log(e.type, e);
+                        console.log(this);
+                        if (e.type === 'mouseout') {
+                            this.setSymbol(material);
+                        }
+                    });
+                });
                 // initVertexColors(mesh.geometry, '#2d2f61', '#fff');
                 meshs.push(mesh);
                 // if (Array.isArray(mesh)) {
@@ -89,7 +124,13 @@
         threeLayer.addTo(map);
 
 
-
+        var lines;
+        var material = new THREE.LineBasicMaterial({
+            linewidth: 1,
+            color: 0x00ffff,
+            // opacity: 0.8,
+            transparent: true
+        });
         function addLines() {
             fetch('./data/berlin-roads.txt').then(function (res) {
                 return res.text();
@@ -104,17 +145,11 @@
                 //     dashSize: 0.1,
                 //     gapSize: 0.1
                 // });
-                var material = new THREE.LineBasicMaterial({
-                    linewidth: 1,
-                    color: 0x00ffff,
-                    // opacity: 0.8,
-                    transparent: true
-                });
 
                 var lineStrings = maptalks.GeoJSON.toGeometry(geojson);
                 var timer = 'generate line time';
                 console.time(timer);
-                var lines = lineStrings.slice(0, Infinity).map(function (lineString) {
+                lines = lineStrings.slice(0, Infinity).map(function (lineString) {
                     // var colors = [];
 
                     // var coordinates = lineString.getCoordinates();
@@ -123,24 +158,133 @@
                     //     color.setHSL(i / len, 1.0, 0.5);
                     //     colors.push(color);
                     // }
-                    return threeLayer.toLine(lineString, { altitude: 0 }, material);
+                    var line = threeLayer.toLine(lineString, { altitude: 0 }, material);
+                    //tooltip test
+                    line.setToolTip(maptalks.Util.GUID(), {
+                        showTimeout: 0,
+                        eventsPropagation: true,
+                        dx: 10
+                    });
+                    line.getToolTip().addTo(point);
+
+
+                    //infowindow test
+                    line.setInfoWindow({
+                        content: 'hello world,height:',
+                        title: 'message',
+                        animationDuration: 0,
+                        autoOpenOn: false
+                    });
+
+                    line.getInfoWindow().addTo(map);
+
+                    //event test
+                    ['click', 'mousemove', 'mouseout'].forEach(function (eventType) {
+                        line.on(eventType, function (e) {
+                            console.log(e.type, e);
+                            console.log(this);
+                            if (e.type === 'mouseout') {
+                                this.setSymbol(material);
+                            }
+                        });
+                    });
+                    return line;
                 });
                 console.log('lines.length:', lines.length);
                 console.timeEnd(timer);
                 threeLayer.addMesh(lines);
+                initGui();
             })
         }
 
-
+        var baseObject;
         function addEvents() {
+            var highlightmaterial = new THREE.MeshBasicMaterial({ color: 'yellow', transparent: true });
+            var highlightLinematerial = new THREE.LineDashedMaterial({
+                linewidth: 1,
+                color: 'yellow',
+                // opacity: 0.8,
+                transparent: true,
+                dashSize: 0.05,
+                gapSize: 0.05
+            });
             map.on('mousemove', function (e) {
                 map.resetCursor('default');
                 var objects = threeLayer.identify(e.coordinate, { count: 2 });
-                console.log(objects);
+                // console.log(objects);
                 if (objects.length) {
                     map.setCursor(`pointer`);
+                    if (baseObject && baseObject != objects[0]) {
+                        baseObject.closeToolTip();
+                        baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject }));
+                    }
+                    baseObject = objects[0];
+                    baseObject.setSymbol((baseObject.getType() === 'Line' ? highlightLinematerial : highlightmaterial));
+                    baseObject.openToolTip(e.coordinate);
+                    objects.forEach(function (object) {
+                        object._fire(e.type, Object.assign({}, e, { target: object }));
+                    });
+                } else {
+                    baseObject && baseObject.closeToolTip() && baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject }));
                 }
-            })
+            });
+
+
+            map.on('click', function (e) {
+                var objects = threeLayer.identify(e.coordinate, { count: 2 });
+                if (objects.length) {
+                    objects[0].openInfoWindow(e.coordinate);
+                    objects.forEach(function (object) {
+                        object._fire(e.type, Object.assign({}, e, { target: object }));
+                    });
+                }
+            });
+        }
+
+
+
+        function initGui() {
+            var params = {
+                add: true,
+                color: 0x00ffff,
+                show: true,
+                opacity: 1,
+                altitude: 0
+            };
+            var gui = new dat.GUI();
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    threeLayer.addMesh(lines);
+                } else {
+                    threeLayer.removeMesh(lines);
+                }
+            });
+            gui.addColor(params, 'color').name('line color').onChange(function () {
+                material.color.set(params.color);
+                lines.forEach(function (mesh) {
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'opacity', 0, 1).onChange(function () {
+                material.opacity = params.opacity;
+                lines.forEach(function (mesh) {
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'show').onChange(function () {
+                lines.forEach(function (mesh) {
+                    if (params.show) {
+                        mesh.show();
+                    } else {
+                        mesh.hide();
+                    }
+                });
+            });
+            gui.add(params, 'altitude', 0, 300).onChange(function () {
+                lines.forEach(function (mesh) {
+                    mesh.setAltitude(params.altitude);
+                });
+            });
         }
 
 

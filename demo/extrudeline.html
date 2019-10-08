@@ -3,6 +3,7 @@
 
 <head>
     <title>extrudeline test</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
     <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.97.0/build/three.min.js"></script>
@@ -49,7 +50,8 @@
         // the ThreeLayer to draw buildings
         var threeLayer = new maptalks.ThreeLayer('t', {
             forceRenderOnMoving: true,
-            forceRenderOnRotating: true
+            forceRenderOnRotating: true,
+            animation: true
         });
         threeLayer.prepareToDraw = function (gl, scene, camera) {
             var light = new THREE.DirectionalLight(0xffffff);
@@ -65,6 +67,17 @@
                     height: heightPerLevel * levels,
                     topColor: '#fff'
                 }, material);
+
+                //event test
+                ['click', 'mousemove', 'mouseout'].forEach(function (eventType) {
+                    mesh.on(eventType, function (e) {
+                        console.log(e.type, e);
+                        console.log(this);
+                        if (e.type === 'mouseout') {
+                            this.setSymbol(material);
+                        }
+                    });
+                });
                 // initVertexColors(mesh.geometry, '#2d2f61', '#fff');
                 meshs.push(mesh);
                 // if (Array.isArray(mesh)) {
@@ -80,34 +93,128 @@
         threeLayer.addTo(map);
 
 
+        var material = new THREE.MeshPhongMaterial({ color: 0x00ffff, transparent: true });
+        var lines;
         function addLines() {
             fetch('./data/berlin-roads.txt').then(function (res) {
                 return res.text();
             }).then(function (geojson) {
                 geojson = LZString.decompressFromBase64(geojson);
                 geojson = JSON.parse(geojson);
-                var material = new THREE.MeshPhongMaterial({ color: 0x00ffff });
                 var lineStrings = maptalks.GeoJSON.toGeometry(geojson);
                 var timer = 'generate line time';
                 console.time(timer);
-                var lines = lineStrings.map(function (lineString) {
-                    return threeLayer.toExtrudeLine(lineString, { altitude: 0, width: 3, height: 1 }, material);
+                lines = lineStrings.map(function (lineString) {
+                    var line = threeLayer.toExtrudeLine(lineString, { altitude: 0, width: 3, height: 1 }, material);
+
+                    //infowindow test
+                    line.setInfoWindow({
+                        content: 'hello world,height:',
+                        title: 'message',
+                        animationDuration: 0,
+                        autoOpenOn: false
+                    });
+
+                    line.getInfoWindow().addTo(map);
+                    //event test
+                    ['click', 'mousemove', 'mouseout'].forEach(function (eventType) {
+                        line.on(eventType, function (e) {
+                            console.log(e.type, e);
+                            console.log(this);
+                            if (e.type === 'mouseout') {
+                                this.setSymbol(material);
+                            }
+                        });
+                    });
+                    return line;
                 });
                 console.log('lines.length:', lines.length);
                 console.timeEnd(timer);
                 threeLayer.addMesh(lines);
+                initGui();
             })
         }
 
+
+        var baseObject;
         function addEvents() {
+            var highlightmaterial = new THREE.MeshBasicMaterial({ color: 'yellow', transparent: true });
             map.on('mousemove', function (e) {
                 map.resetCursor('default');
                 var objects = threeLayer.identify(e.coordinate, { count: 2 });
-                console.log(objects);
+                // console.log(objects);
                 if (objects.length) {
                     map.setCursor(`pointer`);
+                    if (baseObject && baseObject != objects[0]) {
+                        baseObject.closeToolTip();
+                        baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject }));
+                    }
+                    baseObject = objects[0];
+                    baseObject.setSymbol(highlightmaterial);
+                    baseObject.openToolTip(e.coordinate);
+                    objects.forEach(function (object) {
+                        object._fire(e.type, Object.assign({}, e, { target: object }));
+                    });
+                } else {
+                    baseObject && baseObject.closeToolTip() && baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject }));
                 }
-            })
+            });
+
+
+            map.on('click', function (e) {
+                var objects = threeLayer.identify(e.coordinate, { count: 2 });
+                if (objects.length) {
+                    objects[0].openInfoWindow(e.coordinate);
+                    objects.forEach(function (object) {
+                        object._fire(e.type, Object.assign({}, e, { target: object }));
+                    });
+                }
+            });
+        }
+
+
+        function initGui() {
+            var params = {
+                add: true,
+                color: 0x00ffff,
+                show: true,
+                opacity: 1,
+                altitude: 0
+            };
+            var gui = new dat.GUI();
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    threeLayer.addMesh(lines);
+                } else {
+                    threeLayer.removeMesh(lines);
+                }
+            });
+            gui.addColor(params, 'color').name('line color').onChange(function () {
+                material.color.set(params.color);
+                lines.forEach(function (mesh) {
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'opacity', 0, 1).onChange(function () {
+                material.opacity = params.opacity;
+                lines.forEach(function (mesh) {
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'show').onChange(function () {
+                lines.forEach(function (mesh) {
+                    if (params.show) {
+                        mesh.show();
+                    } else {
+                        mesh.hide();
+                    }
+                });
+            });
+            gui.add(params, 'altitude', 0, 300).onChange(function () {
+                lines.forEach(function (mesh) {
+                    mesh.setAltitude(params.altitude);
+                });
+            });
         }
     </script>
 </body>

@@ -3,6 +3,7 @@
 
 <head>
     <title>bar test World Population Visualization</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
     <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.97.0/build/three.min.js"></script>
@@ -44,6 +45,30 @@
         });
 
 
+        var point = new maptalks.Marker(
+            [-0.113049, 51.498568],
+            {
+                visible: true,
+                editable: true,
+                cursor: 'pointer',
+                shadowBlur: 0,
+                shadowColor: 'black',
+                draggable: false,
+                dragShadow: false, // display a shadow during dragging
+                drawOnAxis: null,  // force dragging stick on a axis, can be: x, y
+                symbol: {
+                    'textFaceName': 'sans-serif',
+                    'textName': 'MapTalks',
+                    'textFill': '#34495e',
+                    'textHorizontalAlignment': 'right',
+                    'textSize': 40
+                }
+            }
+        );
+
+        new maptalks.VectorLayer('vector', point).addTo(map);
+
+
 
         // the ThreeLayer to draw buildings
         var threeLayer = new maptalks.ThreeLayer('t', {
@@ -63,8 +88,8 @@
 
 
         var bars;
+        var material = new THREE.MeshBasicMaterial({ color: '#fff', transparent: true });
         function addBars(scene) {
-            var material = new THREE.MeshBasicMaterial({ color: '#fff' });
             fetch('./data/population.json').then((function (res) {
                 return res.json();
             })).then(function (json) {
@@ -76,12 +101,44 @@
                         height: dataItem[2]
                     }
                 }).map(function (d) {
-                    return threeLayer.toBar(d.coordinate, {
+                    var bar = threeLayer.toBar(d.coordinate, {
                         height: d.height * 400,
                         radius: 15000,
                         topColor: '#fff',
                         // radialSegments: 4
-                    }, material)
+                    }, material);
+
+                    // tooltip test
+                    bar.setToolTip(maptalks.Util.GUID(), {
+                        showTimeout: 0,
+                        eventsPropagation: true,
+                        dx: 10
+                    });
+                    bar.getToolTip().addTo(point);
+
+
+                    // //infowindow test
+                    // bar.setInfoWindow({
+                    //     content: 'hello world,height:' + d.height * 400,
+                    //     title: 'message',
+                    //     animationDuration: 0,
+                    //     autoOpenOn: false
+                    // });
+
+                    // bar.getInfoWindow().addTo(map);
+
+                    //event test
+                    ['click', 'mousemove', 'mouseout'].forEach(function (eventType) {
+                        bar.on(eventType, function (e) {
+                            console.log(e.type, e);
+                            console.log(this);
+                            if (e.type === 'mouseout') {
+                                this.setSymbol(material);
+                            }
+                        });
+                    });
+
+                    return bar;
                 });
 
                 console.log(bars);
@@ -97,29 +154,83 @@
 
         function initGui() {
             var params = {
-                'bar': true
+                add: true,
+                color: '#fff',
+                show: true,
+                opacity: 1,
+                altitude: 0
             };
 
             var gui = new dat.GUI();
-            gui.add(params, 'bar').name('bars').onChange(function () {
-                if (params.bar) {
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
                     threeLayer.addMesh(bars);
                 } else {
                     threeLayer.removeMesh(bars);
                 }
             });
+            gui.addColor(params, 'color').name('bar color').onChange(function () {
+                material.color.set(params.color);
+                bars.forEach(function (mesh) {
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'opacity', 0, 1).onChange(function () {
+                material.opacity = params.opacity;
+                bars.forEach(function (mesh) {
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'show').onChange(function () {
+                bars.forEach(function (mesh) {
+                    if (params.show) {
+                        mesh.show();
+                    } else {
+                        mesh.hide();
+                    }
+                });
+            });
+            gui.add(params, 'altitude', 0, 300000).onChange(function () {
+                bars.forEach(function (mesh) {
+                    mesh.setAltitude(params.altitude);
+                });
+            });
         }
 
-
+        var baseObject;
         function addEvents() {
+            var highlightmaterial = new THREE.MeshBasicMaterial({ color: 'yellow', transparent: true });
             map.on('mousemove', function (e) {
                 map.resetCursor('default');
-                var objects = threeLayer.identify(e.coordinate);
-                console.log(objects);
+                var objects = threeLayer.identify(e.coordinate, { count: 2 });
+                // console.log(objects);
                 if (objects.length) {
                     map.setCursor(`pointer`);
+                    if (baseObject && baseObject != objects[0]) {
+                        baseObject.closeToolTip();
+                        baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject }));
+                    }
+                    baseObject = objects[0];
+                    baseObject.setSymbol(highlightmaterial);
+                    baseObject.openToolTip(e.coordinate);
+                    objects.forEach(function (object) {
+                        object._fire(e.type, Object.assign({}, e, { target: object }));
+                    });
+                } else {
+                    baseObject && baseObject.closeToolTip() && baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject }));
                 }
-            })
+            });
+
+
+            map.on('click', function (e) {
+                var objects = threeLayer.identify(e.coordinate, { count: 2 });
+                if (objects.length) {
+                    objects[0].openInfoWindow(e.coordinate);
+                    objects.forEach(function (object) {
+                        object._fire(e.type, Object.assign({}, e, { target: object }));
+                    });
+                }
+            });
         }
 
     </script>

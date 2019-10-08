@@ -3,6 +3,7 @@
 
 <head>
     <title>osm buildings demo</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
     <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.97.0/build/three.min.js"></script>
@@ -17,7 +18,7 @@
         }
 
         #map {
-            width: 1000px;
+            width: 100%;
             height: 700px;
             background-color: #000;
         }
@@ -43,6 +44,29 @@
             })
         });
 
+        var point = new maptalks.Marker(
+            [-0.113049, 51.498568],
+            {
+                visible: true,
+                editable: true,
+                cursor: 'pointer',
+                shadowBlur: 0,
+                shadowColor: 'black',
+                draggable: false,
+                dragShadow: false, // display a shadow during dragging
+                drawOnAxis: null,  // force dragging stick on a axis, can be: x, y
+                symbol: {
+                    'textFaceName': 'sans-serif',
+                    'textName': 'MapTalks',
+                    'textFill': '#34495e',
+                    'textHorizontalAlignment': 'right',
+                    'textSize': 40
+                }
+            }
+        );
+
+        new maptalks.VectorLayer('vector', point).addTo(map);
+
         // features to draw
         var features = [];
 
@@ -53,17 +77,19 @@
         // the ThreeLayer to draw buildings
         var threeLayer = new maptalks.ThreeLayer('t', {
             forceRenderOnMoving: true,
-            forceRenderOnRotating: true
+            forceRenderOnRotating: true,
+            animation: true
         });
+
+        var meshs = [];
+        var material = new THREE.MeshBasicMaterial({ color: '#3e35cf', transparent: true });
         threeLayer.prepareToDraw = function (gl, scene, camera) {
             var light = new THREE.DirectionalLight(0xffffff);
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
 
-            var material = new THREE.MeshBasicMaterial({ color: '#3e35cf' });
+            // var material = new THREE.MeshBasicMaterial({ color: '#3e35cf' });
             // material.vertexColors = THREE.VertexColors;
-
-            var meshs = [];
             features.forEach(function (g) {
                 var heightPerLevel = 10;
                 var levels = g.properties.levels || 1;
@@ -71,6 +97,36 @@
                     height: levels * heightPerLevel,
                     topColor: '#fff'
                 }, material);
+
+                //tooltip test
+                mesh.setToolTip(maptalks.Util.GUID(), {
+                    showTimeout: 0,
+                    eventsPropagation: true,
+                    dx: 10
+                });
+                mesh.getToolTip().addTo(point);
+
+
+                //infowindow test
+                mesh.setInfoWindow({
+                    content: 'hello world,height:' + levels * heightPerLevel,
+                    title: 'message',
+                    animationDuration: 0,
+                    autoOpenOn: false
+                });
+
+                mesh.getInfoWindow().addTo(map);
+
+                //event test
+                ['click', 'mousemove', 'mouseout'].forEach(function (eventType) {
+                    mesh.on(eventType, function (e) {
+                        console.log(e.type, e);
+                        console.log(this);
+                        if (e.type === 'mouseout') {
+                            this.setSymbol(material);
+                        }
+                    });
+                });
                 // initVertexColors(mesh.geometry, '#2d2f61', '#fff');
                 meshs.push(mesh);
                 // if (Array.isArray(mesh)) {
@@ -81,19 +137,92 @@
             });
             threeLayer.addMesh(meshs);
             addEvents();
+            initGui();
         };
         threeLayer.addTo(map);
 
 
+        var baseObject;
         function addEvents() {
+            var highlightmaterial = new THREE.MeshBasicMaterial({ color: 'yellow', transparent: true });
             map.on('mousemove', function (e) {
                 map.resetCursor('default');
                 var objects = threeLayer.identify(e.coordinate, { count: 2 });
-                console.log(objects);
+                // console.log(objects);
                 if (objects.length) {
                     map.setCursor(`pointer`);
+                    if (baseObject && baseObject != objects[0]) {
+                        baseObject.closeToolTip();
+                        baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject }));
+                    }
+                    baseObject = objects[0];
+                    baseObject.setSymbol(highlightmaterial);
+                    baseObject.openToolTip(e.coordinate);
+                    objects.forEach(function (object) {
+                        object._fire(e.type, Object.assign({}, e, { target: object }));
+                    });
+                } else {
+                    baseObject && baseObject.closeToolTip() && baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject }));
                 }
-            })
+            });
+
+
+            map.on('click', function (e) {
+                var objects = threeLayer.identify(e.coordinate, { count: 2 });
+                if (objects.length) {
+                    objects[0].openInfoWindow(e.coordinate);
+                    objects.forEach(function (object) {
+                        object._fire(e.type, Object.assign({}, e, { target: object }));
+                    });
+                }
+            });
+
+
+        }
+
+
+        function initGui() {
+            var params = {
+                add: true,
+                color: '#3e35cf',
+                show: true,
+                opacity: 1,
+                altitude: 0
+            };
+            var gui = new dat.GUI();
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    threeLayer.addMesh(meshs);
+                } else {
+                    threeLayer.removeMesh(meshs);
+                }
+            });
+            gui.addColor(params, 'color').name('building color').onChange(function () {
+                material.color.set(params.color);
+                meshs.forEach(function (mesh) {
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'opacity', 0, 1).onChange(function () {
+                material.opacity = params.opacity;
+                meshs.forEach(function (mesh) {
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'show').onChange(function () {
+                meshs.forEach(function (mesh) {
+                    if (params.show) {
+                        mesh.show();
+                    } else {
+                        mesh.hide();
+                    }
+                });
+            });
+            gui.add(params, 'altitude', 0, 300).onChange(function () {
+                meshs.forEach(function (mesh) {
+                    mesh.setAltitude(params.altitude);
+                });
+            });
         }
 
 
