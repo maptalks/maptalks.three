@@ -30,6 +30,7 @@ class BaseObject extends maptalks.Eventable(Base) { //maptalks.Eventable(Base) r
         this.options = {};
         this.toolTip = null;
         this.infoWindow = null;
+        this._mouseover = false;
         if (id == undefined) {
             id = maptalks.Util.GUID();
         }
@@ -103,7 +104,7 @@ class BaseObject extends maptalks.Eventable(Base) { //maptalks.Eventable(Base) r
             return coordinate;
         } else {
             const geometry = polygon || lineString;
-            if (geometry && geometry.getCenter()) {
+            if (geometry && geometry.getCenter) {
                 return geometry.getCenter();
             }
         }
