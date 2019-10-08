@@ -92,6 +92,21 @@ class Bar extends BaseObject {
         this.getObject3d().rotation.x = Math.PI / 2;
         this.getObject3d().translateY(options.height / 2);
     }
+
+    setAltitude(altitude) {
+        if (maptalks.Util.isNumber(altitude)) {
+            const z = this.getLayer().distanceToVector3(altitude, altitude).x;
+            const center = this.getCenter();
+            const v = this.getLayer().coordinateToVector3(center, z);
+            this.getObject3d().position.copy(v);
+            this.options.altitude = altitude;
+            const height = this.getOptions().height;
+
+            const y = this.getLayer().distanceToVector3(height, height).x;
+            this.getObject3d().translateY(y / 2);
+        }
+        return this;
+    }
 }
 
 export default Bar;
