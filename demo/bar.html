@@ -44,32 +44,6 @@
             })
         });
 
-
-        var point = new maptalks.Marker(
-            [-0.113049, 51.498568],
-            {
-                visible: true,
-                editable: true,
-                cursor: 'pointer',
-                shadowBlur: 0,
-                shadowColor: 'black',
-                draggable: false,
-                dragShadow: false, // display a shadow during dragging
-                drawOnAxis: null,  // force dragging stick on a axis, can be: x, y
-                symbol: {
-                    'textFaceName': 'sans-serif',
-                    'textName': 'MapTalks',
-                    'textFill': '#34495e',
-                    'textHorizontalAlignment': 'right',
-                    'textSize': 40
-                }
-            }
-        );
-
-        new maptalks.VectorLayer('vector', point).addTo(map);
-
-
-
         // the ThreeLayer to draw buildings
         var threeLayer = new maptalks.ThreeLayer('t', {
             forceRenderOnMoving: true,
@@ -89,6 +63,7 @@
 
         var bars;
         var material = new THREE.MeshBasicMaterial({ color: '#fff', transparent: true });
+        var highlightmaterial = new THREE.MeshBasicMaterial({ color: 'yellow', transparent: true });
         function addBars(scene) {
             fetch('./data/population.json').then((function (res) {
                 return res.json();
@@ -109,31 +84,32 @@
                     }, material);
 
                     // tooltip test
-                    bar.setToolTip(maptalks.Util.GUID(), {
+                    bar.setToolTip(d.height * 400, {
                         showTimeout: 0,
                         eventsPropagation: true,
                         dx: 10
                     });
-                    bar.getToolTip().addTo(point);
 
 
-                    // //infowindow test
-                    // bar.setInfoWindow({
-                    //     content: 'hello world,height:' + d.height * 400,
-                    //     title: 'message',
-                    //     animationDuration: 0,
-                    //     autoOpenOn: false
-                    // });
+                    //infowindow test
+                    bar.setInfoWindow({
+                        content: 'hello world,height:' + d.height * 400,
+                        title: 'message',
+                        animationDuration: 0,
+                        autoOpenOn: false
+                    });
 
-                    // bar.getInfoWindow().addTo(map);
 
                     //event test
-                    ['click', 'mousemove', 'mouseout'].forEach(function (eventType) {
+                    ['click', 'mouseout', 'mouseover', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].forEach(function (eventType) {
                         bar.on(eventType, function (e) {
                             console.log(e.type, e);
-                            console.log(this);
+                            // console.log(this);
                             if (e.type === 'mouseout') {
                                 this.setSymbol(material);
+                            }
+                            if (e.type === 'mouseover') {
+                                this.setSymbol(highlightmaterial);
                             }
                         });
                     });
@@ -197,40 +173,9 @@
             });
         }
 
-        var baseObject;
+
         function addEvents() {
-            var highlightmaterial = new THREE.MeshBasicMaterial({ color: 'yellow', transparent: true });
-            map.on('mousemove', function (e) {
-                map.resetCursor('default');
-                var objects = threeLayer.identify(e.coordinate, { count: 2 });
-                // console.log(objects);
-                if (objects.length) {
-                    map.setCursor(`pointer`);
-                    if (baseObject && baseObject != objects[0]) {
-                        baseObject.closeToolTip();
-                        baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject }));
-                    }
-                    baseObject = objects[0];
-                    baseObject.setSymbol(highlightmaterial);
-                    baseObject.openToolTip(e.coordinate);
-                    objects.forEach(function (object) {
-                        object._fire(e.type, Object.assign({}, e, { target: object }));
-                    });
-                } else {
-                    baseObject && baseObject.closeToolTip() && baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject }));
-                }
-            });
 
-
-            map.on('click', function (e) {
-                var objects = threeLayer.identify(e.coordinate, { count: 2 });
-                if (objects.length) {
-                    objects[0].openInfoWindow(e.coordinate);
-                    objects.forEach(function (object) {
-                        object._fire(e.type, Object.assign({}, e, { target: object }));
-                    });
-                }
-            });
         }
 
     </script>
