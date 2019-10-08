@@ -28,6 +28,17 @@ const LINEPRECISIONS = [
     [0.5, 0.02]
 ];
 
+const EVENTS = [
+    'mousemove',
+    'click',
+    'mousedown',
+    'mouseup',
+    'dblclick',
+    'contextmenu',
+    'touchstart',
+    'touchmove',
+    'touchend'
+];
 
 /**
  * A Layer to render with THREE.JS (http://threejs.org), the most popular library for WebGL. <br>
@@ -391,6 +402,107 @@ export class ThreeLayer extends maptalks.CanvasLayer {
             }
         }
         return 0.01;
+    }
+
+    /**
+     * fire baseObject events
+     * @param {*} e 
+     */
+    _identifyBaseObjectEvents(e) {
+        const map = this.map || this.getMap();
+        map.resetCursor('default');
+        const { type, coordinate } = e;
+        const baseObjects = this.identify(coordinate);
+        if (type === 'mousemove') {
+            if (baseObjects.length) {
+                map.setCursor(`pointer`);
+            }
+            // mouseout objects
+            const outBaseObjects = [];
+            if (this._baseObjects) {
+                this._baseObjects.forEach(baseObject => {
+                    let isOut = true;
+                    baseObjects.forEach(baseO => {
+                        if (baseObject == baseO) {
+                            isOut = false;
+                        }
+                    });
+                    (isOut && outBaseObjects.push(baseObject));
+                });
+            }
+            outBaseObjects.forEach(baseObject => {
+                if (baseObject instanceof BaseObject) {
+                    // reset _mouseover status
+                    baseObject._mouseover = false;
+                    baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject, type: 'mouseout' }));
+                    baseObject.closeToolTip();
+                }
+            });
+            baseObjects.forEach(baseObject => {
+                if (baseObject instanceof BaseObject) {
+                    if (!baseObject._mouseover) {
+                        baseObject._fire('mouseover', Object.assign({}, e, { target: baseObject, type: 'mouseover' }));
+                        baseObject._mouseover = true;
+                    }
+                    baseObject._fire(type, Object.assign({}, e, { target: baseObject }));
+                    // tooltip 
+                    const tooltip = baseObject.getToolTip();
+                    if (tooltip && (!tooltip._owner)) {
+                        tooltip.addTo(this._innerMarker);
+                    }
+                    baseObject.openToolTip(coordinate);
+                }
+                else {
+                    console.warn(baseObject, 'is not BaseObject');
+                }
+            });
+        } else {
+            baseObjects.forEach(baseObject => {
+                if (baseObject instanceof BaseObject) {
+                    baseObject._fire(type, Object.assign({}, e, { target: baseObject }));
+                    if (type === 'click') {
+                        const infoWindow = baseObject.getInfoWindow();
+                        if (infoWindow && (!infoWindow._owner)) {
+                            infoWindow.addTo(map);
+                        }
+                        baseObject.openInfoWindow(coordinate);
+                    }
+                } else {
+                    console.warn(baseObject, 'is not BaseObject');
+                }
+            });
+        }
+        this._baseObjects = baseObjects;
+        return this;
+    }
+
+
+    onAdd() {
+        super.onAdd();
+        const map = this.map || this.getMap();
+        if (!map) return this;
+        EVENTS.forEach(event => {
+            map.on(event, this._identifyBaseObjectEvents, this);
+        });
+        if (!this._innerMarker) {
+            this._innerMarker = new maptalks.ui.UIMarker([0, 0], {
+                content: 'hello'
+            });
+        }
+        this._innerMarker.addTo(map);
+        this._innerMarker.hide();
+        return this;
+    }
+
+    onRemove() {
+        super.onRemove();
+        const map = this.map || this.getMap();
+        if (!map) return this;
+        EVENTS.forEach(event => {
+            map.off(event, this._identifyBaseObjectEvents, this);
+        });
+        this._innerMarker.remove();
+        return this;
     }
 
     /**
