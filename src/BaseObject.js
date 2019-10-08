@@ -17,10 +17,31 @@ class Base {
 }
 
 /**
+ * EVENTS=[
+    'mousemove',
+    'click',
+    'mousedown',
+    'mouseup',
+    'dblclick',
+    'contextmenu',
+    'touchstart',
+    'touchmove',
+    'touchend',
+    'mouseover',
+    'mouseout',
+    'idchange',
+    'propertieschange',
+    'show',
+    'hide',
+    'symbolchange'
+];
  * This is the base class for all 3D objects
  * 
  * 
  * Its function and maptalks.geometry are as similar as possible
+ * 
+ * 
+ * 
  */
 class BaseObject extends maptalks.Eventable(Base) { //maptalks.Eventable(Base) return a Class  https://github.com/maptalks/maptalks.js/blob/master/src/core/Eventable.js
     constructor(id) {
@@ -63,7 +84,13 @@ class BaseObject extends maptalks.Eventable(Base) { //maptalks.Eventable(Base) r
     }
 
     setId(id) {
+        const oldId = this.getId();
         this.id = id;
+        this._fire('idchange', {
+            'old': oldId,
+            'new': id,
+            'target': this
+        });
         return this;
     }
 
@@ -80,7 +107,13 @@ class BaseObject extends maptalks.Eventable(Base) { //maptalks.Eventable(Base) r
     }
 
     setProperties(property) {
-        this.options.properties = property
+        const old = Object.assign({}, this.getProperties());
+        this.options.properties = property;
+        this._fire('propertieschange', {
+            'old': old,
+            'new': property,
+            'target': this
+        });
         return this;
     }
 
@@ -131,12 +164,14 @@ class BaseObject extends maptalks.Eventable(Base) { //maptalks.Eventable(Base) r
 
     show() {
         this.getObject3d().visible = true;
+        this._fire('show');
         return this;
     }
 
 
     hide() {
         this.getObject3d().visible = false;
+        this._fire('hide');
         return this;
     }
 
@@ -160,7 +195,13 @@ class BaseObject extends maptalks.Eventable(Base) { //maptalks.Eventable(Base) r
         if (material && material instanceof THREE.Material) {
             material.needsUpdate = true;
             material.vertexColors = this.getObject3d().material.vertexColors;
+            const old = this.getObject3d().material.clone();
             this.getObject3d().material = material;
+            this._fire('symbolchange', {
+                'old': old,
+                'new': material,
+                'target': this
+            });
         }
         return this;
     }
@@ -219,13 +260,6 @@ class BaseObject extends maptalks.Eventable(Base) { //maptalks.Eventable(Base) r
         return this;
     }
 
-    // on() {
-
-    // }
-
-    // off() {
-
-    // }
 
     /**
      * more method support

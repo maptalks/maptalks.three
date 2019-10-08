@@ -115,6 +115,9 @@
                 // }
             });
             threeLayer.addMesh(meshs);
+            meshs[0].on('show hide symbolchange', function (e) {
+                console.log(e.type, e);
+            });
             addEvents();
             initGui();
         };
