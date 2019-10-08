@@ -363,6 +363,10 @@ export class ThreeLayer extends maptalks.CanvasLayer {
             camera = this.getCamera(),
             scene = this.getScene(),
             size = this.getMap().getSize();
+        //Errors will be reported when the layer is not initialized
+        if (!scene) {
+            return [];
+        }
         const width = size.width,
             height = size.height;
         mouse.x = (x / width) * 2 - 1;
@@ -485,12 +489,12 @@ export class ThreeLayer extends maptalks.CanvasLayer {
             map.on(event, this._identifyBaseObjectEvents, this);
         });
         if (!this._innerMarker) {
-            this._innerMarker = new maptalks.ui.UIMarker([0, 0], {
-                content: 'hello'
+            this._innerMarker = new maptalks.Marker([0, 0], {
+                visible: false
             });
+            this._innerLayer = new maptalks.VectorLayer(maptalks.Util.GUID(), this._innerMarker);
         }
-        this._innerMarker.addTo(map);
-        this._innerMarker.hide();
+        this._innerLayer.addTo(map);
         return this;
     }
 
@@ -501,7 +505,7 @@ export class ThreeLayer extends maptalks.CanvasLayer {
         EVENTS.forEach(event => {
             map.off(event, this._identifyBaseObjectEvents, this);
         });
-        this._innerMarker.remove();
+        map.removeLayer(this._innerLayer);
         return this;
     }
 
