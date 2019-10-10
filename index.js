@@ -410,7 +410,7 @@ export class ThreeLayer extends maptalks.CanvasLayer {
 
     /**
      * fire baseObject events
-     * @param {*} e 
+     * @param {*} e
      */
     _identifyBaseObjectEvents(e) {
         const map = this.map || this.getMap();
@@ -419,7 +419,7 @@ export class ThreeLayer extends maptalks.CanvasLayer {
         const baseObjects = this.identify(coordinate);
         if (type === 'mousemove') {
             if (baseObjects.length) {
-                map.setCursor(`pointer`);
+                map.setCursor('pointer');
             }
             // mouseout objects
             const outBaseObjects = [];
@@ -427,11 +427,13 @@ export class ThreeLayer extends maptalks.CanvasLayer {
                 this._baseObjects.forEach(baseObject => {
                     let isOut = true;
                     baseObjects.forEach(baseO => {
-                        if (baseObject == baseO) {
+                        if (baseObject === baseO) {
                             isOut = false;
                         }
                     });
-                    (isOut && outBaseObjects.push(baseObject));
+                    if (isOut) {
+                        outBaseObjects.push(baseObject);
+                    }
                 });
             }
             outBaseObjects.forEach(baseObject => {
@@ -449,14 +451,13 @@ export class ThreeLayer extends maptalks.CanvasLayer {
                         baseObject._mouseover = true;
                     }
                     baseObject._fire(type, Object.assign({}, e, { target: baseObject }));
-                    // tooltip 
+                    // tooltip
                     const tooltip = baseObject.getToolTip();
                     if (tooltip && (!tooltip._owner)) {
                         tooltip.addTo(this._innerMarker);
                     }
                     baseObject.openToolTip(coordinate);
-                }
-                else {
+                } else {
                     console.warn(baseObject, 'is not BaseObject');
                 }
             });
