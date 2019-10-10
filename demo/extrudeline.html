@@ -50,8 +50,8 @@
         // the ThreeLayer to draw buildings
         var threeLayer = new maptalks.ThreeLayer('t', {
             forceRenderOnMoving: true,
-            forceRenderOnRotating: true,
-            animation: true
+            forceRenderOnRotating: true
+            // animation: true
         });
         threeLayer.prepareToDraw = function (gl, scene, camera) {
             var light = new THREE.DirectionalLight(0xffffff);
@@ -145,6 +145,7 @@
                 console.timeEnd(timer);
                 threeLayer.addMesh(lines);
                 initGui();
+                threeLayer.config('animation', true);
             })
         }
 
