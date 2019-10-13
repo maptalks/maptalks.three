@@ -381,7 +381,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 if (interactive) {
                     children.push(mesh);
                 }
-            } else if (mesh instanceof THREE.Mesh) {
+            } else if (mesh instanceof THREE.Mesh || mesh instanceof THREE.Group) {
                 children.push(mesh);
             }
         });
@@ -389,12 +389,25 @@ class ThreeLayer extends maptalks.CanvasLayer {
         const intersects = raycaster.intersectObjects(children, true);
         if (intersects && Array.isArray(intersects) && intersects.length) {
             baseObjects = intersects.map(intersect => {
-                return intersect.object.__parent || intersect.object;
+                let object = intersect.object;
+                object = this._recursionMesh(object);
+                return object.__parent || object;
             });
         }
         options = maptalks.Util.extend({}, options);
         const count = options.count;
         return (maptalks.Util.isNumber(count) && count > 0 ? baseObjects.slice(0, count) : baseObjects);
+    }
+
+    /**
+    * Recursively finding the root node of mesh,Until it is scene node
+    * @param {*} mesh
+    */
+    _recursionMesh(mesh) {
+        while (mesh && (!(mesh.parent instanceof THREE.Scene))) {
+            mesh = mesh.parent;
+        }
+        return mesh || {};
     }
 
     //get Line Precision by Resolution
