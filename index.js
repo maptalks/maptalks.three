@@ -63,7 +63,7 @@ const EVENTS = [
  * @param {String|Number} id - layer's id
  * @param {Object} options - options defined in [options]{@link maptalks.ThreeLayer#options}
  */
-export class ThreeLayer extends maptalks.CanvasLayer {
+class ThreeLayer extends maptalks.CanvasLayer {
     /**
      * Draw method of ThreeLayer
      * In default, it calls renderScene, refresh the camera and the scene
@@ -363,7 +363,7 @@ export class ThreeLayer extends maptalks.CanvasLayer {
             camera = this.getCamera(),
             scene = this.getScene(),
             size = this.getMap().getSize();
-        //Errors will be reported when the layer is not initialized
+        //fix Errors will be reported when the layer is not initialized
         if (!scene) {
             return [];
         }
@@ -525,7 +525,7 @@ export class ThreeLayer extends maptalks.CanvasLayer {
 
 ThreeLayer.mergeOptions(options);
 
-export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
+class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
 
     getPrepareParams() {
         return [this.scene, this.camera];
@@ -664,4 +664,8 @@ ThreeLayer.registerRenderer('gl', ThreeRenderer);
 
 function getTargetZoom(map) {
     return map.getGLZoom();
+}
+
+export {
+    ThreeLayer, ThreeRenderer, BaseObject
 }

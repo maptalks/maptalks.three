@@ -40,10 +40,10 @@ class Base {
  * 
  * Its function and maptalks.geometry are as similar as possible
  * 
- * 
+ * maptalks.Eventable(Base) return a Class  https://github.com/maptalks/maptalks.js/blob/master/src/core/Eventable.js
  * 
  */
-class BaseObject extends maptalks.Eventable(Base) { //maptalks.Eventable(Base) return a Class  https://github.com/maptalks/maptalks.js/blob/master/src/core/Eventable.js
+class BaseObject extends maptalks.Eventable(Base) {
     constructor(id) {
         super();
         this.isBaseObject = true;
