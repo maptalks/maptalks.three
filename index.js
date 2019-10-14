@@ -481,7 +481,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                     if (type === 'click') {
                         const infoWindow = baseObject.getInfoWindow();
                         if (infoWindow && (!infoWindow._owner)) {
-                            infoWindow.addTo(map);
+                            infoWindow.addTo(baseObject);
                         }
                         baseObject.openInfoWindow(coordinate);
                     }
