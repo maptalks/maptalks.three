@@ -80,6 +80,7 @@ class Bar extends BaseObject {
         const { height, radius, topColor, bottomColor, altitude } = options;
         options.height = layer.distanceToVector3(height, height).x;
         options.radius = layer.distanceToVector3(radius, radius).x;
+        this._h = options.height;
         const geometry = getGeometry(options);
         if (topColor && !material.map) {
             initVertexColors(geometry, bottomColor, topColor);
@@ -100,10 +101,8 @@ class Bar extends BaseObject {
             const v = this.getLayer().coordinateToVector3(center, z);
             this.getObject3d().position.copy(v);
             this.options.altitude = altitude;
-            const height = this.getOptions().height;
-
-            const y = this.getLayer().distanceToVector3(height, height).x;
-            this.getObject3d().translateY(y / 2);
+            const h = this._h;
+            this.getObject3d().translateY(h / 2);
         }
         return this;
     }
