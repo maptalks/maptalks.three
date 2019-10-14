@@ -467,7 +467,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                     // tooltip
                     const tooltip = baseObject.getToolTip();
                     if (tooltip && (!tooltip._owner)) {
-                        tooltip.addTo(this._innerMarker);
+                        tooltip.addTo(baseObject);
                     }
                     baseObject.openToolTip(coordinate);
                 } else {
@@ -502,13 +502,6 @@ class ThreeLayer extends maptalks.CanvasLayer {
         EVENTS.forEach(event => {
             map.on(event, this._identifyBaseObjectEvents, this);
         });
-        if (!this._innerMarker) {
-            this._innerMarker = new maptalks.Marker([0, 0], {
-                visible: false
-            });
-            this._innerLayer = new maptalks.VectorLayer(maptalks.Util.GUID(), this._innerMarker);
-        }
-        this._innerLayer.addTo(map);
         this._needsUpdate = true;
         return this;
     }
@@ -520,7 +513,6 @@ class ThreeLayer extends maptalks.CanvasLayer {
         EVENTS.forEach(event => {
             map.off(event, this._identifyBaseObjectEvents, this);
         });
-        map.removeLayer(this._innerLayer);
         return this;
     }
 
@@ -641,15 +633,6 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
     }
 
     renderScene() {
-        const layer = this.layer;
-        //when the layer opens the animation and the map is in a non-interactive state
-        if (layer.options.animation && (!layer.getMap().isInteracting())) {
-            layer._needsUpdate = !layer._needsUpdate;
-            //60fps=>30fps  reduce the number of unnecessary drawings, the time for each drawing is 1000/30 ms
-            if (!layer._needsUpdate) {
-                return;
-            }
-        }
         this._syncCamera();
         this.context.render(this.scene, this.camera);
         this.completeRender();

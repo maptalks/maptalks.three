@@ -1,6 +1,7 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import { ThreeLayer } from "./../index";
+import ToolTip from './ui/ToolTip';
 
 const OPTIONS = {
     interactive: true,
@@ -232,7 +233,7 @@ class BaseObject extends maptalks.Eventable(Base) {
     }
 
     setToolTip(content, options) {
-        this.toolTip = new maptalks.ui.ToolTip(content, options);
+        this.toolTip = new ToolTip(content, options);
         return this;
     }
 
