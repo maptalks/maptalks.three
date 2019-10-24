@@ -78,11 +78,17 @@ var raycaster = new THREE.Raycaster();
 document.addEventListener('click', function (event) {
     event.preventDefault();
     var mouse = new THREE.Vector2();
+    
+    let dpr = map.getDevicePixelRatio();
+    if(!dpr)
+    {
+      dpr = 1;
+    }
     // 屏幕点击坐标转 ndc 设备无关坐标，[-1, 1]
     var renderer = threeLayer.getThreeRenderer();
     var rendererSize = renderer.getSize();
-    mouse.x = (event.clientX / rendererSize.width) * 2 - 1;
-    mouse.y = -(event.clientY / rendererSize.height) * 2 + 1;
+    mouse.x = (event.clientX * dpr / rendererSize.width) * 2 - 1;
+    mouse.y = -(event.clientY * dpr / rendererSize.height) * 2 + 1;
 
     var objects = [];
     threeLayer.getScene().children.forEach(child => {
