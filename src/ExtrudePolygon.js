@@ -111,6 +111,39 @@ class ExtrudePolygon extends BaseObject {
         const z = layer.distanceToVector3(altitude, altitude).x;
         this.getObject3d().position.z = z;
     }
+
+    /**
+     * https://github.com/maptalks/maptalks.js/blob/a56b878078e7fb48ecbe700ba7481edde7b83cfe/src/geometry/Path.js#L74
+     * @param {*} options 
+     * @param {*} cb 
+     */
+    animateShow(options = {}, cb) {
+        if (this._showPlayer) {
+            this._showPlayer.finish();
+        }
+        if (maptalks.Util.isFunction(options)) {
+            options = {};
+            cb = options;
+        }
+        const duration = options['duration'] || 1000,
+            easing = options['easing'] || 'out';
+        const player = this._showPlayer = maptalks.animation.Animation.animate({
+            'scale': 1
+        }, {
+            'duration': duration,
+            'easing': easing
+        }, farme => {
+            const scale = farme.styles.scale;
+            if (scale > 0) {
+                this.getObject3d().scale.set(1, 1, scale);
+            }
+            if (cb) {
+                cb(farme, scale);
+            }
+        });
+        player.play();
+        return player;
+    }
 }
 
 export default ExtrudePolygon;

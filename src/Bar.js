@@ -111,6 +111,50 @@ class Bar extends BaseObject {
         }
         return this;
     }
+
+    /**
+     * https://github.com/maptalks/maptalks.js/blob/a56b878078e7fb48ecbe700ba7481edde7b83cfe/src/geometry/Path.js#L74
+     * @param {*} options 
+     * @param {*} cb 
+     */
+    animateShow(options = {}, cb) {
+        if (this._showPlayer) {
+            this._showPlayer.finish();
+            delete this._translateY;
+        }
+        if (maptalks.Util.isFunction(options)) {
+            options = {};
+            cb = options;
+        }
+        const duration = options['duration'] || 1000, h = this._h,
+            easing = options['easing'] || 'out';
+
+        this.getObject3d().translateY(-h / 2);
+        this.getObject3d().scale.set(1, 0.00001, 1);
+
+        const player = this._showPlayer = maptalks.animation.Animation.animate({
+            'scale': 1
+        }, {
+            'duration': duration,
+            'easing': easing
+        }, farme => {
+            if (this._translateY) {
+                this.getObject3d().translateY(-this._translateY);
+            }
+            const scale = farme.styles.scale;
+            if (scale > 0) {
+                this.getObject3d().scale.set(1, scale, 1);
+                const y = h / 2 * scale;
+                this._translateY = y;
+                this.getObject3d().translateY(y);
+            }
+            if (cb) {
+                cb(farme, scale);
+            }
+        });
+        player.play();
+        return player;
+    }
 }
 
 export default Bar;
