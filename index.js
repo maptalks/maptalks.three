@@ -28,6 +28,17 @@ const LINEPRECISIONS = [
     [0.5, 0.02]
 ];
 
+const EVENTS = [
+    'mousemove',
+    'click',
+    'mousedown',
+    'mouseup',
+    'dblclick',
+    'contextmenu',
+    'touchstart',
+    'touchmove',
+    'touchend'
+];
 
 /**
  * A Layer to render with THREE.JS (http://threejs.org), the most popular library for WebGL. <br>
@@ -52,7 +63,7 @@ const LINEPRECISIONS = [
  * @param {String|Number} id - layer's id
  * @param {Object} options - options defined in [options]{@link maptalks.ThreeLayer#options}
  */
-export class ThreeLayer extends maptalks.CanvasLayer {
+class ThreeLayer extends maptalks.CanvasLayer {
     /**
      * Draw method of ThreeLayer
      * In default, it calls renderScene, refresh the camera and the scene
@@ -352,6 +363,10 @@ export class ThreeLayer extends maptalks.CanvasLayer {
             camera = this.getCamera(),
             scene = this.getScene(),
             size = this.getMap().getSize();
+        //fix Errors will be reported when the layer is not initialized
+        if (!scene) {
+            return [];
+        }
         const width = size.width,
             height = size.height;
         mouse.x = (x / width) * 2 - 1;
@@ -366,7 +381,7 @@ export class ThreeLayer extends maptalks.CanvasLayer {
                 if (interactive) {
                     children.push(mesh);
                 }
-            } else if (mesh instanceof THREE.Mesh) {
+            } else if (mesh instanceof THREE.Mesh || mesh instanceof THREE.Group) {
                 children.push(mesh);
             }
         });
@@ -374,12 +389,25 @@ export class ThreeLayer extends maptalks.CanvasLayer {
         const intersects = raycaster.intersectObjects(children, true);
         if (intersects && Array.isArray(intersects) && intersects.length) {
             baseObjects = intersects.map(intersect => {
-                return intersect.object.__parent || intersect.object;
+                let object = intersect.object;
+                object = this._recursionMesh(object);
+                return object.__parent || object;
             });
         }
         options = maptalks.Util.extend({}, options);
         const count = options.count;
         return (maptalks.Util.isNumber(count) && count > 0 ? baseObjects.slice(0, count) : baseObjects);
+    }
+
+    /**
+    * Recursively finding the root node of mesh,Until it is scene node
+    * @param {*} mesh
+    */
+    _recursionMesh(mesh) {
+        while (mesh && (!(mesh.parent instanceof THREE.Scene))) {
+            mesh = mesh.parent;
+        }
+        return mesh || {};
     }
 
     //get Line Precision by Resolution
@@ -391,6 +419,101 @@ export class ThreeLayer extends maptalks.CanvasLayer {
             }
         }
         return 0.01;
+    }
+
+    /**
+     * fire baseObject events
+     * @param {*} e
+     */
+    _identifyBaseObjectEvents(e) {
+        const map = this.map || this.getMap();
+        map.resetCursor('default');
+        const { type, coordinate } = e;
+        const baseObjects = this.identify(coordinate);
+        if (type === 'mousemove') {
+            if (baseObjects.length) {
+                map.setCursor('pointer');
+            }
+            // mouseout objects
+            const outBaseObjects = [];
+            if (this._baseObjects) {
+                this._baseObjects.forEach(baseObject => {
+                    let isOut = true;
+                    baseObjects.forEach(baseO => {
+                        if (baseObject === baseO) {
+                            isOut = false;
+                        }
+                    });
+                    if (isOut) {
+                        outBaseObjects.push(baseObject);
+                    }
+                });
+            }
+            outBaseObjects.forEach(baseObject => {
+                if (baseObject instanceof BaseObject) {
+                    // reset _mouseover status
+                    baseObject._mouseover = false;
+                    baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject, type: 'mouseout' }));
+                    baseObject.closeToolTip();
+                }
+            });
+            baseObjects.forEach(baseObject => {
+                if (baseObject instanceof BaseObject) {
+                    if (!baseObject._mouseover) {
+                        baseObject._fire('mouseover', Object.assign({}, e, { target: baseObject, type: 'mouseover' }));
+                        baseObject._mouseover = true;
+                    }
+                    baseObject._fire(type, Object.assign({}, e, { target: baseObject }));
+                    // tooltip
+                    const tooltip = baseObject.getToolTip();
+                    if (tooltip && (!tooltip._owner)) {
+                        tooltip.addTo(baseObject);
+                    }
+                    baseObject.openToolTip(coordinate);
+                } else {
+                    console.warn(baseObject, 'is not BaseObject');
+                }
+            });
+        } else {
+            baseObjects.forEach(baseObject => {
+                if (baseObject instanceof BaseObject) {
+                    baseObject._fire(type, Object.assign({}, e, { target: baseObject }));
+                    if (type === 'click') {
+                        const infoWindow = baseObject.getInfoWindow();
+                        if (infoWindow && (!infoWindow._owner)) {
+                            infoWindow.addTo(baseObject);
+                        }
+                        baseObject.openInfoWindow(coordinate);
+                    }
+                } else {
+                    console.warn(baseObject, 'is not BaseObject');
+                }
+            });
+        }
+        this._baseObjects = baseObjects;
+        return this;
+    }
+
+
+    onAdd() {
+        super.onAdd();
+        const map = this.map || this.getMap();
+        if (!map) return this;
+        EVENTS.forEach(event => {
+            map.on(event, this._identifyBaseObjectEvents, this);
+        });
+        this._needsUpdate = true;
+        return this;
+    }
+
+    onRemove() {
+        super.onRemove();
+        const map = this.map || this.getMap();
+        if (!map) return this;
+        EVENTS.forEach(event => {
+            map.off(event, this._identifyBaseObjectEvents, this);
+        });
+        return this;
     }
 
     /**
@@ -408,7 +531,7 @@ export class ThreeLayer extends maptalks.CanvasLayer {
 
 ThreeLayer.mergeOptions(options);
 
-export class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
+class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
 
     getPrepareParams() {
         return [this.scene, this.camera];
@@ -548,3 +671,7 @@ ThreeLayer.registerRenderer('gl', ThreeRenderer);
 function getTargetZoom(map) {
     return map.getGLZoom();
 }
+
+export {
+    ThreeLayer, ThreeRenderer, BaseObject
+};
