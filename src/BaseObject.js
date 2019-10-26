@@ -19,6 +19,8 @@ class Base {
 
 /**
  * EVENTS=[
+ *  'add',
+ *  'remove',
     'mousemove',
     'click',
     'mousedown',
