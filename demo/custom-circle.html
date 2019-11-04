@@ -118,15 +118,15 @@
                 , [13.341879792058194, 52.52318729489704]
                 , [13.348448231846305, 52.537668773653735]
             ];
+            var text = Math.round(Math.random() * 10000);
+            var material = getMaterial(70, text, '#fff');
             circles = lnglats.map(function (lnglat) {
-                var text = Math.round(Math.random() * 10000);
-                var material = getMaterial(70, text, '#fff');
                 var circle = new Circle(lnglat, {
                     radius: 200
                 }, material, threeLayer);
 
                 //tooltip test
-                circle.setToolTip('text:' + text, {
+                circle.setToolTip('id:' + circle.getId(), {
                     showTimeout: 0,
                     eventsPropagation: true,
                     dx: 10
@@ -135,7 +135,7 @@
 
                 //infowindow test
                 circle.setInfoWindow({
-                    content: 'text:' + text,
+                    content: 'id:' + circle.getId(),
                     title: 'message',
                     animationDuration: 0,
                     autoOpenOn: false
@@ -175,12 +175,13 @@
                     threeLayer.removeMesh(circles);
                 }
             });
-            // gui.addColor(params, 'color').name('bar color').onChange(function () {
-            //     material.color.set(params.color);
-            //     bars.forEach(function (mesh) {
-            //         mesh.setSymbol(material);
-            //     });
-            // });
+            gui.addColor(params, 'color').name('circle color').onChange(function () {
+                var text = Math.round(Math.random() * 10000);
+                var material = getMaterial(70, text, params.color);
+                circles.forEach(function (mesh) {
+                    mesh.setSymbol(material);
+                });
+            });
             gui.add(params, 'opacity', 0, 1).onChange(function () {
                 circles.forEach(function (mesh) {
                     var material = mesh.getSymbol();
@@ -211,7 +212,7 @@
             circles.forEach(circle => {
                 circle.animationShow({
                     duration: 1000,
-                    easing:'upAndDown'
+                    easing: 'upAndDown'
                 })
             });
         }
