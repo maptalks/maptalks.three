@@ -259,7 +259,7 @@
              * */
             animationShow(options = {}, cb) {
                 if (this._showPlayer) {
-                    this._showPlayer.finish();
+                    this._showPlayer.cancel();
                 }
                 if (maptalks.Util.isFunction(options)) {
                     options = {};
@@ -272,13 +272,13 @@
                 }, {
                     'duration': duration,
                     'easing': easing
-                }, farme => {
-                    const scale = farme.styles.scale;
+                }, frame => {
+                    const scale = frame.styles.scale;
                     if (scale > 0) {
                         this.getObject3d().scale.set(scale, scale, scale);
                     }
                     if (cb) {
-                        cb(farme, scale);
+                        cb(frame, scale);
                     }
                 });
                 player.play();

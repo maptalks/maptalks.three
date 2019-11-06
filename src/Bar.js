@@ -119,7 +119,10 @@ class Bar extends BaseObject {
      */
     animateShow(options = {}, cb) {
         if (this._showPlayer) {
-            this._showPlayer.finish();
+            this._showPlayer.cancel();
+            //restore bar initial state
+            this.getObject3d().scale.set(1, 1, 1);
+            this.getObject3d().translateY(this._h / 2);
             delete this._translateY;
         }
         if (maptalks.Util.isFunction(options)) {
@@ -137,11 +140,11 @@ class Bar extends BaseObject {
         }, {
             'duration': duration,
             'easing': easing
-        }, farme => {
+        }, frame => {
             if (this._translateY) {
                 this.getObject3d().translateY(-this._translateY);
             }
-            const scale = farme.styles.scale;
+            const scale = frame.styles.scale;
             if (scale > 0) {
                 this.getObject3d().scale.set(1, scale, 1);
                 const y = h / 2 * scale;
@@ -149,7 +152,7 @@ class Bar extends BaseObject {
                 this.getObject3d().translateY(y);
             }
             if (cb) {
-                cb(farme, scale);
+                cb(frame, scale);
             }
         });
         player.play();

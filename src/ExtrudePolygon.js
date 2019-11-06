@@ -119,7 +119,7 @@ class ExtrudePolygon extends BaseObject {
      */
     animateShow(options = {}, cb) {
         if (this._showPlayer) {
-            this._showPlayer.finish();
+            this._showPlayer.cancel();
         }
         if (maptalks.Util.isFunction(options)) {
             options = {};
@@ -132,13 +132,13 @@ class ExtrudePolygon extends BaseObject {
         }, {
             'duration': duration,
             'easing': easing
-        }, farme => {
-            const scale = farme.styles.scale;
+        }, frame => {
+            const scale = frame.styles.scale;
             if (scale > 0) {
                 this.getObject3d().scale.set(1, 1, scale);
             }
             if (cb) {
-                cb(farme, scale);
+                cb(frame, scale);
             }
         });
         player.play();
