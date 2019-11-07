@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Customize your own components </title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.97.0/build/three.min.js"></script>
+    <script type="text/javascript" src="../dist/maptalks.three.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 700px;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            center: [13.416935229170008, 52.529564137540376],
+            zoom: 15,
+            pitch: 70,
+            bearing: 0,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+
+
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true,
+            // animation: true
+        });
+
+
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            addCircles();
+            threeLayer.config('animation', true);
+
+        };
+        threeLayer.addTo(map);
+
+
+        function getMaterial(fontSize, text, fillColor) {
+            var SIZE = 256;
+            var canvas = document.createElement('canvas');
+            canvas.width = canvas.height = SIZE;
+            var ctx = canvas.getContext('2d');
+            var gradient = ctx.createLinearGradient(0, 0, SIZE, 0);
+            // gradient.addColorStop("0", "#ffffff");
+            gradient.addColorStop("0.0", "#1a9bfc");
+            gradient.addColorStop("1.0", "#7049f0");
+            // gradient.addColorStop("0.66", "white");
+            // gradient.addColorStop("1.0", "red");
+
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = 40;
+            ctx.arc(SIZE / 2, SIZE / 2, SIZE / 2, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.fillStyle = fillColor;
+            ctx.font = `${fontSize}px Aria`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, SIZE / 2, SIZE / 2);
+            ctx.rect(0, 0, SIZE, SIZE);
+            var texture = new THREE.Texture(canvas);
+            texture.needsUpdate = true; //使用贴图时进行更新
+
+            var material = new THREE.MeshPhongMaterial({
+                map: texture,
+                side: THREE.DoubleSide,
+                transparent: true
+            });
+            return material;
+        }
+
+        var circles;
+        function addCircles() {
+            var lnglats = [
+                [13.429362937522342, 52.518205849377495]
+                , [13.41688993786238, 52.52216099633924]
+                , [13.417991247928398, 52.53296954185342]
+                , [13.438154245439819, 52.533321196953096]
+                , [13.450418871799684, 52.52653968753597]
+                , [13.390340036780685, 52.51953598324846]
+                , [13.399921081391199, 52.50920191922407]
+                , [13.366122901455583, 52.50949703597493]
+                , [13.365784792637783, 52.51964629275582]
+                , [13.371429857108524, 52.528732386936014]
+                , [13.383686384074508, 52.53781463596616]
+                , [13.40395563186371, 52.540223413847315]
+                , [13.361485408920998, 52.53916869831616]
+                , [13.35373758485457, 52.52883597474849]
+                , [13.355233792792774, 52.519259850666316]
+                , [13.369548077301943, 52.506940362998336]
+                , [13.338732610093984, 52.50860998116909]
+                , [13.341879792058194, 52.52318729489704]
+                , [13.348448231846305, 52.537668773653735]
+            ];
+            var text = Math.round(Math.random() * 10000);
+            var material = getMaterial(70, text, '#fff');
+            circles = lnglats.map(function (lnglat) {
+                var circle = new Circle(lnglat, {
+                    radius: 200
+                }, material, threeLayer);
+
+                //tooltip test
+                circle.setToolTip('id:' + circle.getId(), {
+                    showTimeout: 0,
+                    eventsPropagation: true,
+                    dx: 10
+                });
+
+
+                //infowindow test
+                circle.setInfoWindow({
+                    content: 'id:' + circle.getId(),
+                    title: 'message',
+                    animationDuration: 0,
+                    autoOpenOn: false
+                });
+
+
+                //event test
+                ['click', 'mousemove', 'mouseout', 'mouseover', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].forEach(function (eventType) {
+                    circle.on(eventType, function (e) {
+                        console.log(e.type, e);
+                    });
+                });
+                return circle;
+            });
+            threeLayer.addMesh(circles);
+
+            initGui();
+        }
+
+
+
+        function initGui() {
+            var params = {
+                add: true,
+                color: '#fff',
+                show: true,
+                opacity: 1,
+                altitude: 0,
+                animateShow: animateShow
+            };
+
+            var gui = new dat.GUI();
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    threeLayer.addMesh(circles);
+                } else {
+                    threeLayer.removeMesh(circles);
+                }
+            });
+            gui.addColor(params, 'color').name('circle color').onChange(function () {
+                var text = Math.round(Math.random() * 10000);
+                var material = getMaterial(70, text, params.color);
+                circles.forEach(function (mesh) {
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'opacity', 0, 1).onChange(function () {
+                circles.forEach(function (mesh) {
+                    var material = mesh.getSymbol();
+                    material.opacity = params.opacity;
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'show').onChange(function () {
+                circles.forEach(function (mesh) {
+                    if (params.show) {
+                        mesh.show();
+                    } else {
+                        mesh.hide();
+                    }
+                });
+            });
+            gui.add(params, 'altitude', 0, 300).onChange(function () {
+                circles.forEach(function (mesh) {
+                    mesh.setAltitude(params.altitude);
+                });
+            });
+            gui.add(params, 'animateShow');
+        }
+
+
+
+        function animateShow() {
+            circles.forEach(circle => {
+                circle.animationShow({
+                    duration: 1000,
+                    easing: 'upAndDown'
+                })
+            });
+        }
+
+        //default values
+        var OPTIONS = {
+            radius: 100,
+            altitude: 0
+        };
+
+        /**
+         * custom Circle component
+         * 
+         * you can customize your own components
+         * */
+
+        class Circle extends maptalks.BaseObject {
+            constructor(coordinate, options, material, layer) {
+                options = maptalks.Util.extend({}, OPTIONS, options, { layer, coordinate });
+                super();
+                //Initialize internal configuration
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L135
+                this._initOptions(options);
+                const { altitude, radius } = options;
+                //generate geometry
+                const r = layer.distanceToVector3(radius, radius).x
+                const geometry = new THREE.CircleBufferGeometry(r, 50);
+
+                //Initialize internal object3d
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L140
+                this._createMesh(geometry, material);
+
+                //set object3d position
+                const z = layer.distanceToVector3(altitude, altitude).x;
+                const position = layer.coordinateToVector3(coordinate, z);
+                this.getObject3d().position.copy(position);
+                this.getObject3d().rotation.x = -Math.PI;
+            }
+
+
+            /**
+             * animationShow test
+             * 
+             * */
+            animationShow(options = {}, cb) {
+                if (this._showPlayer) {
+                    this._showPlayer.cancel();
+                }
+                if (maptalks.Util.isFunction(options)) {
+                    options = {};
+                    cb = options;
+                }
+                const duration = options['duration'] || 1000,
+                    easing = options['easing'] || 'out';
+                const player = this._showPlayer = maptalks.animation.Animation.animate({
+                    'scale': 1
+                }, {
+                    'duration': duration,
+                    'easing': easing
+                }, frame => {
+                    const scale = frame.styles.scale;
+                    if (scale > 0) {
+                        this.getObject3d().scale.set(scale, scale, scale);
+                    }
+                    if (cb) {
+                        cb(frame, scale);
+                    }
+                });
+                player.play();
+                return player;
+            }
+        }
+
+
+
+
+
+
+    </script>
+</body>
+
+</html>

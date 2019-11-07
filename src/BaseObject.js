@@ -19,6 +19,8 @@ class Base {
 
 /**
  * EVENTS=[
+ *  'add',
+ *  'remove',
     'mousemove',
     'click',
     'mousedown',
@@ -53,6 +55,7 @@ class BaseObject extends maptalks.Eventable(Base) {
         this.toolTip = null;
         this.infoWindow = null;
         this._mouseover = false;
+        this._showPlayer = null;
         if (id == undefined) {
             id = maptalks.Util.GUID();
         }
@@ -254,6 +257,15 @@ class BaseObject extends maptalks.Eventable(Base) {
     removeToolTip() {
         (this.toolTip && this.toolTip.remove() && (delete this.toolTip));
         return this;
+    }
+
+    /**
+     * different components should implement their own animation methods
+     * @param {*} options 
+     * @param {*} cb 
+     */
+    animateShow(options = {}, cb) {
+
     }
 
     config() {

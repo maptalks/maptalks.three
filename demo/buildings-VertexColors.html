@@ -130,7 +130,8 @@
                 color: '#3e35cf',
                 show: true,
                 opacity: 1,
-                altitude: 0
+                altitude: 0,
+                animateShow: animateShow
             };
             var gui = new dat.GUI();
             gui.add(params, 'add').onChange(function () {
@@ -164,6 +165,15 @@
             gui.add(params, 'altitude', 0, 300).onChange(function () {
                 meshs.forEach(function (mesh) {
                     mesh.setAltitude(params.altitude);
+                });
+            });
+            gui.add(params, 'animateShow');
+        }
+
+        function animateShow() {
+            meshs.forEach(function (mesh) {
+                mesh.animateShow({
+                    duration: 3000
                 });
             });
         }

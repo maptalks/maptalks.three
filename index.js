@@ -300,6 +300,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         meshes.forEach(mesh => {
             if (mesh instanceof BaseObject) {
                 scene.add(mesh.getObject3d());
+                mesh._fire('add', { target: mesh });
             } else if (mesh instanceof THREE.Object3D) {
                 scene.add(mesh);
             }
@@ -321,6 +322,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         meshes.forEach(mesh => {
             if (mesh instanceof BaseObject) {
                 scene.remove(mesh.getObject3d());
+                mesh._fire('remove', { target: mesh });
             } else if (mesh instanceof THREE.Object3D) {
                 scene.remove(mesh);
             }
