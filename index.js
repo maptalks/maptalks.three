@@ -387,12 +387,18 @@ class ThreeLayer extends maptalks.CanvasLayer {
         raycaster.setFromCamera(mouse, camera);
         //set linePrecision for THREE.Line
         raycaster.linePrecision = this._getLinePrecision(this.getMap().getResolution());
-        const children = [];
+        const children = [], hasidentifyChildren = [];
         scene.children.forEach(mesh => {
-            if (mesh.__parent && mesh.__parent.getOptions) {
-                const interactive = mesh.__parent.getOptions().interactive;
+            const parent = mesh.__parent;
+            if (parent && parent.getOptions) {
+                const interactive = parent.getOptions().interactive;
                 if (interactive) {
-                    children.push(mesh);
+                    //If baseobject has its own hit detection
+                    if (parent.identify && maptalks.Util.isFunction(parent.identify)) {
+                        hasidentifyChildren.push(parent);
+                    } else {
+                        children.push(mesh);
+                    }
                 }
             } else if (mesh instanceof THREE.Mesh || mesh instanceof THREE.Group) {
                 children.push(mesh);
@@ -405,6 +411,14 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 let object = intersect.object;
                 object = this._recursionMesh(object);
                 return object.__parent || object;
+            });
+        }
+        if (hasidentifyChildren.length) {
+            hasidentifyChildren.forEach(baseObject => {
+                // baseObject identify
+                if (baseObject.identify(coordinate)) {
+                    baseObjects.push(baseObject);
+                }
             });
         }
         options = maptalks.Util.extend({}, options);
