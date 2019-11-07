@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>fatline test,baseobject identify test</title>
+    <!-- <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script> -->
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.97.0/build/three.min.js"></script>
+    <!--fatline script-->
+    <!-- https://threejs.org/examples/#webgl_lines_fat -->
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.97.0/examples/js/lines/LineSegmentsGeometry.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.97.0/examples/js/lines/LineGeometry.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.97.0/examples/js/lines/WireframeGeometry2.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.97.0/examples/js/lines/LineMaterial.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.97.0/examples/js/lines/LineSegments2.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.97.0/examples/js/lines/Line2.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.97.0/examples/js/lines/Wireframe.js"></script>
+    <!---->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lz-string@1.4.4/libs/lz-string.min.js"></script>
+    <script type="text/javascript" src="../dist/maptalks.three.js"></script>
+    <script type="text/javascript" src="js/geoutil.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 700px;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            center: [13.416935229170008, 52.529564137540376],
+            zoom: 15,
+            pitch: 70,
+            // bearing: 180,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+            // animation: true
+        });
+
+
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            addLines();
+        };
+        threeLayer.addTo(map);
+
+
+        var lines;
+
+        //https://threejs.org/examples/#webgl_lines_fat
+        var material = new THREE.LineMaterial({
+            color: 0x00ffff,
+            side: THREE.BackSide,
+            linewidth: 2 // in pixels
+            // vertexColors: THREE.VertexColors,
+            // dashed: false
+        });
+
+        var highlightmaterial = new THREE.LineMaterial({
+            linewidth: 4,
+            side: THREE.BackSide,
+            color: 'yellow',
+            dashSize: 0.2,
+            gapSize: 0.2,
+            dashed: true
+            // opacity: 0.8,
+        });
+        highlightmaterial.defines.USE_DASH = '';
+
+        function addLines() {
+            fetch('./data/berlin-roads.txt').then(function (res) {
+                return res.text();
+            }).then(function (geojson) {
+                geojson = LZString.decompressFromBase64(geojson);
+                geojson = JSON.parse(geojson);
+
+                var lineStrings = maptalks.GeoJSON.toGeometry(geojson);
+                var timer = 'generate line time';
+                console.time(timer);
+                var list = [];
+                lineStrings.forEach(function (lineString) {
+                    list.push({
+                        lineString,
+                        //geoutil.js lineLength
+                        len: lineLength(lineString)
+                    });
+                });
+                list = list.sort(function (a, b) {
+                    return b.len - a.len
+                });
+                lines = list.slice(0, 200).map(function (d) {
+                    var line = new FatLine(d.lineString, { altitude: 100 }, material, threeLayer);
+
+                    //tooltip test
+                    line.setToolTip(line.getId(), {
+                        showTimeout: 0,
+                        eventsPropagation: true,
+                        dx: 10
+                    });
+
+
+                    //infowindow test
+                    line.setInfoWindow({
+                        content: 'hello world,id:' + line.getId(),
+                        title: 'message',
+                        animationDuration: 0,
+                        autoOpenOn: false
+                    });
+
+
+                    //event test
+                    ['click', 'mouseout', 'mouseover', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].forEach(function (eventType) {
+                        line.on(eventType, function (e) {
+                            console.log(e.type, e);
+                            // console.log(this);
+                            if (e.type === 'mouseout') {
+                                this.setSymbol(material);
+                            }
+                            if (e.type === 'mouseover') {
+                                this.setSymbol(highlightmaterial);
+                            }
+                        });
+                    });
+                    return line;
+                });
+                console.log('lines.length:', lines.length);
+                console.timeEnd(timer);
+                threeLayer.addMesh(lines);
+                threeLayer.config('animation', true);
+            })
+        }
+
+
+        var OPTIONS = {
+            altitude: 0
+        };
+
+        class FatLine extends maptalks.BaseObject {
+            constructor(lineString, options, material, layer) {
+                super();
+                //geoutil.js getLinePosition
+                const { positions } = getLinePosition(lineString, layer);
+
+                options = maptalks.Util.extend({}, OPTIONS, options, { layer, lineString, positions });
+                this._initOptions(options);
+
+                const geometry = new THREE.LineGeometry();
+                geometry.setPositions(positions);
+                const map = layer.getMap();
+                const size = map.getSize();
+                const width = size.width,
+                    height = size.height;
+                material.resolution.set(width, height);
+                const line = new THREE.Line2(geometry, material);
+                line.computeLineDistances();
+                this._createGroup();
+                this.getObject3d().add(line);
+                const { altitude } = options;
+                const z = layer.distanceToVector3(altitude, altitude).x;
+                this.getObject3d().position.z = z;
+            }
+
+
+            setSymbol(material) {
+                if (material && material instanceof THREE.Material) {
+                    material.needsUpdate = true;
+                    const size = this.getMap().getSize();
+                    const width = size.width,
+                        height = size.height;
+                    material.resolution.set(width, height);
+                    this.getObject3d().children[0].material = material;
+                }
+                return this;
+            }
+
+            //test Baseobject customize its identity 
+            identify(coordinate) {
+                const layer = this.getLayer(), size = this.getMap().getSize(),
+                    camera = this.getLayer().getCamera(), positions = this.getOptions().positions, altitude = this.getOptions().altitude;
+                let canvas = layer._testCanvas;
+                if (!canvas) {
+                    canvas = layer._testCanvas = document.createElement('canvas');
+                }
+                canvas.width = size.width;
+                canvas.height = size.height;
+                const context = canvas.getContext('2d');
+
+                const pixels = simplepath.vectors2Pixel(positions, size, camera, altitude, layer);
+                const lineWidth = this.getObject3d().children[0].material.linewidth + 3;
+                simplepath.draw(context, pixels, 'LineString', { lineWidth: lineWidth });
+                const pixel = this.getMap().coordToContainerPoint(coordinate);
+                if (context.isPointInStroke(pixel.x, pixel.y)) {
+                    return true;
+                }
+            }
+        }
+
+
+
+
+        var simplepath = {
+
+            positionsConvert: function (worldPoints, altitude = 0, layer) {
+                const vectors = [];
+                for (let i = 0, len = worldPoints.length; i < len; i += 3) {
+                    let x = worldPoints[i], y = worldPoints[i + 1], z = worldPoints[i + 2];
+                    if (altitude > 0) {
+                        z += layer.distanceToVector3(altitude, altitude).x;
+                    }
+                    vectors.push(new THREE.Vector3(x, y, z));
+                }
+                return vectors;
+            },
+
+            vectors2Pixel: function (worldPoints, size, camera, altitude = 0, layer) {
+                if (!(worldPoints[0] instanceof THREE.Vector3)) {
+                    worldPoints = simplepath.positionsConvert(worldPoints, altitude, layer);
+                }
+                const pixels = worldPoints.map(worldPoint => {
+                    return simplepath.vector2Pixel(worldPoint, size, camera);
+                })
+                return pixels;
+
+            },
+
+            vector2Pixel: function (world_vector, size, camera) {
+                const vector = world_vector.project(camera);
+                const halfWidth = size.width / 2;
+                const halfHeight = size.height / 2;
+                const result = {
+                    x: Math.round(vector.x * halfWidth + halfWidth),
+                    y: Math.round(-vector.y * halfHeight + halfHeight)
+                };
+                return result;
+            },
+
+
+            draw: function (context, data, type, options) {
+                options = options || {};
+                for (var key in options) {
+                    context[key] = options[key];
+                }
+
+                switch (type) {
+                    case 'Circle': {
+                        // var size = options._size || options.size || 20;
+                        // let x = data.x || data[0],
+                        //     y = data.y || data[1];
+                        // context.beginPath();
+                        // context.moveTo(x, y);
+                        // context.arc(x, y, size, 0, Math.PI * 2);
+                        // context.fill();
+                        // context.restore();
+                        break;
+                    }
+                    case 'LineString': {
+                        context.beginPath();
+                        for (var j = 0; j < data.length; j++) {
+                            var _xy = data[j];
+                            let x = _xy.x || _xy[0],
+                                y = _xy.y || _xy[1];
+                            if (j == 0) {
+                                context.moveTo(x, y);
+                            } else {
+                                context.lineTo(x, y);
+                            }
+                            // if(j===data.length-1){
+                            //     context.lineTo(data[0].x,data[0].y);
+                            // }
+                        }
+                        // context.closePath();
+                        context.stroke();
+                        context.restore();
+                        break;
+                    }
+                    default: {
+                        console.error('type' + type + 'is not support now!');
+                    }
+                }
+            }
+        };
+
+
+    </script>
+</body>
+
+</html>
