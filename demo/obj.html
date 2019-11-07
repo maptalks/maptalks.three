@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta content="text/html; charset=utf-8" http-equiv="content-type" />
-  <title>osm buildings demo</title>
+  <title>load obj model</title>
   <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
   <style>
     html,body{
@@ -10,7 +10,7 @@
         height:100%;
         width: 100%;
     }
-    #map { width: 1000px; height: 700px; background-color : #000;}
+    #map { width: 100%; height: 700px; background-color : #000;}
   </style>
 </head>
 <body>
@@ -31,7 +31,7 @@ var map = new maptalks.Map("map",{
       'content' : '<span style="padding:4px;">&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://osmbuilding.org">osmbuilding.org</a></span>'
     },
     baseLayer : new maptalks.TileLayer('tile',{
-        'urlTemplate' : 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png',
+        'urlTemplate' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
         'subdomains'  : ['a','b','c','d']
     })
 });
@@ -64,13 +64,36 @@ threeLayer.prepareToDraw = function (gl, scene, camera) {
                   child.rotation.set(Math.PI * 1 / 2, -Math.PI * 1 / 2, 0);
                 }
             });
-            var v = threeLayer.coordinateToVector3(map.getCenter());
-            object.position.x = v.x;
-            object.position.y = v.y;
-            object.position.z = v.z;
-            scene.add(object);
+            // var v = threeLayer.coordinateToVector3(map.getCenter());
+            // object.position.x = v.x;
+            // object.position.y = v.y;
+            // object.position.z = v.z;
+            // scene.add(object);
+
+            var model=threeLayer.toModel(object,{
+                coordinate:map.getCenter(),
+                altitude:100
+            });
+
+            threeLayer.addMesh(model);
+
+            //tooltip test
+            model.setToolTip('obj model', {
+                    showTimeout: 0,
+                    eventsPropagation: true,
+                    dx: 10
+            });
+
+            model.on('mouseover mouseout',function(e){
+               var scale=1;
+               if(e.type==='mouseover'){
+                 scale=1.5;
+               }
+               this.getObject3d().scale.set(1,1,scale);
+            });
             mtlLoaded = true;
             threeLayer.renderScene();
+            threeLayer.config('animation',true);
         });
     });
 };
