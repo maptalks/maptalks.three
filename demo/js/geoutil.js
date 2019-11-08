@@ -169,7 +169,7 @@ function getLinePosition(lineString, layer) {
 }
 
 
-function getLinesPosition(chunkLines, layer) {
+function getChunkLinesPosition(chunkLines, layer) {
     const positions = [],
         positionsV = [], lnglats = [];
     for (let i = 0, len = chunkLines.length; i < len; i++) {
@@ -198,4 +198,14 @@ function getLinesPosition(chunkLines, layer) {
         positionsV: positionsV,
         lnglats: lnglats
     };
+}
+
+
+function setLineGeometryAttribute(geometry, ps) {
+    const len = ps.length;
+    var positions = geometry.attributes.position.array;
+    for (let i = 0; i < len; i++) {
+        positions[i] = ps[i];
+    }
+    geometry.setDrawRange(0, len / 3);
 }
