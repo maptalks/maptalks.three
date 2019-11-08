@@ -6,6 +6,7 @@ import Line from './src/Line';
 import ExtrudeLine from './src/ExtrudeLine';
 import ExtrudePolygon from './src/ExtrudePolygon';
 import Model from './src/Model';
+import ExtrudeLineTrail from './src/ExtrudeLineTrail';
 
 const options = {
     'renderer': 'gl',
@@ -245,6 +246,19 @@ class ThreeLayer extends maptalks.CanvasLayer {
     }
 
 
+
+    /**
+     *
+     * @param {maptalks.LineString} lineString
+     * @param {*} options
+     * @param {THREE.Material} material
+     */
+    toExtrudeLineTrail(lineString, options, material) {
+        return new ExtrudeLineTrail(lineString, options, material, this);
+    }
+
+
+
     clearMesh() {
         const scene = this.getScene();
         if (!scene) {
@@ -312,6 +326,9 @@ class ThreeLayer extends maptalks.CanvasLayer {
             if (mesh instanceof BaseObject) {
                 scene.add(mesh.getObject3d());
                 mesh._fire('add', { target: mesh });
+                if (mesh._animation && maptalks.Util.isFunction(mesh._animation)) {
+                    this._animationBaseObjectMap[mesh.getObject3d().uuid] = mesh;
+                }
             } else if (mesh instanceof THREE.Object3D) {
                 scene.add(mesh);
             }
@@ -334,6 +351,9 @@ class ThreeLayer extends maptalks.CanvasLayer {
             if (mesh instanceof BaseObject) {
                 scene.remove(mesh.getObject3d());
                 mesh._fire('remove', { target: mesh });
+                if (mesh._animation && maptalks.Util.isFunction(mesh._animation)) {
+                    delete this._animationBaseObjectMap[mesh.getObject3d().uuid];
+                }
             } else if (mesh instanceof THREE.Object3D) {
                 scene.remove(mesh);
             }
@@ -530,6 +550,9 @@ class ThreeLayer extends maptalks.CanvasLayer {
             map.on(event, this._identifyBaseObjectEvents, this);
         });
         this._needsUpdate = true;
+        if (!this._animationBaseObjectMap) {
+            this._animationBaseObjectMap = {};
+        }
         return this;
     }
 
@@ -660,6 +683,13 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
     }
 
     renderScene() {
+        const layer = this.layer;
+        if (layer._animationBaseObjectMap) {
+            for (let uuid in layer._animationBaseObjectMap) {
+                const baseObject = layer._animationBaseObjectMap[uuid];
+                baseObject._animation();
+            }
+        }
         this._syncCamera();
         this.context.render(this.scene, this.camera);
         this.completeRender();

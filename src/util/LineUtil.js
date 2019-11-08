@@ -64,3 +64,67 @@ export function getExtrudeLineGeometry(lineString, lineWidth = 1, depth = 1, lay
     geometry.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
     return geometry;
 }
+
+/**
+ * 
+ * @param {Array[Array]} chunkLines 
+ * @param {*} layer 
+ */
+export function getChunkLinesPosition(chunkLines, layer) {
+    const positions = [],
+        positionsV = [], lnglats = [];
+    for (let i = 0, len = chunkLines.length; i < len; i++) {
+        const line = chunkLines[i];
+        for (let j = 0, len1 = line.length; j < len1; j++) {
+            const lnglat = line[j];
+            if (lnglats.length > 0) {
+                const key = lnglat.join(',').toString();
+                const key1 = lnglats[lnglats.length - 1].join(',').toString();
+                if (key !== key1) {
+                    lnglats.push(lnglat);
+                }
+            } else {
+                lnglats.push(lnglat);
+            }
+        }
+    }
+    const z = 0;
+    lnglats.forEach(lnglat => {
+        const v = layer.coordinateToVector3(lnglat, z);
+        positionsV.push(v);
+        positions.push(v.x, v.y, v.z);
+    });
+    return {
+        positions: positions,
+        positionsV: positionsV,
+        lnglats: lnglats
+    };
+}
+
+
+/**
+ * 
+ * @param {*} lineString 
+ * @param {*} lineWidth 
+ * @param {*} depth 
+ * @param {*} layer 
+ */
+export function getExtrudeLineParams(lineString, lineWidth = 1, depth = 1, layer) {
+    const positions = getLinePosition(lineString, layer).positionsV;
+    const ps = positions.map(p => {
+        return [p.x, p.y];
+    })
+    const {
+        indices,
+        position,
+        normal
+    } = extrudePolyline([ps], {
+        lineWidth: lineWidth,
+        depth: depth
+    });
+    return {
+        position: position,
+        normal: normal,
+        indices: indices
+    }
+}
