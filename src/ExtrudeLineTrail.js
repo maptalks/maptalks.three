@@ -15,7 +15,7 @@ const MAX_POINTS = 1000;
  * @param {*} norls 
  * @param {*} indices 
  */
-function setExtrudeineGeometryAttribute(geometry, ps, norls, indices) {
+function setExtrudeLineGeometryAttribute(geometry, ps, norls, indices) {
     const len = ps.length;
     geometry.attributes.normal.count = len;
     geometry.attributes.position.count = len;
@@ -71,7 +71,7 @@ class ExtrudeLineTrail extends BaseObject {
         const lineWidth = layer.distanceToVector3(width, width).x;
         const depth = layer.distanceToVector3(height, height).x;
         const params = getExtrudeLineParams(positions, lineWidth, depth, layer);
-        setExtrudeineGeometryAttribute(geometry, params.position, params.normal, params.indices);
+        setExtrudeLineGeometryAttribute(geometry, params.position, params.normal, params.indices);
 
         this._createMesh(geometry, material);
         const z = layer.distanceToVector3(altitude, altitude).x;
@@ -123,7 +123,7 @@ class ExtrudeLineTrail extends BaseObject {
                 p = getExtrudeLineParams(ps, lineWidth, depth, layer);
                 geometries[i] = p;
             }
-            setExtrudeineGeometryAttribute(this.getObject3d().geometry, p.position, p.normal, p.indices);
+            setExtrudeLineGeometryAttribute(this.getObject3d().geometry, p.position, p.normal, p.indices);
             this.getObject3d().geometry.attributes.position.needsUpdate = true;
             this.getObject3d().geometry.attributes.normal.needsUpdate = true;
         }
