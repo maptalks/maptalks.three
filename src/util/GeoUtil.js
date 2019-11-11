@@ -4,7 +4,7 @@
 
 const PI = Math.PI / 180;
 const R = 6378137;
-const MINLENGTH = 10;
+const MINLENGTH = 1;
 
 
 function formatLineArray(polyline) {
