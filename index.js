@@ -41,6 +41,8 @@ const EVENTS = [
     'touchend'
 ];
 
+const MATRIX4 = new THREE.Matrix4();
+
 /**
  * A Layer to render with THREE.JS (http://threejs.org), the most popular library for WebGL. <br>
  *
@@ -134,7 +136,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         const center = polygon.getCenter();
         const centerPt = this.coordinateToVector3(center);
         const shell = polygon.getShell();
-        const outer = shell.map(c => this.coordinateToVector3(c).sub(centerPt)).reverse();
+        const outer = shell.map(c => this.coordinateToVector3(c).sub(centerPt));
         const shape = new THREE.Shape(outer);
         const holes = polygon.getHoles();
 
@@ -672,8 +674,10 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
 
     _syncCamera() {
         const map = this.getMap();
-        this.camera.matrix.elements = map.cameraWorldMatrix;
-        this.camera.projectionMatrix.elements = map.projMatrix;
+        const camera = this.camera;
+        camera.matrix.elements = map.cameraWorldMatrix;
+        camera.projectionMatrix.elements = map.projMatrix;
+        camera.projectionMatrixInverse.elements = MATRIX4.getInverse(camera.projectionMatrix).elements;
     }
 
     _createGLContext(canvas, options) {
