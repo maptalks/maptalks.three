@@ -82,10 +82,10 @@ class ExtrudeLineTrail extends BaseObject {
             chunkLines,
             geometries: [],
             layer,
-            trail,
+            trail: Math.max(1, trail),
             lineWidth,
             depth,
-            speed,
+            speed: Math.min(1, speed),
             idx: 0,
             loaded: false
         };
@@ -111,7 +111,7 @@ class ExtrudeLineTrail extends BaseObject {
 
 
     _animation() {
-        const { index, geometries, speed, idx, chunkLines, trail, lineWidth, depth, loaded } = this._params;
+        const { index, geometries, speed, idx, chunkLines, trail, lineWidth, depth, loaded, layer } = this._params;
         if (!loaded) return;
         const i = Math.round(index);
         if (i > idx) {
