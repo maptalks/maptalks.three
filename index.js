@@ -566,6 +566,17 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return this;
     }
 
+    _callbackBaseObjectAnimation() {
+        const layer = this;
+        if (layer._animationBaseObjectMap) {
+            for (let uuid in layer._animationBaseObjectMap) {
+                const baseObject = layer._animationBaseObjectMap[uuid];
+                baseObject._animation();
+            }
+        }
+        return this;
+    }
+
     /**
      * To make map's 2d point's 1 pixel euqal with 1 pixel on XY plane in THREE's scene:
      * 1. fov is 90 and camera's z is height / 2 * scale,
@@ -683,13 +694,7 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
     }
 
     renderScene() {
-        const layer = this.layer;
-        if (layer._animationBaseObjectMap) {
-            for (let uuid in layer._animationBaseObjectMap) {
-                const baseObject = layer._animationBaseObjectMap[uuid];
-                baseObject._animation();
-            }
-        }
+        this.layer._callbackBaseObjectAnimation();
         this._syncCamera();
         this.context.render(this.scene, this.camera);
         this.completeRender();
