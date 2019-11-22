@@ -17,11 +17,12 @@ function toShape(polygon, layer) {
         shell = polygon.getShell();
         holes = polygon.getHoles();
     }
-    const outer = shell.map(c => layer.coordinateToVector3(c));
+    const centerPt = layer.coordinateToVector3(polygon.getCenter());
+    const outer = shell.map(c => layer.coordinateToVector3(c).sub(centerPt));
     const shape = new THREE.Shape(outer);
     if (holes && holes.length > 0) {
         shape.holes = holes.map(item => {
-            const pts = item.map(c => layer.coordinateToVector3(c));
+            const pts = item.map(c => layer.coordinateToVector3(c).sub(centerPt));
             return new THREE.Shape(pts);
         });
     }
@@ -108,8 +109,10 @@ class ExtrudePolygon extends BaseObject {
             material.vertexColors = THREE.VertexColors;
         }
         this._createMesh(geometry, material);
+        const center = polygon.getCenter();
         const z = layer.distanceToVector3(altitude, altitude).x;
-        this.getObject3d().position.z = z;
+        const v = layer.coordinateToVector3(center, z);
+        this.getObject3d().position.copy(v);
     }
 
     /**

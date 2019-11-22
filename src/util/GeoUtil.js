@@ -1,13 +1,11 @@
-
 /**
- * 
- * this is for test
- * 
+ * provide a simple geo function
  */
 
 const PI = Math.PI / 180;
 const R = 6378137;
 const MINLENGTH = 1;
+
 
 function formatLineArray(polyline) {
     const lnglats = polyline.getCoordinates();
@@ -20,7 +18,9 @@ function degreesToRadians(d) {
     return d * PI;
 }
 
-function distance(c1, c2) {
+
+
+export function distance(c1, c2) {
     if (!c1 || !c2) {
         return 0;
     }
@@ -39,8 +39,12 @@ function distance(c1, c2) {
     return Math.round(b * 1E5) / 1E5;
 }
 
-function lineLength(polyline) {
-    const lnglatArray = formatLineArray(polyline);
+
+export function lineLength(polyline) {
+    let lnglatArray = polyline;
+    if (!Array.isArray(polyline)) {
+        lnglatArray = formatLineArray(polyline);
+    }
     let l = 0;
     for (let i = 0, len = lnglatArray.length; i < len - 1; i++) {
         l += distance(lnglatArray[i], lnglatArray[i + 1]);
@@ -48,12 +52,6 @@ function lineLength(polyline) {
     return l;
 }
 
-function getLngLatKey(lnglat) {
-    if (!Array.isArray(lnglat)) {
-        lnglat = lnglat.toArray();
-    }
-    return lnglat.join('-').toString();
-}
 
 function getPercentLngLat(l, length) {
     const { len, c1, c2 } = l;
@@ -65,7 +63,15 @@ function getPercentLngLat(l, length) {
     return [lng, lat];
 }
 
-function lineSlice(cs, lineChunkLength = 10) {
+
+
+/**
+ * This is not an accurate line segment cutting method, but rough, in order to speed up the calculation,
+ * the correct cutting algorithm can be referred to. http://turfjs.org/docs/#lineChunk
+ * @param {*} cs 
+ * @param {*} lineChunkLength 
+ */
+export function lineSlice(cs, lineChunkLength = 10) {
     lineChunkLength = Math.max(lineChunkLength, MINLENGTH);
     if (!Array.isArray(cs)) {
         cs = formatLineArray(cs);
@@ -96,9 +102,10 @@ function lineSlice(cs, lineChunkLength = 10) {
             ]
         }
     }
+
     const LNGLATSLEN = list.length;
     const first = list[0];
-    // const last = list[list.length - 1];
+
     let idx = 0;
     let currentLngLat;
     let currentLen = 0;
@@ -136,82 +143,4 @@ function lineSlice(cs, lineChunkLength = 10) {
         }
     }
     return lines;
-}
-
-
-function getLinePosition(lineString, layer) {
-    const positions = [];
-    const positionsV = [];
-    if (Array.isArray(lineString) && lineString[0] instanceof THREE.Vector3) {
-        for (let i = 0, len = lineString.length; i < len; i++) {
-            const v = lineString[i];
-            positions.push(v.x, v.y, v.z);
-            positionsV.push(v);
-        }
-    } else {
-        if (Array.isArray(lineString)) lineString = new maptalks.LineString(lineString);
-        if (!lineString || !(lineString instanceof maptalks.LineString)) return;
-        const z = 0;
-        const coordinates = lineString.getCoordinates();
-        for (let i = 0, len = coordinates.length; i < len; i++) {
-            let coordinate = coordinates[i];
-            if (Array.isArray(coordinate))
-                coordinate = new maptalks.Coordinate(coordinate);
-            const v = layer.coordinateToVector3(coordinate, z);
-            positions.push(v.x, v.y, v.z);
-            positionsV.push(v);
-        }
-    }
-    return {
-        positions: positions,
-        positionsV: positionsV
-    }
-}
-
-
-function getChunkLinesPosition(chunkLines, layer, positionMap) {
-    const positions = [],
-        positionsV = [], lnglats = [];
-    for (let i = 0, len = chunkLines.length; i < len; i++) {
-        const line = chunkLines[i];
-        for (let j = 0, len1 = line.length; j < len1; j++) {
-            const lnglat = line[j];
-            if (lnglats.length > 0) {
-                const key = lnglat.join(',').toString();
-                const key1 = lnglats[lnglats.length - 1].join(',').toString();
-                if (key !== key1) {
-                    lnglats.push(lnglat);
-                }
-            } else {
-                lnglats.push(lnglat);
-            }
-        }
-    }
-    const z = 0;
-    lnglats.forEach(lnglat => {
-        let v;
-        const key = lnglat.join(',').toString();
-        if (positionMap && positionMap[key]) {
-            v = positionMap[key];
-        } else {
-            v = layer.coordinateToVector3(lnglat, z);
-        }
-        positionsV.push(v);
-        positions.push(v.x, v.y, v.z);
-    });
-    return {
-        positions: positions,
-        positionsV: positionsV,
-        lnglats: lnglats
-    };
-}
-
-
-function setLineGeometryAttribute(geometry, ps) {
-    const len = ps.length;
-    var positions = geometry.attributes.position.array;
-    for (let i = 0; i < len; i++) {
-        positions[i] = ps[i];
-    }
-    geometry.setDrawRange(0, len / 3);
 }

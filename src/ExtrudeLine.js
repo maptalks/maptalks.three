@@ -26,8 +26,10 @@ class ExtrudeLine extends BaseObject {
         this._createMesh(geometry, material);
 
         const { altitude } = options;
+        const center = lineString.getCenter();
         const z = layer.distanceToVector3(altitude, altitude).x;
-        this.getObject3d().position.z = z;
+        const v = layer.coordinateToVector3(center, z);
+        this.getObject3d().position.copy(v);
     }
 }
 
