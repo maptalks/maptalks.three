@@ -23,11 +23,13 @@ export function getLinePosition(lineString, layer) {
         if (!lineString || !(lineString instanceof maptalks.LineString)) return;
         const z = 0;
         const coordinates = lineString.getCoordinates();
+        const centerPt = layer.coordinateToVector3(lineString.getCenter());
         for (let i = 0, len = coordinates.length; i < len; i++) {
             let coordinate = coordinates[i];
-            if (Array.isArray(coordinate))
+            if (Array.isArray(coordinate)) {
                 coordinate = new maptalks.Coordinate(coordinate);
-            const v = layer.coordinateToVector3(coordinate, z);
+            }
+            const v = layer.coordinateToVector3(coordinate, z).sub(centerPt);
             positions.push(v.x, v.y, v.z);
             positionsV.push(v);
         }
@@ -74,7 +76,7 @@ export function getExtrudeLineGeometry(lineString, lineWidth = 1, depth = 1, lay
  * @param {Array[Array]} chunkLines 
  * @param {*} layer 
  */
-export function getChunkLinesPosition(chunkLines, layer, positionMap) {
+export function getChunkLinesPosition(chunkLines, layer, positionMap, centerPt) {
     const positions = [],
         positionsV = [], lnglats = [];
     for (let i = 0, len = chunkLines.length; i < len; i++) {
@@ -100,7 +102,7 @@ export function getChunkLinesPosition(chunkLines, layer, positionMap) {
         if (positionMap && positionMap[key]) {
             v = positionMap[key];
         } else {
-            v = layer.coordinateToVector3(lnglat, z);
+            v = layer.coordinateToVector3(lnglat, z).sub(centerPt);
         }
         positionsV.push(v);
         positions.push(v.x, v.y, v.z);
