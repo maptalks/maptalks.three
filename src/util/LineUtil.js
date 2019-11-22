@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import * as maptalks from 'maptalks';
 import { extrudePolyline } from 'geometry-extrude';
 
+const COMMA = ',';
+
 /**
  *
  * @param {maptalks.LineString} lineString
@@ -70,7 +72,7 @@ export function getExtrudeLineGeometry(lineString, lineWidth = 1, depth = 1, lay
  * @param {Array[Array]} chunkLines 
  * @param {*} layer 
  */
-export function getChunkLinesPosition(chunkLines, layer) {
+export function getChunkLinesPosition(chunkLines, layer, positionMap) {
     const positions = [],
         positionsV = [], lnglats = [];
     for (let i = 0, len = chunkLines.length; i < len; i++) {
@@ -78,8 +80,8 @@ export function getChunkLinesPosition(chunkLines, layer) {
         for (let j = 0, len1 = line.length; j < len1; j++) {
             const lnglat = line[j];
             if (lnglats.length > 0) {
-                const key = lnglat.join(',').toString();
-                const key1 = lnglats[lnglats.length - 1].join(',').toString();
+                const key = lnglat.join(COMMA).toString();
+                const key1 = lnglats[lnglats.length - 1].join(COMMA).toString();
                 if (key !== key1) {
                     lnglats.push(lnglat);
                 }
@@ -90,7 +92,13 @@ export function getChunkLinesPosition(chunkLines, layer) {
     }
     const z = 0;
     lnglats.forEach(lnglat => {
-        const v = layer.coordinateToVector3(lnglat, z);
+        let v;
+        const key = lnglat.join(COMMA).toString();
+        if (positionMap && positionMap[key]) {
+            v = positionMap[key];
+        } else {
+            v = layer.coordinateToVector3(lnglat, z);
+        }
         positionsV.push(v);
         positions.push(v.x, v.y, v.z);
     });

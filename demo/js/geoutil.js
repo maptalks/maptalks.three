@@ -169,7 +169,7 @@ function getLinePosition(lineString, layer) {
 }
 
 
-function getChunkLinesPosition(chunkLines, layer) {
+function getChunkLinesPosition(chunkLines, layer, positionMap) {
     const positions = [],
         positionsV = [], lnglats = [];
     for (let i = 0, len = chunkLines.length; i < len; i++) {
@@ -189,7 +189,13 @@ function getChunkLinesPosition(chunkLines, layer) {
     }
     const z = 0;
     lnglats.forEach(lnglat => {
-        const v = layer.coordinateToVector3(lnglat, z);
+        let v;
+        const key = lnglat.join(',').toString();
+        if (positionMap && positionMap[key]) {
+            v = positionMap[key];
+        } else {
+            v = layer.coordinateToVector3(lnglat, z);
+        }
         positionsV.push(v);
         positions.push(v.x, v.y, v.z);
     });
