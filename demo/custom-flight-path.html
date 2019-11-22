@@ -24,6 +24,8 @@
     src="https://cdn.jsdelivr.net/npm/three@0.104.0/examples/js/postprocessing/UnrealBloomPass.js"></script> -->
     <script type="text/javascript" src="./js/UnrealBloomPass.js"></script>
     <script type="text/javascript"
+    src="https://cdn.jsdelivr.net/npm/three-text2d@0.5.3/dist/three-text2d.min.js"></script>
+    <script type="text/javascript"
         src="https://cdn.jsdelivr.net/npm/three@0.104.0/examples/js/libs/stats.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lz-string@1.4.4/libs/lz-string.min.js"></script>
     <script type="text/javascript" src="../dist/maptalks.three.js"></script>
@@ -219,7 +221,29 @@
                 threeLayer.addMesh(lineTrails);
                 initGui();
                 animation();
+                addNames();
             })
+        }
+
+
+        function addNames() {
+            const data = {
+                London: [-0.12190618249496765, 51.498212339984065],
+                Brussels: [4.373738640091574, 50.840186657638895],
+                Paris: [2.3800954364398876, 48.85267686101494],
+                Dublin: [-6.299583119285558, 53.35018250339746],
+                Berlin: [13.308881922509272, 52.53101222434654],
+
+                Luxembourg: [6.105640274782786, 49.63130280459123],
+                Portugal: [-8.376232416059452, 40.21542351256707],
+                Lyon: [4.841278531087482, 45.75764355978012]
+            };
+
+            const textSprite = [];
+            for (let name in data) {
+                textSprite.push(new TextSprite(data[name], { text: name, altitude: 50000, color: '#000', fontSize: 20 }, threeLayer));
+            }
+            threeLayer.addMesh(textSprite);
         }
 
         function initGui() {
@@ -396,7 +420,7 @@
             // rgb(5,203,87)
 
             var views = [
-                { "center": [0.12234404790478948, 50.47416194213096], "zoom": 8, "pitch": 66.40000000000003, "bearing": -18.600000000000136 },
+            { "center": [0.12234404790478948, 50.47416194213096], "zoom": 8, "pitch": 66.40000000000003, "bearing": -18.600000000000136 },
                 { "center": [1.414110694990427, 50.75002478818257], "zoom": 8, "pitch": 68.39999999999999, "bearing": -72.60000000000002 },
                 { "center": [0.13514677448438306, 51.258067190769765], "zoom": 7, "pitch": 53.20000000000006, "bearing": 10.800000000000296 },
                 { "center": [-0.2808086173964739, 51.38889643903471], "zoom": 10, "pitch": 58.000000000000014, "bearing": 15.600000000000366 },
@@ -404,17 +428,40 @@
                 { "center": [-0.2559958978932855, 50.60467507510438], "zoom": 9, "pitch": 80, "bearing": 2.469536718751783 },
                 { "center": [0.9590619448215421, 51.454745267786365], "zoom": 7, "pitch": 62.40000000000004, "bearing": 14.469536718751781 },
                 { "center": [-0.17461768215309803, 51.520712574261466], "zoom": 11, "pitch": 77.2, "bearing": -82.67740171874891 },
-                { "center": [0.41823033211323946, 51.90835107971574], "zoom": 7, "pitch": 68.80000000000004, "bearing": -13.677401718749024 }
+                { "center": [0.41823033211323946, 51.90835107971574], "zoom": 7, "pitch": 68.80000000000004, "bearing": -13.677401718749024 },
+                { "center": [-0.24528394788546848, 51.652237097568985], "zoom": 9, "pitch": 51.20000000000004, "bearing": -4.7999999999999545 },
+
+                { "center": [-1.1683925855518282, 51.61410423820891], "zoom": 10, "pitch": 51.20000000000004, "bearing": -4.7999999999999545 },
+
+                { "center": [-2.1910111630774054, 51.76228399264701], "zoom": 10, "pitch": 51.20000000000004, "bearing": -4.7999999999999545 },
+
+                { "center": [-3.541184386569512, 51.94509399346546], "zoom": 10, "pitch": 51.20000000000004, "bearing": -4.7999999999999545 },
+
+                { "center": [-5.025558284411318, 52.067527703993136], "zoom": 10, "pitch": 51.20000000000004, "bearing": -4.7999999999999545 },
+                { "center": [-6.429497484372632, 52.304969478675474], "zoom": 10, "pitch": 51.20000000000004, "bearing": -4.7999999999999545 },
+
+                { "center": [-7.847854296027322, 52.635604839207275], "zoom": 10, "pitch": 51.20000000000004, "bearing": -4.7999999999999545 },
+
+                { "center": [-9.434685301967306, 53.28921557642545], "zoom": 10, "pitch": 51.20000000000004, "bearing": -4.7999999999999545 },
+
+                { "center": [-0.24528394788546848, 51.652237097568985], "zoom": 7, "pitch": 51.20000000000004, "bearing": -4.7999999999999545 }
             ];
 
             var idx = 0;
 
             function mapFly() {
                 if (idx < views.length) {
+                    console.log(idx);
                     if (idx === 3) {
                         tileLayerOpacityControl.setValue(0.2);
                         lineColorControl.setValue('rgb(255,45,0)');
                         lineOpacityControl.setValue(0.23);
+                    }
+                    if (idx === 11) {
+                        lineOpacityControl.setValue(1);
+                    }
+                    if (idx === 17) {
+                        lineOpacityControl.setValue(0.16);
                     }
                     map.animateTo(views[idx], {
                         duration: 5000
@@ -572,6 +619,53 @@
                 }
                 this._params.index += speed;
             }
+        }
+
+
+
+        //default values
+        var OPTIONS2 = {
+            fontSize: 15,
+            altitude: 0,
+            color: '#fff',
+            text: 'hello'
+        };
+
+        /**
+         * custom component
+         * We can think of it as a point.
+         * */
+
+        class TextSprite extends maptalks.BaseObject {
+            constructor(coordinate, options, layer) {
+                options = maptalks.Util.extend({}, OPTIONS2, options, { layer, coordinate });
+                super();
+                //Initialize internal configuration
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L135
+                this._initOptions(options);
+                const { altitude, fontSize, color, text } = options;
+
+
+                //Initialize internal object3d
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L140
+                this._createGroup();
+                const textsprite = new THREE_Text2D.SpriteText2D(text, { align: THREE_Text2D.textAlign.center, font: `${fontSize * 2}px Arial`, fillStyle: color, antialias: false });
+                this.getObject3d().add(textsprite);
+
+                //set object3d position
+                const z = layer.distanceToVector3(altitude, altitude).x;
+                const position = layer.coordinateToVector3(coordinate, z);
+                this.getObject3d().position.copy(position);
+            }
+
+
+
+            _animation() {
+                const scale = this.getMap().getScale() / 2000 / 15 * this.getOptions().fontSize;
+                this.getObject3d().children[0].scale.set(scale, scale, scale);
+            }
+
+
         }
 
 
