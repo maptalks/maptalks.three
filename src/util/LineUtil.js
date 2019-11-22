@@ -49,9 +49,11 @@ export function getLinePosition(lineString, layer) {
  */
 export function getExtrudeLineGeometry(lineString, lineWidth = 1, depth = 1, layer) {
     const positions = getLinePosition(lineString, layer).positionsV;
-    const ps = positions.map(p => {
-        return [p.x, p.y];
-    })
+    const ps = [];
+    for (let i = 0, len = positions.length; i < len; i++) {
+        const p = positions[i];
+        ps.push([p.x, p.y]);
+    }
     const {
         indices,
         position,
@@ -91,7 +93,8 @@ export function getChunkLinesPosition(chunkLines, layer, positionMap) {
         }
     }
     const z = 0;
-    lnglats.forEach(lnglat => {
+    for (let i = 0, len = lnglats.length; i < len; i++) {
+        const lnglat = lnglats[i];
         let v;
         const key = lnglat.join(COMMA).toString();
         if (positionMap && positionMap[key]) {
@@ -101,7 +104,7 @@ export function getChunkLinesPosition(chunkLines, layer, positionMap) {
         }
         positionsV.push(v);
         positions.push(v.x, v.y, v.z);
-    });
+    }
     return {
         positions: positions,
         positionsV: positionsV,
@@ -119,9 +122,11 @@ export function getChunkLinesPosition(chunkLines, layer, positionMap) {
  */
 export function getExtrudeLineParams(lineString, lineWidth = 1, depth = 1, layer) {
     const positions = getLinePosition(lineString, layer).positionsV;
-    const ps = positions.map(p => {
-        return [p.x, p.y];
-    })
+    const ps = [];
+    for (let i = 0, len = positions.length; i < len; i++) {
+        const p = positions[i];
+        ps.push([p.x, p.y]);
+    }
     const {
         indices,
         position,

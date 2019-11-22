@@ -25,9 +25,9 @@ function setExtrudeLineGeometryAttribute(geometry, ps, norls, indices) {
         positions[i] = ps[i];
         normals[i] = norls[i];
     }
-    geometry.index.array = new Uint16Array(indices.length);
+    // geometry.index.array = new Uint16Array(indices.length);
     geometry.index.count = indices.length;
-    geometry.index.needsUpdate = true;
+    // geometry.index.needsUpdate = true;
     for (let i = 0, len1 = indices.length; i < len1; i++) {
         geometry.index.array[i] = indices[i];
     }
@@ -60,14 +60,16 @@ class ExtrudeLineTrail extends BaseObject {
 
         //cache position for  faster computing,reduce double counting
         const positionMap = {};
-        chunkLines.forEach(chunkLine => {
-            chunkLine.forEach(lnglat => {
+        for (let i = 0, len = chunkLines.length; i < len; i++) {
+            const chunkLine = chunkLines[i];
+            for (let j = 0, len1 = chunkLine.length; j < len1; j++) {
+                const lnglat = chunkLine[j];
                 const key = lnglat.join(',').toString();
                 if (!positionMap[key]) {
                     positionMap[key] = layer.coordinateToVector3(lnglat);
                 }
-            });
-        });
+            }
+        }
 
         const positions = getChunkLinesPosition(chunkLines.slice(0, 1), layer, positionMap).positionsV;
 
@@ -75,9 +77,10 @@ class ExtrudeLineTrail extends BaseObject {
         const geometry = new THREE.BufferGeometry();
         const ps = new Float32Array(MAX_POINTS * 3); // 3 vertices per point
         const norls = new Float32Array(MAX_POINTS * 3); // 3 vertices per point
+        const inds = new Uint16Array(MAX_POINTS);
         geometry.addAttribute('position', new THREE.BufferAttribute(ps, 3).setDynamic(true));
         geometry.addAttribute('normal', new THREE.BufferAttribute(norls, 3).setDynamic(true));
-        geometry.setIndex(new THREE.BufferAttribute(undefined, 1));
+        geometry.setIndex(new THREE.BufferAttribute(inds, 1));
 
 
         const lineWidth = layer.distanceToVector3(width, width).x;
@@ -103,7 +106,7 @@ class ExtrudeLineTrail extends BaseObject {
             positionMap
         };
         this._init(this._params);
-
+        
     }
 
     /**
@@ -130,6 +133,7 @@ class ExtrudeLineTrail extends BaseObject {
         if (i > idx) {
             this._params.idx++;
             let p = geometries[i];
+            //if not init, this is will running
             if (!p) {
                 const lines = chunkLines.slice(i, i + trail);
                 const ps = getChunkLinesPosition(lines, layer, positionMap).positionsV;
@@ -139,6 +143,7 @@ class ExtrudeLineTrail extends BaseObject {
             setExtrudeLineGeometryAttribute(this.getObject3d().geometry, p.position, p.normal, p.indices);
             this.getObject3d().geometry.attributes.position.needsUpdate = true;
             this.getObject3d().geometry.attributes.normal.needsUpdate = true;
+            this.getObject3d().geometry.index.needsUpdate = true;
         }
         if (index >= chunkLines.length - 1) {
             this._params.index = -1;
