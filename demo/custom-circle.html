@@ -89,7 +89,7 @@
 
             var material = new THREE.MeshPhongMaterial({
                 map: texture,
-                side: THREE.DoubleSide,
+                // side: THREE.DoubleSide,
                 transparent: true
             });
             return material;
@@ -249,7 +249,7 @@
                 const z = layer.distanceToVector3(altitude, altitude).x;
                 const position = layer.coordinateToVector3(coordinate, z);
                 this.getObject3d().position.copy(position);
-                this.getObject3d().rotation.x = -Math.PI;
+                // this.getObject3d().rotation.x = -Math.PI;
             }
 
 
