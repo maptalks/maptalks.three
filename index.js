@@ -520,7 +520,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                     }
                     baseObject.openToolTip(coordinate);
                 } else {
-                    console.warn(baseObject, 'is not BaseObject');
+                    // console.warn(baseObject, 'is not BaseObject');
                 }
             });
         } else {
@@ -535,7 +535,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                         baseObject.openInfoWindow(coordinate);
                     }
                 } else {
-                    console.warn(baseObject, 'is not BaseObject');
+                    // console.warn(baseObject, 'is not BaseObject');
                 }
             });
         }

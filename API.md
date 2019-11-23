@@ -697,11 +697,3 @@ The value of BaseObject's object3d attribute is three.js. You can perform releva
 
 In theory, you can customize any graphics component you need.
 Of course, it requires you to be familiar with three.js
-
-
-
-## Tips
-
-There is no sharing of WebGL context between different threelayer layers, so you'd better complete the rendering of all graphics on one threelayer layer.
-
-Because the normal 3D relationship rendering cannot be maintained between multiple threelayer layers at present

@@ -691,11 +691,3 @@ BaseObject的object3d属性值为three.js原生对象。可以对其执行相关
 
 理论上，您可以自定义所需的任何图形组件
 当然，它要求您熟悉three.js
-
-
-
-## 提示
-
-不同threelayer图层之间没有WebGL上下文共享，因此最好在一个threelayer图层上完成所有图形的呈现。
-
-因为目前多个threelayer图层之间无法维持正常的三维关系渲染
