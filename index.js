@@ -519,9 +519,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                         tooltip.addTo(baseObject);
                     }
                     baseObject.openToolTip(coordinate);
-                } else {
-                    // console.warn(baseObject, 'is not BaseObject');
-                }
+                } 
             });
         } else {
             baseObjects.forEach(baseObject => {
@@ -534,8 +532,6 @@ class ThreeLayer extends maptalks.CanvasLayer {
                         }
                         baseObject.openInfoWindow(coordinate);
                     }
-                } else {
-                    // console.warn(baseObject, 'is not BaseObject');
                 }
             });
         }
