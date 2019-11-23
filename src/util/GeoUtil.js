@@ -11,7 +11,7 @@ function formatLineArray(polyline) {
     const lnglats = polyline.getCoordinates();
     return lnglats.map(lnglat => {
         return lnglat.toArray();
-    })
+    });
 }
 
 function degreesToRadians(d) {
@@ -68,8 +68,8 @@ function getPercentLngLat(l, length) {
 /**
  * This is not an accurate line segment cutting method, but rough, in order to speed up the calculation,
  * the correct cutting algorithm can be referred to. http://turfjs.org/docs/#lineChunk
- * @param {*} cs 
- * @param {*} lineChunkLength 
+ * @param {*} cs
+ * @param {*} lineChunkLength
  */
 export function lineSlice(cs, lineChunkLength = 10) {
     lineChunkLength = Math.max(lineChunkLength, MINLENGTH);
@@ -99,7 +99,7 @@ export function lineSlice(cs, lineChunkLength = 10) {
         if (list[0].len <= lineChunkLength) {
             return [
                 [list[0].c1, list[0].c2]
-            ]
+            ];
         }
     }
 
@@ -121,7 +121,7 @@ export function lineSlice(cs, lineChunkLength = 10) {
             }
             idx++;
         }
-        if (currentLen == lineChunkLength) {
+        if (currentLen === lineChunkLength) {
             lls.push(c2);
             currentLen = 0;
             lines.push(lls);

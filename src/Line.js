@@ -20,7 +20,7 @@ const OPTIONS = {
 };
 
 /**
- * 
+ *
  */
 class Line extends BaseObject {
     constructor(lineString, options, material, layer) {

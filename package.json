@@ -16,7 +16,7 @@
     "build-dev": "rollup -c rollup.config.js",
     "preversion": "npm run lint",
     "version": "npm run build && git add -A dist",
-    "lint": "eslint index.js test/**/*.js",
+    "lint": "eslint index.js src/**/*.js test/**/*.js",
     "prepublish": "npm run lint && npm run build"
   },
   "devDependencies": {

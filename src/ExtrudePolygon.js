@@ -3,9 +3,9 @@ import * as THREE from 'three';
 import BaseObject from './BaseObject';
 
 /**
- * 
- * @param {maptalks.Polygon} polygon 
- * @param {*} layer 
+ *
+ * @param {maptalks.Polygon} polygon
+ * @param {*} layer
  */
 function toShape(polygon, layer) {
     let shell, holes;
@@ -30,10 +30,10 @@ function toShape(polygon, layer) {
 }
 
 /**
- * 
- * @param {maptalks.Polygon|maptalks.MultiPolygon} polygon 
- * @param {*} height 
- * @param {*} layer 
+ *
+ * @param {maptalks.Polygon|maptalks.MultiPolygon} polygon
+ * @param {*} height
+ * @param {*} layer
  */
 function getExtrudeGeometry(polygon, height, layer) {
     if (!polygon) {
@@ -62,10 +62,10 @@ function getExtrudeGeometry(polygon, height, layer) {
 }
 
 /**
- * 
- * @param {*} geometry 
- * @param {*} color 
- * @param {*} _topColor 
+ *
+ * @param {*} geometry
+ * @param {*} color
+ * @param {*} _topColor
  */
 function initVertexColors(geometry, color, _topColor) {
     const position = geometry.attributes.position.array;
@@ -92,10 +92,10 @@ const OPTIONS = {
     height: 1,
     topColor: null,
     bottomColor: '#2d2f61',
-}
+};
 
 /**
- * 
+ *
  */
 class ExtrudePolygon extends BaseObject {
     constructor(polygon, options, material, layer) {
@@ -117,8 +117,8 @@ class ExtrudePolygon extends BaseObject {
 
     /**
      * https://github.com/maptalks/maptalks.js/blob/a56b878078e7fb48ecbe700ba7481edde7b83cfe/src/geometry/Path.js#L74
-     * @param {*} options 
-     * @param {*} cb 
+     * @param {*} options
+     * @param {*} cb
      */
     animateShow(options = {}, cb) {
         if (this._showPlayer) {

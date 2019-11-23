@@ -9,11 +9,11 @@ import { getExtrudeLineParams, getChunkLinesPosition } from './util/LineUtil';
 const MAX_POINTS = 1000;
 
 /**
- * 
- * @param {THREE.BufferGeometry} geometry 
- * @param {*} ps 
- * @param {*} norls 
- * @param {*} indices 
+ *
+ * @param {THREE.BufferGeometry} geometry
+ * @param {*} ps
+ * @param {*} norls
+ * @param {*} indices
  */
 function setExtrudeLineGeometryAttribute(geometry, ps, norls, indices) {
     const len = ps.length;
@@ -47,7 +47,7 @@ const OPTIONS = {
 };
 
 /**
- * 
+ *
  */
 class ExtrudeLineTrail extends BaseObject {
     constructor(lineString, options, material, layer) {
@@ -115,7 +115,7 @@ class ExtrudeLineTrail extends BaseObject {
 
     /**
      * Follow-up support for adding webworker
-     * @param {*} params 
+     * @param {*} params
      */
     _init(params) {
         const { layer, trail, lineWidth, depth, chunkLines, positionMap, centerPt } = params;

@@ -1,6 +1,6 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
-import { ThreeLayer } from "./../index";
+import { ThreeLayer } from './../index';
 import ToolTip from './ui/ToolTip';
 
 const OPTIONS = {
@@ -39,12 +39,12 @@ class Base {
     'symbolchange'
 ];
  * This is the base class for all 3D objects
- * 
- * 
+ *
+ *
  * Its function and maptalks.geometry are as similar as possible
- * 
+ *
  * maptalks.Eventable(Base) return a Class  https://github.com/maptalks/maptalks.js/blob/master/src/core/Eventable.js
- * 
+ *
  */
 class BaseObject extends maptalks.Eventable(Base) {
     constructor(id) {
@@ -56,7 +56,7 @@ class BaseObject extends maptalks.Eventable(Base) {
         this.infoWindow = null;
         this._mouseover = false;
         this._showPlayer = null;
-        if (id == undefined) {
+        if (id === undefined) {
             id = maptalks.Util.GUID();
         }
         this.id = id;
@@ -127,6 +127,7 @@ class BaseObject extends maptalks.Eventable(Base) {
     }
 
 
+    // eslint-disable-next-line consistent-return
     getMap() {
         const layer = this.getLayer();
         if (layer) {
@@ -134,6 +135,7 @@ class BaseObject extends maptalks.Eventable(Base) {
         }
     }
 
+    // eslint-disable-next-line consistent-return
     getCenter() {
         const options = this.getOptions();
         const { coordinate, lineString, polygon } = options;
@@ -154,7 +156,7 @@ class BaseObject extends maptalks.Eventable(Base) {
 
     /**
      * Different objects need to implement their own methods
-     * @param {*} altitude 
+     * @param {*} altitude
      */
     setAltitude(altitude) {
         if (maptalks.Util.isNumber(altitude)) {
@@ -180,7 +182,7 @@ class BaseObject extends maptalks.Eventable(Base) {
     }
 
     isVisible() {
-        return (this.getObject3d().visible ? true : false);
+        return (!!this.getObject3d().visible);
     }
 
 
@@ -193,7 +195,7 @@ class BaseObject extends maptalks.Eventable(Base) {
 
     /**
      *  Different objects need to implement their own methods
-     * @param {*} material 
+     * @param {*} material
      */
     setSymbol(material) {
         if (material && material instanceof THREE.Material) {
@@ -220,17 +222,20 @@ class BaseObject extends maptalks.Eventable(Base) {
     }
 
     openInfoWindow(coordinate) {
+        // eslint-disable-next-line no-unused-expressions
         (coordinate && this.infoWindow && this.infoWindow.show(coordinate));
         return this;
     }
 
     closeInfoWindow() {
+        // eslint-disable-next-line no-unused-expressions
         (this.infoWindow && this.infoWindow.hide());
         return this;
     }
 
 
     removeInfoWindow() {
+        // eslint-disable-next-line no-unused-expressions
         (this.infoWindow && this.infoWindow.remove() && (delete this.infoWindow));
         return this;
     }
@@ -245,25 +250,29 @@ class BaseObject extends maptalks.Eventable(Base) {
     }
 
     openToolTip(coordinate) {
+        // eslint-disable-next-line no-unused-expressions
         (coordinate && this.toolTip && this.toolTip.show(coordinate));
         return this;
     }
 
     closeToolTip() {
+        // eslint-disable-next-line no-unused-expressions
         (this.toolTip && this.toolTip.hide());
         return this;
     }
 
     removeToolTip() {
+        // eslint-disable-next-line no-unused-expressions
         (this.toolTip && this.toolTip.remove() && (delete this.toolTip));
         return this;
     }
 
     /**
      * different components should implement their own animation methods
-     * @param {*} options 
-     * @param {*} cb 
+     * @param {*} options
+     * @param {*} cb
      */
+    // eslint-disable-next-line no-unused-vars
     animateShow(options = {}, cb) {
 
     }
@@ -276,12 +285,12 @@ class BaseObject extends maptalks.Eventable(Base) {
 
     /**
      * more method support
-     * @param {*} options 
+     * @param {*} options
      */
 
     /**
-     * 
-     * @param {*} options 
+     *
+     * @param {*} options
      */
 
     _initOptions(options) {
@@ -310,6 +319,7 @@ class BaseObject extends maptalks.Eventable(Base) {
     }
 
 
+    // eslint-disable-next-line no-unused-vars
     _createPoints(geometry, material) {
 
         /**
