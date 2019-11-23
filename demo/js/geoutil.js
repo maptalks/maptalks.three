@@ -58,11 +58,13 @@ function getLngLatKey(lnglat) {
 function getPercentLngLat(l, length) {
     const { len, c1, c2 } = l;
     const dx = c2[0] - c1[0],
-        dy = c2[1] - c1[1];
+        dy = c2[1] - c1[1],
+        dh = (c2[2] || 0) - (c1[2] || 0);
     const percent = length / len;
     const lng = c1[0] + percent * dx;
     const lat = c1[1] + percent * dy;
-    return [lng, lat];
+    const h = (c1[2] || 0) + percent * dh;
+    return [lng, lat, h];
 }
 
 function lineSlice(cs, lineChunkLength = 10) {
@@ -153,11 +155,13 @@ function getLinePosition(lineString, layer) {
         if (!lineString || !(lineString instanceof maptalks.LineString)) return;
         const z = 0;
         const coordinates = lineString.getCoordinates();
+        const centerPt = layer.coordinateToVector3(lineString.getCenter());
         for (let i = 0, len = coordinates.length; i < len; i++) {
             let coordinate = coordinates[i];
-            if (Array.isArray(coordinate))
+            if (Array.isArray(coordinate)) {
                 coordinate = new maptalks.Coordinate(coordinate);
-            const v = layer.coordinateToVector3(coordinate, z);
+            }
+            const v = layer.coordinateToVector3(coordinate, z).sub(centerPt);
             positions.push(v.x, v.y, v.z);
             positionsV.push(v);
         }
@@ -169,7 +173,7 @@ function getLinePosition(lineString, layer) {
 }
 
 
-function getChunkLinesPosition(chunkLines, layer, positionMap) {
+function getChunkLinesPosition(chunkLines, layer, positionMap, cenerPt) {
     const positions = [],
         positionsV = [], lnglats = [];
     for (let i = 0, len = chunkLines.length; i < len; i++) {
@@ -194,7 +198,7 @@ function getChunkLinesPosition(chunkLines, layer, positionMap) {
         if (positionMap && positionMap[key]) {
             v = positionMap[key];
         } else {
-            v = layer.coordinateToVector3(lnglat, z);
+            v = layer.coordinateToVector3(lnglat, z).sub(centerPt);
         }
         positionsV.push(v);
         positions.push(v.x, v.y, v.z);
@@ -214,4 +218,73 @@ function setLineGeometryAttribute(geometry, ps) {
         positions[i] = ps[i];
     }
     geometry.setDrawRange(0, len / 3);
+}
+
+
+
+
+function _getLinePosition(lineString, layer) {
+    const positions = [];
+    const positionsV = [];
+    if (Array.isArray(lineString) && lineString[0] instanceof THREE.Vector3) {
+        for (let i = 0, len = lineString.length; i < len; i++) {
+            const v = lineString[i];
+            positions.push(v.x, v.y, v.z);
+            positionsV.push(v);
+        }
+    } else {
+        if (Array.isArray(lineString)) lineString = new maptalks.LineString(lineString);
+        if (!lineString || !(lineString instanceof maptalks.LineString)) return;
+        const z = 0;
+        const coordinates = lineString.getCoordinates();
+        for (let i = 0, len = coordinates.length; i < len; i++) {
+            let coordinate = coordinates[i];
+            if (Array.isArray(coordinate))
+                coordinate = new maptalks.Coordinate(coordinate);
+            const v = layer.coordinateToVector3(coordinate, z);
+            positions.push(v.x, v.y, v.z);
+            positionsV.push(v);
+        }
+    }
+    return {
+        positions: positions,
+        positionsV: positionsV
+    }
+}
+
+
+
+function _getChunkLinesPosition(chunkLines, layer) {
+    const positions = [],
+        positionsV = [], lnglats = [];
+    for (let i = 0, len = chunkLines.length; i < len; i++) {
+        const line = chunkLines[i];
+        for (let j = 0, len1 = line.length; j < len1; j++) {
+            const lnglat = line[j];
+            if (lnglats.length > 0) {
+                const key = lnglat.join(',').toString();
+                const key1 = lnglats[lnglats.length - 1].join(',').toString();
+                if (key !== key1) {
+                    lnglats.push(lnglat);
+                }
+            } else {
+                lnglats.push(lnglat);
+            }
+        }
+    }
+    let z = 0;
+    lnglats.forEach(lnglat => {
+        const h = lnglat[2];
+        if (h) {
+            z = layer.distanceToVector3(h, h).x;
+        }
+        const v = layer.coordinateToVector3(lnglat, z);
+        positionsV.push(v);
+        positions.push(v.x, v.y, v.z);
+    });
+    return {
+        positions: positions,
+        positionsV: positionsV,
+        lnglats: lnglats
+    };
 }

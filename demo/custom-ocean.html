@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Customize your own components</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.97.0/build/three.min.js"></script>
+    <!-- https://github.com/jbouny/ocean -->
+    <script type="text/javascript" src="./js/water-material.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/earcut@2.2.1/dist/earcut.min.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.97.0/examples/js/libs/stats.min.js"></script>
+
+    <script type="text/javascript" src="../dist/maptalks.three.js"></script>
+    <!-- <script type="text/javascript" src="js/geoutil.js"></script> -->
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 700px;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            center: [120.14046159231907, 30.24684576308553],
+            zoom: 15,
+            pitch: 70,
+            // bearing: 180,
+            centerCross: true,
+            doubleClickZoom: false,
+            fog: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true,
+            // animation: true
+        });
+        var stats;
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            addOcean();
+        };
+        threeLayer.addTo(map);
+
+
+        var oceans;
+        function addOcean() {
+            fetch('./data/westlake.geojson').then(function (res) {
+                return res.text();
+            }).then(function (geojson) {
+                var polygons = maptalks.GeoJSON.toGeometry(geojson);
+                oceans = polygons.map(p => {
+                    var ocean = new Ocean(p, {
+                        // altitude: 2,
+                        waterNormals: './data/waternormals.jpg'
+                    }, threeLayer)
+                    return ocean;
+                });
+
+                threeLayer.addMesh(oceans);
+
+                initGui();
+                threeLayer.config('animation', true);
+                animation();
+            })
+        }
+
+        function animation() {
+            // layer animation support Skipping frames
+            // threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            // if (threeLayer._needsUpdate) {
+            //     threeLayer._renderer.clearCanvas();
+            //     threeLayer.renderScene();
+            // }
+            stats.update();
+            requestAnimationFrame(animation);
+        }
+
+
+        function initGui() {
+            var params = {
+                add: true,
+                color: OPTIONS.waterColor,
+                show: true,
+                opacity: OPTIONS.alpha,
+                altitude: 0
+            };
+            var gui = new dat.GUI();
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    threeLayer.addMesh(oceans);
+                } else {
+                    threeLayer.removeMesh(oceans);
+                }
+            });
+            gui.addColor(params, 'color').onChange(function () {
+                const color = new THREE.Color(params.color);
+                oceans.forEach(function (mesh) {
+                    const material = mesh.getSymbol();
+                    material.uniforms.waterColor.value = color;
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'opacity', 0, 1).onChange(function () {
+                oceans.forEach(function (mesh) {
+                    const material = mesh.getSymbol();
+                    material.uniforms.alpha.value = params.opacity;
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'show').onChange(function () {
+                oceans.forEach(function (mesh) {
+                    if (params.show) {
+                        mesh.show();
+                    } else {
+                        mesh.hide();
+                    }
+                });
+            });
+            gui.add(params, 'altitude', 0, 300).onChange(function () {
+                oceans.forEach(function (mesh) {
+                    mesh.setAltitude(params.altitude);
+                });
+            });
+        }
+
+
+
+        //default values
+        var OPTIONS = {
+            textureWidth: 512,
+            textureHeight: 512,
+            sunColor: 0xffffff,
+            betaVersion: 0,
+            waterNormals: null,
+            side: THREE.DoubleSide,
+            depthTest: true,
+            alpha: 0.5,
+            waterColor: '#15e8a9',
+            noiseScale: 0.1,
+            interactive: false,
+            altitude: 0
+        };
+
+        /**
+         * custom component
+         * */
+
+        class Ocean extends maptalks.BaseObject {
+            constructor(polygon, options, layer) {
+                options = maptalks.Util.extend({}, OPTIONS, options, { layer, polygon });
+                if (!options.waterNormals) {
+                    throw new Error('waterNormals is null');
+                }
+                super();
+                //Initialize internal configuration
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L135
+                this._initOptions(options);
+
+                const waterNormalsTexture = new THREE.TextureLoader().load(options.waterNormals);
+                waterNormalsTexture.wrapS = waterNormalsTexture.wrapT = THREE.RepeatWrapping;
+                options.waterNormals = waterNormalsTexture;
+
+                const water = new THREE.Water(
+                    layer.getThreeRenderer(),
+                    layer.getCamera(),
+                    layer.getScene(),
+                    options
+                );
+                const geometry = getOceanGeometry(polygon, layer);
+                this._createMesh(geometry, water.material);
+
+                this.getObject3d().add(water);
+                this.water = water;
+                //set object3d position
+                const { altitude } = options;
+                const z = layer.distanceToVector3(altitude, altitude).x;
+                const center = polygon.getCenter();
+                const v = layer.coordinateToVector3(center, z);
+                this.getObject3d().position.copy(v);
+
+            }
+
+
+            getSymbol() {
+                return this.water.material;
+            }
+
+
+            setSymbol(material) {
+                this.water.material = material;
+                return this;
+            }
+
+
+            _animation() {
+                const water = this.water;
+                water.material.uniforms.time.value += 1.0 / 60.0;
+                water.render();
+            }
+        }
+
+
+
+        function getSingleGeometry(polygon, layer, centerPt) {
+            //if lnglats
+            if (Array.isArray(polygon)) {
+                polygon = new maptalks.Polygon(polygon);
+            }
+
+            const shell = polygon.getShell();
+            const holes = polygon.getHoles();
+            const lnglats = shell;
+            const positions = [],
+                holesIndices = [], positionsV = [];
+            lnglats.forEach(lnglat => {
+                const v = layer.coordinateToVector3(lnglat).sub(centerPt);
+                positions.push(v.x, v.y, v.z);
+                positionsV.push(v);
+            });
+            if (holes && holes.length > 0) {
+                holes.forEach(hole => {
+                    holesIndices.push(positionsV.length);
+                    hole.forEach(lnglat => {
+                        const v = layer.coordinateToVector3(lnglat).sub(centerPt);
+                        positions.push(v.x, v.y, v.z);
+                        positionsV.push(v);
+                    });
+                });
+            }
+            const hole = (holesIndices.length > 0 ? holesIndices : undefined);
+            const faces = earcut(positions, hole, 3);
+            return {
+                positionsV,
+                faces
+            };
+        }
+
+        function getOceanGeometry(polygon, layer) {
+            const geometry = new THREE.Geometry();
+            let positions = [],
+                fcs = [];
+            const centerPt = layer.coordinateToVector3(polygon.getCenter());
+            if (polygon instanceof maptalks.Polygon) {
+                const {
+                    positionsV,
+                    faces
+                } = getSingleGeometry(polygon, layer, centerPt);
+                positions = positionsV;
+                fcs = faces;
+            } else {
+                const lnglats = polygon.getCoordinates();
+                for (let i = 0, len = lnglats.length; i < len; i++) {
+                    const {
+                        positionsV,
+                        faces
+                    } = getSingleGeometry(lnglats[i], layer, centerPt);
+                    if (i > 0) {
+                        const LEN = positions.length;
+                        for (let i = 0, len = faces.length; i < len; i++) {
+                            faces[i] += LEN;
+                        }
+                    }
+                    positionsV.forEach(p => {
+                        positions.push(p);
+                    });
+                    faces.forEach(f => {
+                        fcs.push(f);
+                    });
+                }
+            }
+
+            geometry.vertices = positions;
+            for (let i = 0, len = fcs.length; i < len; i += 3) {
+                const face = new THREE.Face3(
+                    fcs[i],
+                    fcs[i + 1],
+                    fcs[i + 2]
+                );
+                geometry.faces.push(face);
+            }
+            // geometry.computeFlatVertexNormals();
+            // geometry.computeMorphNormals();
+            geometry.computeVertexNormals();
+            geometry.computeFaceNormals();
+            return geometry;
+        }
+    </script>
+</body>
+
+</html>

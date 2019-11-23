@@ -84,7 +84,7 @@
         //https://threejs.org/examples/#webgl_lines_fat
         var material = new THREE.LineMaterial({
             color: 0x00ffff,
-            side: THREE.BackSide,
+            // side: THREE.BackSide,
             linewidth: 2 // in pixels
             // vertexColors: THREE.VertexColors,
             // dashed: false
@@ -92,7 +92,7 @@
 
         var highlightmaterial = new THREE.LineMaterial({
             linewidth: 4,
-            side: THREE.BackSide,
+            // side: THREE.BackSide,
             color: 'yellow',
             dashSize: 0.2,
             gapSize: 0.2,
@@ -174,8 +174,9 @@
                 super();
                 //geoutil.js getLinePosition
                 const { positions } = getLinePosition(lineString, layer);
+                const positions1 = _getLinePosition(lineString, layer).positions;
 
-                options = maptalks.Util.extend({}, OPTIONS, options, { layer, lineString, positions });
+                options = maptalks.Util.extend({}, OPTIONS, options, { layer, lineString, positions: positions1 });
                 this._initOptions(options);
 
                 const geometry = new THREE.LineGeometry();
@@ -191,7 +192,9 @@
                 this.getObject3d().add(line);
                 const { altitude } = options;
                 const z = layer.distanceToVector3(altitude, altitude).x;
-                this.getObject3d().position.z = z;
+                const center = lineString.getCenter();
+                const v = layer.coordinateToVector3(center, z);
+                this.getObject3d().position.copy(v);
             }
 
 

@@ -87,6 +87,9 @@ IE 11, Chrome, Firefox, other modern and mobile browsers that support WebGL;
 
 ```ThreeLayer``` is a subclass of [maptalks.CanvasLayer](http://maptalks.github.io/maptalks.js/api/0.x/CanvasLayer.html) and inherits all the methods of its parent.
 
+### [API](./API.md)  
+### [API中文](./API.ZH-CN.md)
+
 ### `Constructor`
 
 ```javascript
