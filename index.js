@@ -519,7 +519,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                         tooltip.addTo(baseObject);
                     }
                     baseObject.openToolTip(coordinate);
-                } 
+                }
             });
         } else {
             baseObjects.forEach(baseObject => {
