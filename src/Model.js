@@ -1,5 +1,5 @@
 import * as maptalks from 'maptalks';
-import BaseObject from "./BaseObject";
+import BaseObject from './BaseObject';
 
 const OPTIONS = {
     altitude: 0,

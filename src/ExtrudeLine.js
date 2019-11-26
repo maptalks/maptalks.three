@@ -11,7 +11,7 @@ const OPTIONS = {
 
 
 /**
- * 
+ *
  */
 class ExtrudeLine extends BaseObject {
     constructor(lineString, options, material, layer) {

@@ -7,7 +7,7 @@ const KEY = '-';
 
 /**
  * Reuse Geometry   , Meter as unit
- * @param {*} property 
+ * @param {*} property
  */
 function getGeometry(property) {
     const {
@@ -36,9 +36,9 @@ function getGeometry(property) {
 
 /**
  * init Colors
- * @param {*} geometry 
- * @param {*} color 
- * @param {*} _topColor 
+ * @param {*} geometry
+ * @param {*} color
+ * @param {*} _topColor
  */
 function initVertexColors(geometry, color, _topColor) {
     const position = geometry.attributes.position.array;
@@ -72,7 +72,7 @@ const OPTIONS = {
 
 
 /**
- * 
+ *
  */
 class Bar extends BaseObject {
     constructor(coordinate, options, material, layer) {
@@ -114,8 +114,8 @@ class Bar extends BaseObject {
 
     /**
      * https://github.com/maptalks/maptalks.js/blob/a56b878078e7fb48ecbe700ba7481edde7b83cfe/src/geometry/Path.js#L74
-     * @param {*} options 
-     * @param {*} cb 
+     * @param {*} options
+     * @param {*} cb
      */
     animateShow(options = {}, cb) {
         if (this._showPlayer) {

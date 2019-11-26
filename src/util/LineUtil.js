@@ -20,7 +20,7 @@ export function getLinePosition(lineString, layer) {
         }
     } else {
         if (Array.isArray(lineString)) lineString = new maptalks.LineString(lineString);
-        if (!lineString || !(lineString instanceof maptalks.LineString)) return;
+        if (!lineString || !(lineString instanceof maptalks.LineString)) return null;
         const z = 0;
         const coordinates = lineString.getCoordinates();
         const centerPt = layer.coordinateToVector3(lineString.getCenter());
@@ -37,17 +37,17 @@ export function getLinePosition(lineString, layer) {
     return {
         positions: positions,
         positionsV: positionsV
-    }
+    };
 }
 
 
 
 /**
- * 
- * @param {maptalks.LineString} lineString 
- * @param {Number} lineWidth 
- * @param {Number} depth 
- * @param {ThreeLayer} layer 
+ *
+ * @param {maptalks.LineString} lineString
+ * @param {Number} lineWidth
+ * @param {Number} depth
+ * @param {ThreeLayer} layer
  */
 export function getExtrudeLineGeometry(lineString, lineWidth = 1, depth = 1, layer) {
     const positions = getLinePosition(lineString, layer).positionsV;
@@ -72,9 +72,9 @@ export function getExtrudeLineGeometry(lineString, lineWidth = 1, depth = 1, lay
 }
 
 /**
- * 
- * @param {Array[Array]} chunkLines 
- * @param {*} layer 
+ *
+ * @param {Array[Array]} chunkLines
+ * @param {*} layer
  */
 export function getChunkLinesPosition(chunkLines, layer, positionMap, centerPt) {
     const positions = [],
@@ -116,11 +116,11 @@ export function getChunkLinesPosition(chunkLines, layer, positionMap, centerPt) 
 
 
 /**
- * 
- * @param {*} lineString 
- * @param {*} lineWidth 
- * @param {*} depth 
- * @param {*} layer 
+ *
+ * @param {*} lineString
+ * @param {*} lineWidth
+ * @param {*} depth
+ * @param {*} layer
  */
 export function getExtrudeLineParams(lineString, lineWidth = 1, depth = 1, layer) {
     const positions = getLinePosition(lineString, layer).positionsV;
@@ -141,5 +141,5 @@ export function getExtrudeLineParams(lineString, lineWidth = 1, depth = 1, layer
         position: position,
         normal: normal,
         indices: indices
-    }
+    };
 }
