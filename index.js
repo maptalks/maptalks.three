@@ -7,6 +7,7 @@ import ExtrudeLine from './src/ExtrudeLine';
 import ExtrudePolygon from './src/ExtrudePolygon';
 import Model from './src/Model';
 import ExtrudeLineTrail from './src/ExtrudeLineTrail';
+import MergedExtrudeMesh from './src/MergedExtrudeMesh';
 
 const options = {
     'renderer': 'gl',
@@ -257,6 +258,16 @@ class ThreeLayer extends maptalks.CanvasLayer {
      */
     toExtrudeLineTrail(lineString, options, material) {
         return new ExtrudeLineTrail(lineString, options, material, this);
+    }
+
+    /**
+     *
+     * @param {*} polygons
+     * @param {*} options
+     * @param {*} material
+     */
+    toMergedExtrudeMesh(polygons, options, material) {
+        return new MergedExtrudeMesh(polygons, options, material, this);
     }
 
 

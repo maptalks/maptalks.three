@@ -1,7 +1,7 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
-import { getExtrudeGeometry, initVertexColors } from './util/ExtrudeUtil';
+import { getExtrudeGeometry, initVertexColors, getCenterOfPoints } from './util/ExtrudeUtil';
 
 const OPTIONS = {
     altitude: 0,
@@ -10,26 +10,45 @@ const OPTIONS = {
     bottomColor: '#2d2f61',
 };
 
-/**
- *
- */
-class ExtrudePolygon extends BaseObject {
-    constructor(polygon, options, material, layer) {
-        options = maptalks.Util.extend({}, OPTIONS, options, { layer, polygon });
+class MergedExtrudeMesh extends BaseObject {
+    constructor(polygons, options, material, layer) {
+        if (!THREE.BufferGeometryUtils) {
+            console.error('not find BufferGeometryUtils,please include related scripts');
+        }
+        if (!Array.isArray(polygons)) {
+            polygons = [polygons];
+        }
+        const centers = [];
+        const len = polygons.length;
+        for (let i = 0; i < len; i++) {
+            const polygon = polygons[i];
+            centers.push(polygon.getCenter());
+        }
+        const center = getCenterOfPoints(centers);
+        const geometries = [];
+        for (let i = 0; i < len; i++) {
+            const polygon = polygons[i];
+            const height = (polygon.getProperties() || {}).height || 1;
+            const buffGeom = getExtrudeGeometry(polygon, height, layer, center);
+            geometries.push(buffGeom);
+        }
+        const geometry = THREE.BufferGeometryUtils.mergeBufferGeometries(geometries);
+
+        options = maptalks.Util.extend({}, OPTIONS, options, { layer, polygons, coordinate: center });
         super();
         this._initOptions(options);
-        const { height, topColor, bottomColor, altitude } = options;
-        const geometry = getExtrudeGeometry(polygon, height, layer);
+
+        const { topColor, bottomColor, altitude } = options;
         if (topColor && !material.map) {
             initVertexColors(geometry, bottomColor, topColor);
             material.vertexColors = THREE.VertexColors;
         }
         this._createMesh(geometry, material);
-        const center = polygon.getCenter();
         const z = layer.distanceToVector3(altitude, altitude).x;
         const v = layer.coordinateToVector3(center, z);
         this.getObject3d().position.copy(v);
     }
+
 
     /**
      * https://github.com/maptalks/maptalks.js/blob/a56b878078e7fb48ecbe700ba7481edde7b83cfe/src/geometry/Path.js#L74
@@ -65,4 +84,4 @@ class ExtrudePolygon extends BaseObject {
     }
 }
 
-export default ExtrudePolygon;
+export default MergedExtrudeMesh;
