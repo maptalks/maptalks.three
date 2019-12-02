@@ -22,7 +22,7 @@
 
         #map {
             width: 100%;
-            height: 700px;
+            height: 900px;
             background-color: #000;
         }
     </style>
@@ -33,7 +33,7 @@
     <script>
 
         var map = new maptalks.Map("map", {
-            "center": [-123.11242174084998, 49.2556309551961], "zoom": 13, "pitch": 70.80000000000018, "bearing": 8.988706875000616,
+            "center": [-73.9975632008751, 40.72633533378442], "zoom": 14, "pitch": 64.80000000000021, "bearing": 12.588706875000753,
 
             centerCross: true,
             doubleClickZoom: false,
@@ -65,44 +65,147 @@
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
 
-            fetch('https://raw.githubusercontent.com/uber-common/deck.gl-data/master/examples/geojson/vancouver-blocks.json').then(res => res.json()).then(geojson => {
-                const polygons = geojson.features.map(f => {
-                    const height = Math.sqrt(f.properties.valuePerSqm) * 10;
-                    const properties = f.properties;
-                    properties.height = height;
-                    const p = maptalks.GeoJSON.toGeometry(f);
-                    p.setProperties(properties);
-                    return p;
-                });
-                const timer = 'genreate mesh';
-                console.time(timer);
-                var mesh = threeLayer.toMergedExtrudeMesh(polygons, { topColor: '#fff' }, material);
-                console.timeEnd(timer);
-                console.log('polygons,', polygons.length);
-                meshs.push(mesh);
-                threeLayer.addMesh(meshs);
-                meshs[0].on('show hide symbolchange', function (e) {
-                    // console.log(e.type, e);
-                });
-                //event test
-                ['click', 'mousemove', 'mouseout', 'mouseover', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].forEach(function (eventType) {
-                    mesh.on(eventType, function (e) {
-                        // console.log(e.type, e);
-                        // console.log(this);
-                        if (e.type === 'mouseout') {
-                            this.setSymbol(material);
-                        }
-                        if (e.type === 'mouseover') {
-                            this.setSymbol(highlightmaterial);
-                        }
-                    });
-                });
-                initGui();
-                animation();
-                // threeLayer.config('animation', true);
-            });
+            // fetch('https://raw.githubusercontent.com/uber-common/deck.gl-data/master/examples/geojson/vancouver-blocks.json').then(res => res.json()).then(geojson => {
+            //     const polygons = geojson.features.map(f => {
+            //         const height = Math.sqrt(f.properties.valuePerSqm) * 10;
+            //         const properties = f.properties;
+            //         properties.height = height;
+            //         const p = maptalks.GeoJSON.toGeometry(f);
+            //         p.setProperties(properties);
+            //         return p;
+            //     });
+            //     const timer = 'genreate mesh';
+            //     console.time(timer);
+            //     var mesh = threeLayer.toMergedExtrudeMesh(polygons, { topColor: '#fff' }, material);
+            //     console.timeEnd(timer);
+            //     console.log('polygons,', polygons.length);
+            //     meshs.push(mesh);
+            //     threeLayer.addMesh(meshs);
+            //     meshs[0].on('show hide symbolchange', function (e) {
+            //         // console.log(e.type, e);
+            //     });
+            //     //event test
+            //     ['click', 'mousemove', 'mouseout', 'mouseover', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].forEach(function (eventType) {
+            //         mesh.on(eventType, function (e) {
+            //             // console.log(e.type, e);
+            //             // console.log(this);
+            //             console.log(this);
+            //             if (e.type === 'mouseout') {
+            //                 this.setSymbol(material);
+            //             }
+            //             if (e.type === 'mouseover') {
+            //                 this.setSymbol(highlightmaterial);
+            //             }
+            //         });
+            //     });
+            load();
+
+            // threeLayer.config('animation', true);
+            // });
         };
         threeLayer.addTo(map);
+
+
+        let idx = 0, total = 100;
+        let selectMesh;
+
+        let polygons = [];
+        function load() {
+            fetch('./data/ny/' + idx + '.json').then(res => res.json()).then(geojson => {
+                geojson.forEach(feature => {
+                    const geometry = feature.geometry;
+                    const type = feature.geometry.type;
+                    if (['Polygon', 'MultiPolygon'].includes(type)) {
+                        const height = feature.height || feature.properties.height || 20;
+                        const properties = feature.properties;
+                        properties.height = height;
+                        const polygon = maptalks.GeoJSON.toGeometry(feature);
+                        polygon.setProperties(properties);
+                        polygons.push(polygon);
+                    }
+
+                });
+                if (polygons.length > 0) {
+                    var mesh = threeLayer.toMergedExtrudeMesh(polygons, { topColor: '#fff' }, material);
+                    threeLayer.addMesh(mesh);
+                    meshs.push(mesh);
+                    polygons = [];
+                    //tooltip test
+                    mesh.setToolTip('hello', {
+                        showTimeout: 0,
+                        eventsPropagation: true,
+                        dx: 10
+                    });
+
+                    //infowindow test
+                    mesh.setInfoWindow({
+                        content: 'hello world',
+                        title: 'message',
+                        animationDuration: 0,
+                        autoOpenOn: false
+                    });
+
+                    //event test
+                    ['click', 'mouseout', 'mousemove', 'mouseover', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].forEach(function (eventType) {
+                        mesh.on(eventType, function (e) {
+                            if (this.getSelectMesh) {
+                                //单体获取
+                                const result = this.getSelectMesh();
+                                if (!result) {
+                                    return;
+                                }
+                                const { polygon, extrudePolygon } = result;
+
+                                if (this.selectMesh && this.selectMesh != extrudePolygon) {
+                                    this.selectMesh.isAdd = false;
+                                    this.selectMesh.setSymbol(material);
+                                    threeLayer.removeMesh(this.selectMesh);
+                                }
+
+                                if (e.type === 'mouseout') {
+                                    if (this.selectMesh && this.selectMesh.isAdd) {
+                                        this.selectMesh.isAdd = false;
+                                        this.selectMesh.setSymbol(material);
+                                        threeLayer.removeMesh(this.selectMesh);
+                                        this.selectMesh = null;
+                                    }
+                                } else {
+                                    if (!extrudePolygon.isAdd) {
+                                        extrudePolygon.isAdd = true;
+                                        extrudePolygon.setSymbol(highlightmaterial);
+                                        extrudePolygon.getObject3d().scale.set(1.1, 1.1, 1.2);
+                                        threeLayer.addMesh(extrudePolygon);
+                                        this.selectMesh = extrudePolygon;
+                                    }
+                                    //override tooltip
+                                    if (e.type === 'mousemove') {
+                                        const height = polygon.getProperties().height;
+                                        const tooltip = this.getToolTip();
+                                        tooltip._content = `height:${height}`;
+                                    }
+                                    //override infowindow
+                                    if (e.type === 'click') {
+                                        const height = polygon.getProperties().height;
+                                        const infoWindow = this.getInfoWindow();
+                                        infoWindow.setContent(`height:${height}`);
+
+                                    }
+                                }
+                            }
+                        });
+                    });
+                }
+                idx++;
+                if (idx <= total) {
+                    setTimeout(() => {
+                        load(idx);
+                    }, 10);
+                } else {
+                    initGui();
+                    animation();
+                }
+            });
+        }
 
 
         function animation() {
