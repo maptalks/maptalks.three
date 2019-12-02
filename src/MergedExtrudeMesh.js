@@ -2,6 +2,7 @@ import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
 import { getExtrudeGeometry, initVertexColors, getCenterOfPoints } from './util/ExtrudeUtil';
+import ExtrudePolygon from './ExtrudePolygon';
 
 const OPTIONS = {
     altitude: 0,
@@ -25,19 +26,34 @@ class MergedExtrudeMesh extends BaseObject {
             centers.push(polygon.getCenter());
         }
         const center = getCenterOfPoints(centers);
-        const geometries = [];
+        const geometries = [], extrudePolygons = [];
+        let faceIndex = 0, faceMap = {};
         for (let i = 0; i < len; i++) {
             const polygon = polygons[i];
             const height = (polygon.getProperties() || {}).height || 1;
             const buffGeom = getExtrudeGeometry(polygon, height, layer, center);
             geometries.push(buffGeom);
+            const extrudePolygon = new ExtrudePolygon(polygon, Object.assign({}, options, { height }), material, layer);
+            extrudePolygons.push(extrudePolygon);
+
+            const geometry = new THREE.Geometry();
+            geometry.fromBufferGeometry(buffGeom);
+            const faceLen = geometry.faces.length;
+            faceMap[i] = [faceIndex + 1, faceIndex + faceLen];
+            faceIndex += faceLen;
+            geometry.dispose();
         }
         const geometry = THREE.BufferGeometryUtils.mergeBufferGeometries(geometries);
-
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, polygons, coordinate: center });
         super();
         this._initOptions(options);
 
+        //Face corresponding to monomer
+        this.faceMap = faceMap;
+        this.extrudePolygons = extrudePolygons;
+        this.polygons = polygons;
+        // this.positions = positions;
+        this.faceIndex = null;
         const { topColor, bottomColor, altitude } = options;
         if (topColor && !material.map) {
             initVertexColors(geometry, bottomColor, topColor);
@@ -47,6 +63,23 @@ class MergedExtrudeMesh extends BaseObject {
         const z = layer.distanceToVector3(altitude, altitude).x;
         const v = layer.coordinateToVector3(center, z);
         this.getObject3d().position.copy(v);
+    }
+
+
+    // eslint-disable-next-line consistent-return
+    getSelectMesh() {
+        if (this.faceMap && (!this.faceIndex !== null)) {
+            const faceIndex = this.faceIndex;
+            for (let key in this.faceMap) {
+                const [start, end] = this.faceMap[key];
+                if (start <= faceIndex && faceIndex <= end) {
+                    return {
+                        polygon: this.polygons[key],
+                        extrudePolygon: this.extrudePolygons[key]
+                    };
+                }
+            }
+        }
     }
 
 
