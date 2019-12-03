@@ -514,9 +514,18 @@ class ThreeLayer extends maptalks.CanvasLayer {
             outBaseObjects.forEach(baseObject => {
                 if (baseObject instanceof BaseObject) {
                     // reset _mouseover status
-                    baseObject._mouseover = false;
-                    baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject, type: 'mouseout' }));
-                    baseObject.closeToolTip();
+                    // Deal with the mergedmesh
+                    if (baseObject.getSelectMesh) {
+                        if (!baseObject.isHide) {
+                            baseObject._mouseover = false;
+                            baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject, type: 'mouseout' }));
+                            baseObject.closeToolTip();
+                        }
+                    } else {
+                        baseObject._mouseover = false;
+                        baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject, type: 'mouseout' }));
+                        baseObject.closeToolTip();
+                    }
                 }
             });
             baseObjects.forEach(baseObject => {
