@@ -112,7 +112,7 @@ class MergedExtrudeMesh extends BaseObject {
             extrudePolygon.on('mouseout', (e) => {
                 this._mouseover = false;
                 this._fire('mouseout', Object.assign({}, e, { target: this, type: 'mouseout' }));
-                this._showGeometry(e.target, false);
+                // this._showGeometry(e.target, false);
             });
             ['click', 'mousemove', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].forEach((eventType) => {
                 extrudePolygon.on(eventType, (e) => {
@@ -175,8 +175,8 @@ class MergedExtrudeMesh extends BaseObject {
             // buffGeom.attributes.color.needsUpdate = true;
             // buffGeom.attributes.normal.needsUpdate = true;
             // buffGeom.attributes.uv.needsUpdate = true;
+            this.isHide = isHide;
         }
-        this.isHide = isHide;
         return this;
     }
 
