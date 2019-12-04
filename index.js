@@ -494,10 +494,11 @@ class ThreeLayer extends maptalks.CanvasLayer {
         map.resetCursor('default');
         const { type, coordinate } = e;
         const baseObjects = this.identify(coordinate);
-        if (baseObjects.length === 0) {
-            const scene = this.getScene();
+        const scene = this.getScene();
+        if (baseObjects.length === 0 && scene) {
             for (let i = 0, len = scene.children.length; i < len; i++) {
-                const parent = scene.children[i].__parent;
+                const child = scene.children[i] || {};
+                const parent = child.__parent;
                 if (parent) {
                     parent._fire('empty', Object.assign({}, e, { target: parent }));
                 }
