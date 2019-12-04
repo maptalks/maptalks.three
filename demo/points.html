@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>point</title>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/gcoord@0.2.3/dist/gcoord.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.97.0/build/three.min.js"></script>
+    <script type="text/javascript" src="../dist/maptalks.three.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.97.0/examples/js/libs/stats.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 900px;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            "center": [114.02886943761405, 22.536328869597213], "zoom": 13, "pitch": 12.000000000000057, "bearing": -3.0000000000001137,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+            // animation: true
+        });
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+
+            addPoints(scene);
+
+        };
+        threeLayer.addTo(map);
+
+
+        function createLightMateria() {
+            const canvasDom = document.createElement('canvas');
+            const size = 32;
+            canvasDom.width = size;
+            canvasDom.height = size;
+            const ctx = canvasDom.getContext('2d');
+            const gradient = ctx.createRadialGradient(
+                canvasDom.width / 2,
+                canvasDom.height / 2,
+                0,
+                canvasDom.width / 2,
+                canvasDom.height / 2,
+                canvasDom.width / 2);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(0.005, 'rgba(139,69,19,1)');
+            gradient.addColorStop(0.4, 'rgba(139,69,19,1)');
+            gradient.addColorStop(1, 'rgba(0,0,0,1)');
+
+            ctx.fillStyle = gradient;
+            ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+            ctx.fill();
+            console.log(canvasDom.toDataURL());
+
+            // ctx.fillRect(0, 0, canvasDom.width, canvasDom.height);
+
+            const texture = new THREE.Texture(canvasDom);
+            texture.needsUpdate = true; //使用贴图时进行更新
+            return texture;
+        }
+
+
+        var points = [], selectMesh = [];
+        const material = new THREE.PointsMaterial({
+            // size: 10,
+            sizeAttenuation: false,
+            // color: 'red',
+            // alphaTest: 0.5,
+            // vertexColors: THREE.VertexColors,
+            //  transparent: true
+            // color: 0xffffff,
+            size: 5,
+            transparent: true, //使材质透明
+            // blending: THREE.AdditiveBlending,
+            depthTest: true, //深度测试关闭，不消去场景的不可见面
+            depthWrite: false,
+            map: createLightMateria() //刚刚创建的粒子贴图就在这里用上
+        });
+
+        var highlightmaterial = new THREE.PointsMaterial({
+            // size: 10,
+            sizeAttenuation: false,
+            // color: '#fff',
+            // alphaTest: 0.5,
+            // vertexColors: THREE.VertexColors,
+            //  transparent: true
+            // color: 0xffffff,
+            size: 36,
+            transparent: true, //使材质透明
+            // blending: THREE.AdditiveBlending,
+            depthTest: true, //深度测试关闭，不消去场景的不可见面
+            depthWrite: false,
+            map: new THREE.TextureLoader().load('./data/1.svg')
+        });
+
+        function addPoints(scene) {
+
+            fetch('https://gw.alipayobjects.com/os/basement_prod/513add53-dcb2-4295-8860-9e7aa5236699.json').then((function (res) {
+                return res.json();
+            })).then(function (json) {
+                const data = json.features.slice(0, Infinity).map(function (dataItem) {
+                    dataItem = gcoord.transform(dataItem, gcoord.AMap, gcoord.WGS84);
+                    return {
+                        coordinate: dataItem.geometry.coordinates,
+                        height: 0,
+                        value: Math.random() * 10000
+                    }
+                });
+                const point = threeLayer.toPoints(data, {}, material);
+                points.push(point);
+
+                // tooltip test
+                point.setToolTip('hello', {
+                    showTimeout: 0,
+                    eventsPropagation: true,
+                    dx: 10
+                });
+                threeLayer.addMesh(points);
+
+
+                //infowindow test
+                point.setInfoWindow({
+                    content: 'hello world,height:',
+                    title: 'message',
+                    animationDuration: 0,
+                    autoOpenOn: false
+                });
+
+
+                ['click', 'empty', 'mousemove'].forEach(function (eventType) {
+                    point.on(eventType, function (e) {
+                        const select = e.selectMesh;
+                        if (e.type === 'empty' && selectMesh.length) {
+                            threeLayer.removeMesh(selectMesh);
+                            selectMesh = [];
+                        }
+
+                        let data, baseObject;
+                        if (select) {
+                            data = select.data;
+                            baseObject = select.baseObject;
+                            if (baseObject && !baseObject.isAdd) {
+                                baseObject.setSymbol(highlightmaterial);
+                                threeLayer.addMesh(baseObject);
+                                selectMesh.push(baseObject);
+                            }
+                        }
+
+
+                        if (selectMesh.length > 20) {
+                            threeLayer.removeMesh(selectMesh);
+                            selectMesh = [];
+                        }
+                        // override tooltip
+                        if (e.type === 'mousemove' && data) {
+                            const height = data.value;
+                            const tooltip = this.getToolTip();
+                            tooltip._content = `value:${height}`;
+                        }
+                        //             //override infowindow
+                        if (e.type === 'click' && data) {
+                            const height = data.value;
+                            const infoWindow = this.getInfoWindow();
+                            infoWindow.setContent(`value:${height}`);
+                            if (infoWindow && (!infoWindow._owner)) {
+                                infoWindow.addTo(this);
+                            }
+                            this.openInfoWindow(e.coordinate);
+                        }
+                    });
+                });
+            });
+            animation();
+            initGui();
+        }
+
+
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer._renderer.clearCanvas();
+                threeLayer.renderScene();
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+        }
+
+
+        function initGui() {
+            var params = {
+                blending: false,
+                size: 5,
+
+                color: '#fff',
+                show: true,
+                opacity: 1,
+                altitude: 0,
+                // animateShow: animateShow
+            };
+
+            var gui = new dat.GUI();
+            gui.add(params, 'blending').onChange(function () {
+                if (params.blending) {
+                    material.blending = THREE.AdditiveBlending;
+                } else {
+                    material.blending = THREE.NoBlending;
+                }
+            });
+            gui.add(params, 'size', 2, 20).onChange(function () {
+                material.size = params.size;
+            });
+        }
+
+    </script>
+</body>
+
+</html>

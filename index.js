@@ -8,6 +8,8 @@ import ExtrudePolygon from './src/ExtrudePolygon';
 import Model from './src/Model';
 import ExtrudeLineTrail from './src/ExtrudeLineTrail';
 import MergedExtrudeMesh from './src/MergedExtrudeMesh';
+import Point from './src/Point';
+import Points from './src/Points';
 
 const options = {
     'renderer': 'gl',
@@ -268,6 +270,16 @@ class ThreeLayer extends maptalks.CanvasLayer {
      */
     toMergedExtrudeMesh(polygons, options, material) {
         return new MergedExtrudeMesh(polygons, options, material, this);
+    }
+
+
+    toPoint(coordinate, options, material) {
+        return new Point(coordinate, options, material, this);
+    }
+
+
+    toPoints(points, options, material) {
+        return new Points(points, options, material, this);
     }
 
 
