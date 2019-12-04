@@ -185,8 +185,8 @@ class MergedExtrudeMesh extends BaseObject {
         const index = this._getIndex(faceIndex);
         if (index != null) {
             return {
-                polygon: this._polygons[index],
-                extrudePolygon: this._extrudePolygons[index]
+                data: this._polygons[index],
+                baseObject: this._extrudePolygons[index]
             };
         }
     }

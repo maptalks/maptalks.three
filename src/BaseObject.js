@@ -37,6 +37,7 @@ class Base {
     'show',
     'hide',
     'symbolchange'
+     empty
 ];
  * This is the base class for all 3D objects
  *
@@ -50,6 +51,7 @@ class BaseObject extends maptalks.Eventable(Base) {
     constructor(id) {
         super();
         this.isBaseObject = true;
+        this.isAdd = false;
         this.object3d = null;
         this.options = {};
         this.toolTip = null;
@@ -321,10 +323,10 @@ class BaseObject extends maptalks.Eventable(Base) {
 
     // eslint-disable-next-line no-unused-vars
     _createPoints(geometry, material) {
-
-        /**
-         * todo points
-         */
+        //Serving for particles
+        this.object3d = new THREE.Points(geometry, material);
+        this.object3d.__parent = this;
+        return this;
     }
 }
 

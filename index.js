@@ -338,6 +338,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         meshes.forEach(mesh => {
             if (mesh instanceof BaseObject) {
                 scene.add(mesh.getObject3d());
+                mesh.isAdd = true;
                 mesh._fire('add', { target: mesh });
                 if (mesh._animation && maptalks.Util.isFunction(mesh._animation)) {
                     this._animationBaseObjectMap[mesh.getObject3d().uuid] = mesh;
@@ -363,6 +364,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         meshes.forEach(mesh => {
             if (mesh instanceof BaseObject) {
                 scene.remove(mesh.getObject3d());
+                mesh.isAdd = false;
                 mesh._fire('remove', { target: mesh });
                 if (mesh._animation && maptalks.Util.isFunction(mesh._animation)) {
                     delete this._animationBaseObjectMap[mesh.getObject3d().uuid];
@@ -492,6 +494,15 @@ class ThreeLayer extends maptalks.CanvasLayer {
         map.resetCursor('default');
         const { type, coordinate } = e;
         const baseObjects = this.identify(coordinate);
+        if (baseObjects.length === 0) {
+            const scene = this.getScene();
+            for (let i = 0, len = scene.children.length; i < len; i++) {
+                const parent = scene.children[i].__parent;
+                if (parent) {
+                    parent._fire('empty', Object.assign({}, e, { target: parent }));
+                }
+            }
+        }
         if (type === 'mousemove') {
             if (baseObjects.length) {
                 map.setCursor('pointer');
@@ -518,7 +529,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                     if (baseObject.getSelectMesh) {
                         if (!baseObject.isHide) {
                             baseObject._mouseover = false;
-                            baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject, type: 'mouseout' }));
+                            baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject, type: 'mouseout', selectMesh: null }));
                             baseObject.closeToolTip();
                         }
                     } else {
@@ -531,10 +542,10 @@ class ThreeLayer extends maptalks.CanvasLayer {
             baseObjects.forEach(baseObject => {
                 if (baseObject instanceof BaseObject) {
                     if (!baseObject._mouseover) {
-                        baseObject._fire('mouseover', Object.assign({}, e, { target: baseObject, type: 'mouseover' }));
+                        baseObject._fire('mouseover', Object.assign({}, e, { target: baseObject, type: 'mouseover', selectMesh: (baseObject.getSelectMesh ? baseObject.getSelectMesh() : null) }));
                         baseObject._mouseover = true;
                     }
-                    baseObject._fire(type, Object.assign({}, e, { target: baseObject }));
+                    baseObject._fire(type, Object.assign({}, e, { target: baseObject, selectMesh: (baseObject.getSelectMesh ? baseObject.getSelectMesh() : null) }));
                     // tooltip
                     const tooltip = baseObject.getToolTip();
                     if (tooltip && (!tooltip._owner)) {
@@ -546,7 +557,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         } else {
             baseObjects.forEach(baseObject => {
                 if (baseObject instanceof BaseObject) {
-                    baseObject._fire(type, Object.assign({}, e, { target: baseObject }));
+                    baseObject._fire(type, Object.assign({}, e, { target: baseObject, selectMesh: (baseObject.getSelectMesh ? baseObject.getSelectMesh() : null) }));
                     if (type === 'click') {
                         const infoWindow = baseObject.getInfoWindow();
                         if (infoWindow && (!infoWindow._owner)) {
