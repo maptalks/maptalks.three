@@ -8,6 +8,8 @@ const OPTIONS = {
     height: 0
 };
 
+const vector = new THREE.Vector3();
+
 class Point extends BaseObject {
     constructor(coordinate, options, material, layer) {
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, coordinate });
@@ -46,7 +48,6 @@ class Point extends BaseObject {
         const pixel = this.getMap().coordToContainerPoint(coordinate);
 
         const z = layer.distanceToVector3(altitude, altitude).x;
-        const vector = new THREE.Vector3();
         vector.x = positions.x;
         vector.y = positions.y;
         vector.z = positions.z + z;

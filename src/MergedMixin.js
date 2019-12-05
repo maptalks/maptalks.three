@@ -1,0 +1,119 @@
+
+const EVENTS = ['click', 'mousemove', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].join(' ').toString();
+
+/**
+ * This is for the merger, MergedExtrudeMesh,Points ...
+ * @param {*} Base
+ */
+const MergedMixin = (Base) => {
+
+    return class extends Base {
+
+        /**
+         *Events representing the merge
+         * @param {*} baseObject
+         */
+        _proxyEvent(baseObject) {
+            baseObject.on('add', (e) => {
+                this._showGeometry(e.target, true);
+            });
+            baseObject.on('remove', (e) => {
+                this._showGeometry(e.target, false);
+            });
+            baseObject.on('mouseout', (e) => {
+                this._mouseover = false;
+                this._fire('mouseout', Object.assign({}, e, { target: this }));
+                // this._showGeometry(e.target, false);
+            });
+            baseObject.on(EVENTS, (e) => {
+                this._fire(e.type, Object.assign({}, e, { target: this }));
+            });
+        }
+
+
+        /**
+         * Get the index of the monomer to be hidden
+         * @param {*} attribute
+         */
+        _getHideGeometryIndex(attribute) {
+            const indexs = [];
+            let len = 0;
+            for (let key in this._geometriesAttributes) {
+                if (this._geometriesAttributes[key].hide === true) {
+                    indexs.push(key);
+                    len += this._geometriesAttributes[key][attribute].count;
+                }
+            }
+            return {
+                indexs,
+                count: len
+            };
+        }
+
+        /**
+         * update geometry attributes
+         * @param {*} bufferAttribute
+         * @param {*} attribute
+         */
+        _updateAttribute(bufferAttribute, attribute) {
+            const { indexs } = this._getHideGeometryIndex(attribute);
+            const array = this._geometryCache.attributes[attribute].array;
+            const len = array.length;
+            for (let i = 0; i < len; i++) {
+                bufferAttribute.array[i] = array[i];
+            }
+            for (let j = 0; j < indexs.length; j++) {
+                const index = indexs[j];
+                const { start, end } = this._geometriesAttributes[index][attribute];
+                for (let i = start; i < end; i++) {
+                    bufferAttribute.array[i] = NaN;
+                }
+            }
+            return this;
+        }
+
+        /**
+         * show or hide monomer
+         * @param {*} baseObject
+         * @param {*} isHide
+         */
+        _showGeometry(baseObject, isHide) {
+            let index;
+            if (baseObject) {
+                index = baseObject.getOptions().index;
+            }
+            if (index != null) {
+                const geometryAttributes = this._geometriesAttributes[index];
+                const { hide } = geometryAttributes;
+                if (hide === isHide) {
+                    return this;
+                }
+                geometryAttributes.hide = isHide;
+                const buffGeom = this.getObject3d().geometry;
+                this._updateAttribute(buffGeom.attributes.position, 'position');
+                // this._updateAttribute(buffGeom.attributes.normal, 'normal', 3);
+                // this._updateAttribute(buffGeom.attributes.color, 'color', 3);
+                // this._updateAttribute(buffGeom.attributes.uv, 'uv', 2);
+                buffGeom.attributes.position.needsUpdate = true;
+                // buffGeom.attributes.color.needsUpdate = true;
+                // buffGeom.attributes.normal.needsUpdate = true;
+                // buffGeom.attributes.uv.needsUpdate = true;
+                this.isHide = isHide;
+            }
+            return this;
+        }
+
+
+        /**
+         * Get selected monomer
+         */
+        getSelectMesh() {
+            return {
+                data: null,
+                baseObject: null
+            };
+        }
+    };
+};
+
+export default MergedMixin;

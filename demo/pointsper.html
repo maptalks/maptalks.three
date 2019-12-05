@@ -133,7 +133,7 @@
             d3.csv('https://gw.alipayobjects.com/os/rmsportal/BElVQFEFvpAKzddxFZxJ.txt',
                 (error, response) => {
                     // console.log(response);
-                    let data = response.slice(0, 10 * 100000).map(d => {
+                    let data = response.slice(0, 5 * 100000).map(d => {
                         return {
                             coordinate: [Number(d.lng), Number(d.lat)],
                             value: Math.random() * 10000
