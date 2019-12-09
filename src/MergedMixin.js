@@ -22,11 +22,11 @@ const MergedMixin = (Base) => {
             });
             baseObject.on('mouseout', (e) => {
                 this._mouseover = false;
-                this._fire('mouseout', Object.assign({}, e, { target: this }));
+                this._fire('mouseout', Object.assign({}, e, { target: this, selectMesh: (this.getSelectMesh ? this.getSelectMesh() : null) }));
                 // this._showGeometry(e.target, false);
             });
             baseObject.on(EVENTS, (e) => {
-                this._fire(e.type, Object.assign({}, e, { target: this }));
+                this._fire(e.type, Object.assign({}, e, { target: this, selectMesh: (this.getSelectMesh ? this.getSelectMesh() : null) }));
             });
         }
 
