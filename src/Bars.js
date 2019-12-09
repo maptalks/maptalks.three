@@ -1,44 +1,58 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
-import { getExtrudeGeometry, initVertexColors, getCenterOfPoints } from './util/ExtrudeUtil';
-import ExtrudePolygon from './ExtrudePolygon';
+import { getGeometry, initVertexColors } from './util/BarUtil';
+import Bar from './Bar';
 import MergedMixin from './MergedMixin';
 
+
 const OPTIONS = {
+    coordinate: null,
+    radius: 10,
+    height: 100,
+    radialSegments: 6,
     altitude: 0,
-    height: 1,
     topColor: null,
     bottomColor: '#2d2f61',
 };
 
-class MergedExtrudeMesh extends MergedMixin(BaseObject) {
-    constructor(polygons, options, material, layer) {
+/**
+ * merged bars
+ */
+class Bars extends MergedMixin(BaseObject) {
+    constructor(points, options, material, layer) {
         if (!THREE.BufferGeometryUtils) {
             console.error('not find BufferGeometryUtils,please include related scripts');
         }
-        if (!Array.isArray(polygons)) {
-            polygons = [polygons];
+        if (!Array.isArray(points)) {
+            points = [points];
         }
-        const centers = [];
-        const len = polygons.length;
+        const len = points.length;
+        const geometries = [], bars = [], geometriesAttributes = [], faceMap = {};
+        let faceIndex = 0, psIndex = 0, normalIndex = 0, uvIndex = 0;
         for (let i = 0; i < len; i++) {
-            const polygon = polygons[i];
-            centers.push(polygon.getCenter());
-        }
-        // Get the center point of the point set
-        const center = getCenterOfPoints(centers);
-        const geometries = [], extrudePolygons = [];
-        let faceIndex = 0, faceMap = {}, geometriesAttributes = {},
-            psIndex = 0, normalIndex = 0, uvIndex = 0;
-        for (let i = 0; i < len; i++) {
-            const polygon = polygons[i];
-            const height = (polygon.getProperties() || {}).height || 1;
-            const buffGeom = getExtrudeGeometry(polygon, height, layer, center);
+            const opts = maptalks.Util.extend({ index: i }, OPTIONS, points[i]);
+            const { radius, radialSegments, altitude, topColor, bottomColor, height, coordinate } = opts;
+            const r = layer.distanceToVector3(radius, radius).x;
+            const h = layer.distanceToVector3(height, height).x;
+            const alt = layer.distanceToVector3(altitude, altitude).x;
+            const buffGeom = getGeometry({ radius: r, height: h, radialSegments }, false);
+            if (topColor && !material.map) {
+                initVertexColors(buffGeom, bottomColor, topColor);
+                material.vertexColors = THREE.VertexColors;
+            }
+            buffGeom.rotateX(Math.PI / 2);
+            const v = layer.coordinateToVector3(coordinate);
+            const parray = buffGeom.attributes.position.array;
+            for (let j = 0, len1 = parray.length; j < len1; j += 3) {
+                parray[j + 2] += (h / 2 + alt);
+                parray[j] += v.x;
+                parray[j + 1] += v.y;
+                parray[j + 2] += v.z;
+            }
             geometries.push(buffGeom);
-
-            const extrudePolygon = new ExtrudePolygon(polygon, Object.assign({}, options, { height, index: i }), material, layer);
-            extrudePolygons.push(extrudePolygon);
+            const bar = new Bar(coordinate, opts, material, layer);
+            bars.push(bar);
 
             const geometry = new THREE.Geometry();
             geometry.fromBufferGeometry(buffGeom);
@@ -46,6 +60,7 @@ class MergedExtrudeMesh extends MergedMixin(BaseObject) {
             faceMap[i] = [faceIndex + 1, faceIndex + faceLen];
             faceIndex += faceLen;
             geometry.dispose();
+
             const psCount = buffGeom.attributes.position.count,
                 //  colorCount = buffGeom.attributes.color.count,
                 normalCount = buffGeom.attributes.normal.count, uvCount = buffGeom.attributes.uv.count;
@@ -77,36 +92,25 @@ class MergedExtrudeMesh extends MergedMixin(BaseObject) {
             // colorIndex += colorCount * 3;
             uvIndex += uvCount * 2;
         }
-        const geometry = THREE.BufferGeometryUtils.mergeBufferGeometries(geometries);
-
-        options = maptalks.Util.extend({}, OPTIONS, options, { layer, polygons, coordinate: center });
         super();
+        options = maptalks.Util.extend({}, { altitude: 0, layer, points }, options);
         this._initOptions(options);
-
-        const { topColor, bottomColor, altitude } = options;
-        if (topColor && !material.map) {
-            initVertexColors(geometry, bottomColor, topColor);
-            material.vertexColors = THREE.VertexColors;
-        }
-
+        const geometry = THREE.BufferGeometryUtils.mergeBufferGeometries(geometries);
         this._createMesh(geometry, material);
-        const z = layer.distanceToVector3(altitude, altitude).x;
-        const v = layer.coordinateToVector3(center, z);
-        this.getObject3d().position.copy(v);
 
-        //Face corresponding to monomer
         this._faceMap = faceMap;
-        this._extrudePolygons = extrudePolygons;
-        this._datas = polygons;
+        this._bars = bars;
+        this._datas = points;
         this._geometriesAttributes = geometriesAttributes;
         this.faceIndex = null;
         this._geometryCache = geometry.clone();
         this.isHide = false;
 
-        extrudePolygons.forEach(extrudePolygon => {
-            this._proxyEvent(extrudePolygon);
+        bars.forEach(bar => {
+            this._proxyEvent(bar);
         });
     }
+
 
     // eslint-disable-next-line consistent-return
     getSelectMesh() {
@@ -114,7 +118,7 @@ class MergedExtrudeMesh extends MergedMixin(BaseObject) {
         if (index != null) {
             return {
                 data: this._datas[index],
-                baseObject: this._extrudePolygons[index]
+                baseObject: this._bars[index]
             };
         }
     }
@@ -169,4 +173,4 @@ class MergedExtrudeMesh extends MergedMixin(BaseObject) {
     }
 }
 
-export default MergedExtrudeMesh;
+export default Bars;

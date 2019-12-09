@@ -10,6 +10,7 @@ import ExtrudeLineTrail from './src/ExtrudeLineTrail';
 import MergedExtrudeMesh from './src/MergedExtrudeMesh';
 import Point from './src/Point';
 import Points from './src/Points';
+import Bars from './src/Bars';
 
 const options = {
     'renderer': 'gl',
@@ -273,13 +274,36 @@ class ThreeLayer extends maptalks.CanvasLayer {
     }
 
 
+    /**
+     *
+     * @param {maptalks.Coordinate} coordinate
+     * @param {*} options
+     * @param {*} material
+     */
     toPoint(coordinate, options, material) {
         return new Point(coordinate, options, material, this);
     }
 
 
+    /**
+     *
+     * @param {Array} points
+     * @param {*} options
+     * @param {*} material
+     */
     toPoints(points, options, material) {
         return new Points(points, options, material, this);
+    }
+
+
+    /**
+     *
+     * @param {Array} points
+     * @param {*} options
+     * @param {*} material
+     */
+    toBars(points, options, material) {
+        return new Bars(points, options, material, this);
     }
 
 

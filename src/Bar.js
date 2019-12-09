@@ -1,64 +1,7 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
-
-const barGeometryCache = {};
-const KEY = '-';
-
-/**
- * Reuse Geometry   , Meter as unit
- * @param {*} property
- */
-function getGeometry(property) {
-    const {
-        height,
-        radialSegments,
-        radius,
-        _radius,
-        _height
-    } = property;
-    let geometry;
-    for (let i = 0; i <= 4; i++) {
-        let key = [(_height + i), _radius, radialSegments].join(KEY).toString();
-        geometry = barGeometryCache[key];
-        if (geometry) break;
-        key = [(_height - i), _radius, radialSegments].join(KEY).toString();
-        geometry = barGeometryCache[key];
-        if (geometry) break;
-    }
-    if (!geometry) {
-        const key = [_height, _radius, radialSegments].join(KEY).toString();
-        geometry = barGeometryCache[key] = new THREE.CylinderBufferGeometry(radius, radius, height, radialSegments, 1);
-    }
-    return geometry;
-}
-
-
-/**
- * init Colors
- * @param {*} geometry
- * @param {*} color
- * @param {*} _topColor
- */
-function initVertexColors(geometry, color, _topColor) {
-    const position = geometry.attributes.position.array;
-    const len = position.length;
-    const bottomColor = (color instanceof THREE.Color ? color : new THREE.Color(color));
-    const topColor = new THREE.Color(_topColor);
-    const colors = [];
-    for (let i = 0; i < len; i += 3) {
-        const y = position[i + 1];
-        if (y > 0) {
-            colors.push(topColor.r, topColor.r, topColor.b);
-        } else {
-            colors.push(bottomColor.r, bottomColor.r, bottomColor.b);
-        }
-    }
-    geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3, true));
-    return colors;
-}
-
-
+import { getGeometry, initVertexColors } from './util/BarUtil';
 
 
 const OPTIONS = {
