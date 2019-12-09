@@ -37,9 +37,9 @@
             centerCross: true,
             doubleClickZoom: false,
             baseLayer: new maptalks.TileLayer('tile', {
-                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                urlTemplate: 'http://{s}.tiles.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejh2N21nMzAxMmQzMnA5emRyN2lucW0ifQ.jSE-g2vsn48Ry928pqylcg',
                 subdomains: ['a', 'b', 'c', 'd'],
-                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://mapbox.com/">mapbox</a>'
             })
         });
 
@@ -51,7 +51,7 @@
         });
 
         var meshs = [];
-        var material = new THREE.MeshBasicMaterial({ color: '#3e35cf', transparent: true });
+        var material = new THREE.MeshPhongMaterial({ color: '#1e2b27', transparent: true });
         var highlightmaterial = new THREE.MeshBasicMaterial({ color: 'yellow', transparent: true, opacity: 0.5 });
 
         threeLayer.prepareToDraw = function (gl, scene, camera) {
@@ -63,6 +63,8 @@
             var light = new THREE.DirectionalLight(0xffffff);
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
+
+            scene.add(new THREE.AmbientLight(0xffffff));
 
 
             load();
