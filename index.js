@@ -7,11 +7,11 @@ import ExtrudeLine from './src/ExtrudeLine';
 import ExtrudePolygon from './src/ExtrudePolygon';
 import Model from './src/Model';
 import ExtrudeLineTrail from './src/ExtrudeLineTrail';
-import MergedExtrudePolygon from './src/MergedExtrudePolygon';
+import ExtrudePolygons from './src/ExtrudePolygons';
 import Point from './src/Point';
 import Points from './src/Points';
 import Bars from './src/Bars';
-import MergedExtrudeLine from './src/MergedExtrudeLine';
+import ExtrudeLines from './src/ExtrudeLines';
 import Lines from './src/Lines';
 
 const options = {
@@ -271,8 +271,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * @param {*} options
      * @param {*} material
      */
-    toMergedExtrudePolygon(polygons, options, material) {
-        return new MergedExtrudePolygon(polygons, options, material, this);
+    toExtrudePolygons(polygons, options, material) {
+        return new ExtrudePolygons(polygons, options, material, this);
     }
 
 
@@ -315,8 +315,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * @param {*} options
      * @param {*} material
      */
-    toMergedExtrudeLine(lineStrings, options, material) {
-        return new MergedExtrudeLine(lineStrings, options, material, this);
+    toExtrudeLines(lineStrings, options, material) {
+        return new ExtrudeLines(lineStrings, options, material, this);
     }
 
 

@@ -1,44 +1,47 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
-import BaseObject from './BaseObject';
-import { getExtrudeGeometry, initVertexColors, getCenterOfPoints } from './util/ExtrudeUtil';
-import ExtrudePolygon from './ExtrudePolygon';
 import MergedMixin from './MergedMixin';
+import BaseObject from './BaseObject';
+import { getCenterOfPoints } from './util/ExtrudeUtil';
+import { getExtrudeLineGeometry } from './util/LineUtil';
+import ExtrudeLine from './ExtrudeLine';
 
 const OPTIONS = {
-    altitude: 0,
+    width: 3,
     height: 1,
-    topColor: null,
-    bottomColor: '#2d2f61',
+    altitude: 0
 };
 
-class MergedExtrudePolygon extends MergedMixin(BaseObject) {
-    constructor(polygons, options, material, layer) {
+class ExtrudeLines extends MergedMixin(BaseObject) {
+    constructor(lineStrings, options, material, layer) {
         if (!THREE.BufferGeometryUtils) {
             console.error('not find BufferGeometryUtils,please include related scripts');
         }
-        if (!Array.isArray(polygons)) {
-            polygons = [polygons];
+        if (!Array.isArray(lineStrings)) {
+            lineStrings = [lineStrings];
         }
         const centers = [];
-        const len = polygons.length;
+        const len = lineStrings.length;
         for (let i = 0; i < len; i++) {
-            const polygon = polygons[i];
-            centers.push(polygon.getCenter());
+            const lineString = lineStrings[i];
+            centers.push(lineString.getCenter());
         }
         // Get the center point of the point set
         const center = getCenterOfPoints(centers);
-        const geometries = [], extrudePolygons = [];
+        const geometries = [], extrudeLines = [];
         let faceIndex = 0, faceMap = {}, geometriesAttributes = {},
-            psIndex = 0, normalIndex = 0, uvIndex = 0;
+            psIndex = 0, normalIndex = 0;
         for (let i = 0; i < len; i++) {
-            const polygon = polygons[i];
-            const height = (polygon.getProperties() || {}).height || 1;
-            const buffGeom = getExtrudeGeometry(polygon, height, layer, center);
+            const lineString = lineStrings[i];
+            const opts = maptalks.Util.extend({}, OPTIONS, lineString.getProperties(), { index: i });
+            const { height, width } = opts;
+            const w = layer.distanceToVector3(width, width).x;
+            const h = layer.distanceToVector3(height, height).x;
+            const buffGeom = getExtrudeLineGeometry(lineString, w, h, layer, center);
             geometries.push(buffGeom);
 
-            const extrudePolygon = new ExtrudePolygon(polygon, Object.assign({}, options, { height, index: i }), material, layer);
-            extrudePolygons.push(extrudePolygon);
+            const extrudeLine = new ExtrudeLine(lineString, opts, material, layer);
+            extrudeLines.push(extrudeLine);
 
             const geometry = new THREE.Geometry();
             geometry.fromBufferGeometry(buffGeom);
@@ -48,7 +51,7 @@ class MergedExtrudePolygon extends MergedMixin(BaseObject) {
             geometry.dispose();
             const psCount = buffGeom.attributes.position.count,
                 //  colorCount = buffGeom.attributes.color.count,
-                normalCount = buffGeom.attributes.normal.count, uvCount = buffGeom.attributes.uv.count;
+                normalCount = buffGeom.attributes.normal.count;
             geometriesAttributes[i] = {
                 position: {
                     count: psCount,
@@ -65,48 +68,44 @@ class MergedExtrudePolygon extends MergedMixin(BaseObject) {
                 //     start: colorIndex,
                 //     end: colorIndex + colorCount * 3,
                 // },
-                uv: {
-                    count: uvCount,
-                    start: uvIndex,
-                    end: uvIndex + uvCount * 2,
-                },
+                // uv: {
+                //     count: uvCount,
+                //     start: uvIndex,
+                //     end: uvIndex + uvCount * 2,
+                // },
                 hide: false
             };
             psIndex += psCount * 3;
             normalIndex += normalCount * 3;
             // colorIndex += colorCount * 3;
-            uvIndex += uvCount * 2;
+            // uvIndex += uvCount * 2;
         }
         const geometry = THREE.BufferGeometryUtils.mergeBufferGeometries(geometries);
 
-        options = maptalks.Util.extend({}, OPTIONS, options, { layer, polygons, coordinate: center });
+        options = maptalks.Util.extend({}, OPTIONS, options, { layer, lineStrings, coordinate: center });
         super();
         this._initOptions(options);
 
-        const { topColor, bottomColor, altitude } = options;
-        if (topColor && !material.map) {
-            initVertexColors(geometry, bottomColor, topColor);
-            material.vertexColors = THREE.VertexColors;
-        }
-
         this._createMesh(geometry, material);
+        const { altitude } = options;
         const z = layer.distanceToVector3(altitude, altitude).x;
         const v = layer.coordinateToVector3(center, z);
         this.getObject3d().position.copy(v);
 
         //Face corresponding to monomer
         this._faceMap = faceMap;
-        this._baseObjects = extrudePolygons;
-        this._datas = polygons;
+        this._baseObjects = extrudeLines;
+        this._datas = lineStrings;
         this._geometriesAttributes = geometriesAttributes;
         this.faceIndex = null;
         this._geometryCache = geometry.clone();
         this.isHide = false;
 
-        extrudePolygons.forEach(extrudePolygon => {
-            this._proxyEvent(extrudePolygon);
+        extrudeLines.forEach(extrudeLine => {
+            this._proxyEvent(extrudeLine);
         });
     }
+
 
     // eslint-disable-next-line consistent-return
     getSelectMesh() {
@@ -133,40 +132,6 @@ class MergedExtrudePolygon extends MergedMixin(BaseObject) {
             }
         }
     }
-
-
-    /**
-     * https://github.com/maptalks/maptalks.js/blob/a56b878078e7fb48ecbe700ba7481edde7b83cfe/src/geometry/Path.js#L74
-     * @param {*} options
-     * @param {*} cb
-     */
-    animateShow(options = {}, cb) {
-        if (this._showPlayer) {
-            this._showPlayer.cancel();
-        }
-        if (maptalks.Util.isFunction(options)) {
-            options = {};
-            cb = options;
-        }
-        const duration = options['duration'] || 1000,
-            easing = options['easing'] || 'out';
-        const player = this._showPlayer = maptalks.animation.Animation.animate({
-            'scale': 1
-        }, {
-            'duration': duration,
-            'easing': easing
-        }, frame => {
-            const scale = frame.styles.scale;
-            if (scale > 0) {
-                this.getObject3d().scale.set(1, 1, scale);
-            }
-            if (cb) {
-                cb(frame, scale);
-            }
-        });
-        player.play();
-        return player;
-    }
 }
 
-export default MergedExtrudePolygon;
+export default ExtrudeLines;

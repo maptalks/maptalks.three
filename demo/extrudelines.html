@@ -77,7 +77,7 @@
                 lineStrings.forEach(lineString => {
                     lineString.setProperties({ altitude: 0, width: 3, height: 1 });
                 });
-                const mesh = threeLayer.toMergedExtrudeLine(lineStrings, { interactive: false }, material);
+                const mesh = threeLayer.toExtrudeLines(lineStrings, { interactive: false }, material);
                 lines.push(mesh);
                 threeLayer.addMesh(mesh);
                 console.log('lines.length:', lines.length);

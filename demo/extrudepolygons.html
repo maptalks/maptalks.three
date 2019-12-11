@@ -92,7 +92,7 @@
 
                 });
                 if (polygons.length > 0) {
-                    var mesh = threeLayer.toMergedExtrudePolygon(polygons.slice(0, Infinity), { topColor: '#fff' }, material);
+                    var mesh = threeLayer.toExtrudePolygons(polygons.slice(0, Infinity), { topColor: '#fff' }, material);
                     threeLayer.addMesh(mesh);
                     meshs.push(mesh);
                     polygons = [];
