@@ -7,10 +7,11 @@ import ExtrudeLine from './src/ExtrudeLine';
 import ExtrudePolygon from './src/ExtrudePolygon';
 import Model from './src/Model';
 import ExtrudeLineTrail from './src/ExtrudeLineTrail';
-import MergedExtrudeMesh from './src/MergedExtrudeMesh';
+import MergedExtrudePolygon from './src/MergedExtrudePolygon';
 import Point from './src/Point';
 import Points from './src/Points';
 import Bars from './src/Bars';
+import MergedExtrudeLine from './src/MergedExtrudeLine';
 
 const options = {
     'renderer': 'gl',
@@ -269,8 +270,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * @param {*} options
      * @param {*} material
      */
-    toMergedExtrudeMesh(polygons, options, material) {
-        return new MergedExtrudeMesh(polygons, options, material, this);
+    toMergedExtrudePolygon(polygons, options, material) {
+        return new MergedExtrudePolygon(polygons, options, material, this);
     }
 
 
@@ -304,6 +305,17 @@ class ThreeLayer extends maptalks.CanvasLayer {
      */
     toBars(points, options, material) {
         return new Bars(points, options, material, this);
+    }
+
+
+    /**
+     *
+     * @param {Array[maptalks.LineString]} lineStrings
+     * @param {*} options
+     * @param {*} material
+     */
+    toMergedExtrudeLine(lineStrings, options, material) {
+        return new MergedExtrudeLine(lineStrings, options, material, this);
     }
 
 
@@ -527,6 +539,10 @@ class ThreeLayer extends maptalks.CanvasLayer {
      */
     _identifyBaseObjectEvents(e) {
         const map = this.map || this.getMap();
+        //When map interaction, do not carry out mouse movement detection, which can have better performance
+        if (map.isInteracting() && e.type === 'mousemove') {
+            return this;
+        }
         map.resetCursor('default');
         const { type, coordinate } = e;
         const baseObjects = this.identify(coordinate);

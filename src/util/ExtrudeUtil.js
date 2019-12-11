@@ -90,7 +90,7 @@ export function initVertexColors(geometry, color, _topColor) {
 }
 
 /**
- *
+ *Get the center point of the point set
  * @param {*} coordinates
  */
 export function getCenterOfPoints(coordinates = []) {

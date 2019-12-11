@@ -12,7 +12,7 @@ const OPTIONS = {
     bottomColor: '#2d2f61',
 };
 
-class MergedExtrudeMesh extends MergedMixin(BaseObject) {
+class MergedExtrudePolygon extends MergedMixin(BaseObject) {
     constructor(polygons, options, material, layer) {
         if (!THREE.BufferGeometryUtils) {
             console.error('not find BufferGeometryUtils,please include related scripts');
@@ -169,4 +169,4 @@ class MergedExtrudeMesh extends MergedMixin(BaseObject) {
     }
 }
 
-export default MergedExtrudeMesh;
+export default MergedExtrudePolygon;
