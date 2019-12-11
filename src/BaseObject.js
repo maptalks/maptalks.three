@@ -328,6 +328,13 @@ class BaseObject extends maptalks.Eventable(Base) {
         this.object3d.__parent = this;
         return this;
     }
+
+    _createLineSegments(geometry, material) {
+        this.object3d = new THREE.LineSegments(geometry, material);
+        this.object3d.computeLineDistances();
+        this.object3d.__parent = this;
+        return this;
+    }
 }
 
 export default BaseObject;

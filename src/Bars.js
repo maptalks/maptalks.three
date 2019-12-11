@@ -99,7 +99,7 @@ class Bars extends MergedMixin(BaseObject) {
         this._createMesh(geometry, material);
 
         this._faceMap = faceMap;
-        this._bars = bars;
+        this._baseObjects = bars;
         this._datas = points;
         this._geometriesAttributes = geometriesAttributes;
         this.faceIndex = null;
@@ -118,7 +118,7 @@ class Bars extends MergedMixin(BaseObject) {
         if (index != null) {
             return {
                 data: this._datas[index],
-                baseObject: this._bars[index]
+                baseObject: this._baseObjects[index]
             };
         }
     }

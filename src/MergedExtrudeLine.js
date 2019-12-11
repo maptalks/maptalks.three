@@ -94,7 +94,7 @@ class MergedExtrudeLine extends MergedMixin(BaseObject) {
 
         //Face corresponding to monomer
         this._faceMap = faceMap;
-        this._extrudeLines = extrudeLines;
+        this._baseObjects = extrudeLines;
         this._datas = lineStrings;
         this._geometriesAttributes = geometriesAttributes;
         this.faceIndex = null;
@@ -113,7 +113,7 @@ class MergedExtrudeLine extends MergedMixin(BaseObject) {
         if (index != null) {
             return {
                 data: this._datas[index],
-                baseObject: this._extrudeLines[index]
+                baseObject: this._baseObjects[index]
             };
         }
     }

@@ -12,6 +12,7 @@ import Point from './src/Point';
 import Points from './src/Points';
 import Bars from './src/Bars';
 import MergedExtrudeLine from './src/MergedExtrudeLine';
+import Lines from './src/Lines';
 
 const options = {
     'renderer': 'gl',
@@ -319,6 +320,17 @@ class ThreeLayer extends maptalks.CanvasLayer {
     }
 
 
+    /**
+     *
+     * @param {Array[maptalks.LineString]} lineStrings
+     * @param {*} options
+     * @param {*} material
+     */
+    toLines(lineStrings, options, material) {
+        return new Lines(lineStrings, options, material, this);
+    }
+
+
 
     clearMesh() {
         const scene = this.getScene();
@@ -495,6 +507,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 object = this._recursionMesh(object);
                 const baseObject = object.__parent || object;
                 baseObject.faceIndex = intersect.faceIndex;
+                baseObject.index = intersect.index;
                 return baseObject;
             });
         }
@@ -540,9 +553,9 @@ class ThreeLayer extends maptalks.CanvasLayer {
     _identifyBaseObjectEvents(e) {
         const map = this.map || this.getMap();
         //When map interaction, do not carry out mouse movement detection, which can have better performance
-        if (map.isInteracting() && e.type === 'mousemove') {
-            return this;
-        }
+        // if (map.isInteracting() && e.type === 'mousemove') {
+        //     return this;
+        // }
         map.resetCursor('default');
         const { type, coordinate } = e;
         const baseObjects = this.identify(coordinate);

@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 
 const EVENTS = ['click', 'mousemove', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].join(' ').toString();
 
@@ -62,11 +63,15 @@ const MergedMixin = (Base) => {
             for (let i = 0; i < len; i++) {
                 bufferAttribute.array[i] = array[i];
             }
+            let value = NaN;
+            if (this.getObject3d() instanceof THREE.LineSegments) {
+                value = 0;
+            }
             for (let j = 0; j < indexs.length; j++) {
                 const index = indexs[j];
                 const { start, end } = this._geometriesAttributes[index][attribute];
                 for (let i = start; i < end; i++) {
-                    bufferAttribute.array[i] = NaN;
+                    bufferAttribute.array[i] = value;
                 }
             }
             return this;
