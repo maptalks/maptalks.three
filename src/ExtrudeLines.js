@@ -101,9 +101,7 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
         this._geometryCache = geometry.clone();
         this.isHide = false;
 
-        extrudeLines.forEach(extrudeLine => {
-            this._proxyEvent(extrudeLine);
-        });
+        this._initBaseObjectsEvent(extrudeLines);
     }
 
 

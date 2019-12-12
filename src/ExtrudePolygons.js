@@ -103,9 +103,7 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
         this._geometryCache = geometry.clone();
         this.isHide = false;
 
-        extrudePolygons.forEach(extrudePolygon => {
-            this._proxyEvent(extrudePolygon);
-        });
+        this._initBaseObjectsEvent(extrudePolygons);
     }
 
     // eslint-disable-next-line consistent-return

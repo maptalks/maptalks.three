@@ -10,6 +10,28 @@ const MergedMixin = (Base) => {
 
     return class extends Base {
 
+        // this._baseObjects = [];
+        // this._data = [];
+        // this.faceIndex = null;
+        // this.index=null;
+        // this._geometriesAttributes = geometriesAttributes;
+        // this._geometryCache = geometry.clone();
+        // this.isHide = false;
+
+        /**
+         *
+         * @param {*} baseObjects
+         */
+        _initBaseObjectsEvent(baseObjects) {
+            if (baseObjects && Array.isArray(baseObjects) && baseObjects.length) {
+                for (let i = 0, len = baseObjects.length; i < len; i++) {
+                    const baseObject = baseObjects[i];
+                    this._proxyEvent(baseObject);
+                }
+            }
+            return this;
+        }
+
         /**
          *Events representing the merge
          * @param {*} baseObject

@@ -14,7 +14,7 @@ export function getGeometry(property, isCache = true) {
         _radius,
         _height
     } = property;
-    if (!isCache) {
+    if (!isCache) { //for bars
         const geometry = new THREE.CylinderBufferGeometry(radius, radius, height, radialSegments, 1);
         geometry.rotateX(Math.PI / 2);
         const parray = geometry.attributes.position.array;

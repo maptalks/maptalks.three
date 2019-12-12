@@ -87,9 +87,7 @@ class Lines extends MergedMixin(BaseObject) {
         this._geometryCache = geometry.clone();
         this.isHide = false;
 
-        lines.forEach(line => {
-            this._proxyEvent(line);
-        });
+        this._initBaseObjectsEvent(lines);
     }
 
     // eslint-disable-next-line consistent-return

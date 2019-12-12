@@ -106,9 +106,7 @@ class Bars extends MergedMixin(BaseObject) {
         this._geometryCache = geometry.clone();
         this.isHide = false;
 
-        bars.forEach(bar => {
-            this._proxyEvent(bar);
-        });
+        this._initBaseObjectsEvent(bars);
     }
 
 

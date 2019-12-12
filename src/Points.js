@@ -12,6 +12,9 @@ const OPTIONS = {
 const MAX = 100000;
 const vector = new THREE.Vector3();
 
+/**
+ *points
+ */
 class Points extends MergedMixin(BaseObject) {
     constructor(points, options, material, layer) {
         if (!Array.isArray(points)) {
@@ -50,6 +53,7 @@ class Points extends MergedMixin(BaseObject) {
             geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3, true));
         }
 
+        //for identify
         options.positions = vectors;
         super();
         this._initOptions(options);
@@ -58,32 +62,28 @@ class Points extends MergedMixin(BaseObject) {
         const z = layer.distanceToVector3(altitude, altitude).x;
         this.getObject3d().position.z = z;
 
-        this._points = pointMeshes;
+        this._baseObjects = pointMeshes;
         this._data = points;
         this.faceIndex = null;
         this._geometriesAttributes = geometriesAttributes;
         this._geometryCache = geometry.clone();
         this.isHide = false;
-        if (pointMeshes.length) {
-            pointMeshes.forEach(point => {
-                this._proxyEvent(point);
-            });
-        }
+        this._initBaseObjectsEvent(pointMeshes);
     }
 
     // eslint-disable-next-line consistent-return
     getSelectMesh() {
         const index = this.faceIndex;
         if (index != null) {
-            if (!this._points[index]) {
+            if (!this._baseObjects[index]) {
                 const data = this._data[index];
                 const { coordinate, height, color } = data;
-                this._points[index] = new Point(coordinate, { height, index, color }, this.getObject3d().material, this.getLayer());
-                this._proxyEvent(this._points[index]);
+                this._baseObjects[index] = new Point(coordinate, { height, index, color }, this.getObject3d().material, this.getLayer());
+                this._proxyEvent(this._baseObjects[index]);
             }
             return {
                 data: this._data[index],
-                baseObject: this._points[index]
+                baseObject: this._baseObjects[index]
             };
         }
     }
