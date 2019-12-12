@@ -15,7 +15,13 @@ export function getGeometry(property, isCache = true) {
         _height
     } = property;
     if (!isCache) {
-        return new THREE.CylinderBufferGeometry(radius, radius, height, radialSegments, 1);
+        const geometry = new THREE.CylinderBufferGeometry(radius, radius, height, radialSegments, 1);
+        geometry.rotateX(Math.PI / 2);
+        const parray = geometry.attributes.position.array;
+        for (let j = 0, len1 = parray.length; j < len1; j += 3) {
+            parray[j + 2] += (height / 2);
+        }
+        return geometry;
     }
     let geometry;
     for (let i = 0; i <= 4; i++) {
@@ -29,6 +35,12 @@ export function getGeometry(property, isCache = true) {
     if (!geometry) {
         const key = [_height, _radius, radialSegments].join(KEY).toString();
         geometry = barGeometryCache[key] = new THREE.CylinderBufferGeometry(radius, radius, height, radialSegments, 1);
+        geometry.rotateX(Math.PI / 2);
+        const parray = geometry.attributes.position.array;
+        for (let j = 0, len1 = parray.length; j < len1; j += 3) {
+            parray[j + 2] += (height / 2);
+        }
+        return geometry;
     }
     return geometry;
 }

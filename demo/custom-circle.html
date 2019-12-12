@@ -210,7 +210,7 @@
 
         function animateShow() {
             circles.forEach(circle => {
-                circle.animationShow({
+                circle.animateShow({
                     duration: 1000,
                     easing: 'upAndDown'
                 })
@@ -254,10 +254,10 @@
 
 
             /**
-             * animationShow test
+             * animateShow test
              * 
              * */
-            animationShow(options = {}, cb) {
+            animateShow(options = {}, cb) {
                 if (this._showPlayer) {
                     this._showPlayer.cancel();
                 }

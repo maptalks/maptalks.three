@@ -276,7 +276,31 @@ class BaseObject extends maptalks.Eventable(Base) {
      */
     // eslint-disable-next-line no-unused-vars
     animateShow(options = {}, cb) {
-
+        if (this._showPlayer) {
+            this._showPlayer.cancel();
+        }
+        if (maptalks.Util.isFunction(options)) {
+            options = {};
+            cb = options;
+        }
+        const duration = options['duration'] || 1000,
+            easing = options['easing'] || 'out';
+        const player = this._showPlayer = maptalks.animation.Animation.animate({
+            'scale': 1
+        }, {
+            'duration': duration,
+            'easing': easing
+        }, frame => {
+            const scale = frame.styles.scale;
+            if (scale > 0) {
+                this.getObject3d().scale.set(1, 1, scale);
+            }
+            if (cb) {
+                cb(frame, scale);
+            }
+        });
+        player.play();
+        return player;
     }
 
     config() {

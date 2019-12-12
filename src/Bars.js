@@ -38,14 +38,14 @@ class Bars extends MergedMixin(BaseObject) {
             const alt = layer.distanceToVector3(altitude, altitude).x;
             const buffGeom = getGeometry({ radius: r, height: h, radialSegments }, false);
             if (topColor && !material.map) {
-                initVertexColors(buffGeom, bottomColor, topColor);
+                initVertexColors(buffGeom, bottomColor, topColor, 'z', h / 2);
                 material.vertexColors = THREE.VertexColors;
             }
-            buffGeom.rotateX(Math.PI / 2);
+            // buffGeom.rotateX(Math.PI / 2);
             const v = layer.coordinateToVector3(coordinate);
             const parray = buffGeom.attributes.position.array;
             for (let j = 0, len1 = parray.length; j < len1; j += 3) {
-                parray[j + 2] += (h / 2 + alt);
+                parray[j + 2] += alt;
                 parray[j] += v.x;
                 parray[j + 1] += v.y;
                 parray[j + 2] += v.z;
@@ -136,40 +136,6 @@ class Bars extends MergedMixin(BaseObject) {
                 }
             }
         }
-    }
-
-
-    /**
-     * https://github.com/maptalks/maptalks.js/blob/a56b878078e7fb48ecbe700ba7481edde7b83cfe/src/geometry/Path.js#L74
-     * @param {*} options
-     * @param {*} cb
-     */
-    animateShow(options = {}, cb) {
-        if (this._showPlayer) {
-            this._showPlayer.cancel();
-        }
-        if (maptalks.Util.isFunction(options)) {
-            options = {};
-            cb = options;
-        }
-        const duration = options['duration'] || 1000,
-            easing = options['easing'] || 'out';
-        const player = this._showPlayer = maptalks.animation.Animation.animate({
-            'scale': 1
-        }, {
-            'duration': duration,
-            'easing': easing
-        }, frame => {
-            const scale = frame.styles.scale;
-            if (scale > 0) {
-                this.getObject3d().scale.set(1, 1, scale);
-            }
-            if (cb) {
-                cb(frame, scale);
-            }
-        });
-        player.play();
-        return player;
     }
 }
 

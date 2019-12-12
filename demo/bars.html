@@ -141,12 +141,12 @@
                         for (let i = 0; i <= page; i++) {
                             const list = data.slice(i * PAGESIZE, (i + 1) * PAGESIZE);
                             if (list.length) {
-                                const mesh = threeLayer.toBars(list, {}, material);
+                                const mesh = threeLayer.toBars(list, { interactive: false }, material);
                                 bars.push(mesh);
                             }
                         }
                     } else {
-                        const mesh = threeLayer.toBars(data, {}, material);
+                        const mesh = threeLayer.toBars(data, { interactive: false }, material);
                         bars.push(mesh);
                     }
                 }
@@ -238,7 +238,8 @@
                 show: true,
                 opacity: 1,
                 altitude: 0,
-                animateShow: animateShow
+                animateShow: animateShow,
+                interactive: false
             };
 
             var gui = new dat.GUI();
@@ -277,6 +278,11 @@
                 });
             });
             gui.add(params, 'animateShow');
+            gui.add(params, 'interactive').onChange(function () {
+                bars.forEach(function (mesh) {
+                    mesh.options.interactive = params.interactive;
+                });
+            });
         }
 
         function animateShow() {
