@@ -129,6 +129,35 @@
             map: new THREE.TextureLoader().load('./data/1.svg')
         });
 
+
+        var polygon = new maptalks.Polygon([
+            [
+                [-0.131049, 51.498568],
+                [-0.107049, 51.498568],
+                [-0.107049, 51.493568],
+                [-0.131049, 51.493568],
+                [-0.131049, 51.498568]
+            ]
+        ], {
+            visible: true,
+            editable: true,
+            cursor: 'pointer',
+            shadowBlur: 0,
+            shadowColor: 'black',
+            draggable: false,
+            dragShadow: false, // display a shadow during dragging
+            drawOnAxis: null,  // force dragging stick on a axis, can be: x, y
+            symbol: {
+                'lineColor': '#34495e',
+                'lineWidth': 2,
+                'polygonFill': 'rgb(135,196,240)',
+                'polygonOpacity': 0.6
+            }
+        });
+
+        const layer = new maptalks.VectorLayer('vector').addTo(map);
+        layer.setZIndex(-9);
+
         function addPoints(scene) {
             d3.csv('https://gw.alipayobjects.com/os/rmsportal/BElVQFEFvpAKzddxFZxJ.txt',
                 (error, response) => {
@@ -139,7 +168,32 @@
                             value: Math.random() * 10000
                         };
                     });
-                    const point = threeLayer.toPoints(data, {}, material);
+                    const point = threeLayer.toPoints(data, { interactive: false }, material);
+                    const grids = point._grids;
+                    // console.log(girds);
+
+                    grids.forEach(grid => {
+                        const { minlng, minlat, maxlng, maxlat, key } = grid;
+                        const coordinates = [
+                            [minlng, minlat],
+                            [minlng, maxlat],
+                            [maxlng, maxlat],
+                            [maxlng, minlat]
+                        ];
+                        const polygon = new maptalks.Polygon(coordinates, {
+                            symbol: {
+                                textName: key,
+                                textFill: '#fff',
+                                textSize: 12,
+                                'lineColor': '#34495e',
+                                'lineWidth': 2,
+                                'polygonFill': 'rgb(135,196,240)',
+                                'polygonOpacity': 0
+                            },
+                            interactive: false
+                        });
+                        layer.addGeometry(polygon);
+                    });
                     points.push(point);
                     threeLayer.addMesh(points);
 
@@ -179,7 +233,7 @@
                             }
 
 
-                            if (selectMesh.length > 20) {
+                            if (selectMesh.length > 1) {
                                 threeLayer.removeMesh(selectMesh);
                                 selectMesh = [];
                             }
@@ -224,12 +278,13 @@
         function initGui() {
             var params = {
                 blending: false,
-                size: 5,
+                size: material.size,
 
                 color: '#fff',
                 show: true,
                 opacity: 1,
                 altitude: 0,
+                interactive: false
                 // animateShow: animateShow
             };
 
@@ -243,6 +298,11 @@
             });
             gui.add(params, 'size', 1, 20).onChange(function () {
                 material.size = params.size;
+            });
+            gui.add(params, 'interactive').onChange(function () {
+                points.forEach(function (mesh) {
+                    mesh.options.interactive = params.interactive;
+                });
             });
         }
 

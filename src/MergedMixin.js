@@ -10,11 +10,12 @@ const MergedMixin = (Base) => {
 
     return class extends Base {
 
+        // this._faceMap=[];
         // this._baseObjects = [];
         // this._data = [];
         // this.faceIndex = null;
         // this.index=null;
-        // this._geometriesAttributes = geometriesAttributes;
+        // this._geometriesAttributes = [];
         // this._geometryCache = geometry.clone();
         // this.isHide = false;
 
@@ -60,16 +61,16 @@ const MergedMixin = (Base) => {
          */
         _getHideGeometryIndex(attribute) {
             const indexs = [];
-            let len = 0;
-            for (let key in this._geometriesAttributes) {
-                if (this._geometriesAttributes[key].hide === true) {
-                    indexs.push(key);
-                    len += this._geometriesAttributes[key][attribute].count;
+            let count = 0;
+            for (let i = 0, len = this._geometriesAttributes.length; i < len; i++) {
+                if (this._geometriesAttributes[i].hide === true) {
+                    indexs.push(i);
+                    count += this._geometriesAttributes[i][attribute].count;
                 }
             }
             return {
                 indexs,
-                count: len
+                count
             };
         }
 

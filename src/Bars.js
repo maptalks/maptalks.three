@@ -28,7 +28,7 @@ class Bars extends MergedMixin(BaseObject) {
             points = [points];
         }
         const len = points.length;
-        const geometries = [], bars = [], geometriesAttributes = [], faceMap = {};
+        const geometries = [], bars = [], geometriesAttributes = [], faceMap = [];
         let faceIndex = 0, psIndex = 0, normalIndex = 0, uvIndex = 0;
         for (let i = 0; i < len; i++) {
             const opts = maptalks.Util.extend({ index: i }, OPTIONS, points[i]);
@@ -127,10 +127,10 @@ class Bars extends MergedMixin(BaseObject) {
             faceIndex = this.faceIndex;
         }
         if (faceIndex != null) {
-            for (let index in this._faceMap) {
-                const [start, end] = this._faceMap[index];
+            for (let i = 0, len = this._faceMap.length; i < len; i++) {
+                const [start, end] = this._faceMap[i];
                 if (start <= faceIndex && faceIndex < end) {
-                    return index;
+                    return i;
                 }
             }
         }

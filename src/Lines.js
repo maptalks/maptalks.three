@@ -32,7 +32,7 @@ class Lines extends MergedMixin(BaseObject) {
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, lineStrings, coordinate: center });
 
         const lines = [];
-        let faceIndex = 0, faceMap = {}, geometriesAttributes = {},
+        let faceIndex = 0, faceMap = [], geometriesAttributes = [],
             psIndex = 0, ps = [];
         for (let i = 0; i < len; i++) {
             const lineString = lineStrings[i];
@@ -107,10 +107,10 @@ class Lines extends MergedMixin(BaseObject) {
             faceIndex = this.faceIndex || this.index;
         }
         if (faceIndex != null) {
-            for (let index in this._faceMap) {
-                const [start, end] = this._faceMap[index];
+            for (let i = 0, len = this._faceMap.length; i < len; i++) {
+                const [start, end] = this._faceMap[i];
                 if (start <= faceIndex && faceIndex < end) {
-                    return index;
+                    return i;
                 }
             }
         }

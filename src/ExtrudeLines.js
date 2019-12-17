@@ -29,7 +29,7 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
         // Get the center point of the point set
         const center = getCenterOfPoints(centers);
         const geometries = [], extrudeLines = [];
-        let faceIndex = 0, faceMap = {}, geometriesAttributes = {},
+        let faceIndex = 0, faceMap = [], geometriesAttributes = [],
             psIndex = 0, normalIndex = 0;
         for (let i = 0; i < len; i++) {
             const lineString = lineStrings[i];
@@ -122,10 +122,10 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
             faceIndex = this.faceIndex;
         }
         if (faceIndex != null) {
-            for (let index in this._faceMap) {
-                const [start, end] = this._faceMap[index];
+            for (let i = 0, len = this._faceMap.length; i < len; i++) {
+                const [start, end] = this._faceMap[i];
                 if (start <= faceIndex && faceIndex < end) {
-                    return index;
+                    return i;
                 }
             }
         }
