@@ -96,7 +96,7 @@
                 lineStrings.forEach(lineString => {
                     lineString.setProperties({ altitude: 0, width: 3, height: 1 });
                 });
-                const mesh = threeLayer.toLines(lineStrings, { interactive: false }, material);
+                const mesh = threeLayer.toLines(lineStrings, { interactive: false, minZoom: 11, maxZoom: 19 }, material);
                 lines.push(mesh);
                 threeLayer.addMesh(mesh);
                 console.log('lines.length:', lines.length);

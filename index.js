@@ -398,8 +398,10 @@ class ThreeLayer extends maptalks.CanvasLayer {
         meshes.forEach(mesh => {
             if (mesh instanceof BaseObject) {
                 scene.add(mesh.getObject3d());
-                mesh.isAdd = true;
-                mesh._fire('add', { target: mesh });
+                if (!mesh.isAdd) {
+                    mesh.isAdd = true;
+                    mesh._fire('add', { target: mesh });
+                }
                 if (mesh._animation && maptalks.Util.isFunction(mesh._animation)) {
                     this._animationBaseObjectMap[mesh.getObject3d().uuid] = mesh;
                 }
@@ -407,6 +409,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 scene.add(mesh);
             }
         });
+        this._zoomend();
         this.renderScene();
         return this;
     }
@@ -424,8 +427,10 @@ class ThreeLayer extends maptalks.CanvasLayer {
         meshes.forEach(mesh => {
             if (mesh instanceof BaseObject) {
                 scene.remove(mesh.getObject3d());
-                mesh.isAdd = false;
-                mesh._fire('remove', { target: mesh });
+                if (mesh.isAdd) {
+                    mesh.isAdd = false;
+                    mesh._fire('remove', { target: mesh });
+                }
                 if (mesh._animation && maptalks.Util.isFunction(mesh._animation)) {
                     delete this._animationBaseObjectMap[mesh.getObject3d().uuid];
                 }
@@ -487,7 +492,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
             const parent = mesh.__parent;
             if (parent && parent.getOptions) {
                 const interactive = parent.getOptions().interactive;
-                if (interactive) {
+                if (interactive && parent.isVisible()) {
                     //If baseobject has its own hit detection
                     if (parent.identify && maptalks.Util.isFunction(parent.identify)) {
                         hasidentifyChildren.push(parent);
@@ -638,6 +643,28 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return this;
     }
 
+    /**
+     *map zoom event
+     */
+    _zoomend() {
+        const scene = this.getScene();
+        if (!scene) {
+            return;
+        }
+        const zoom = this.getMap().getZoom();
+        scene.children.forEach(mesh => {
+            const parent = mesh.__parent;
+            if (parent && parent.getOptions) {
+                const minZoom = parent.getMinZoom(), maxZoom = parent.getMaxZoom();
+                if ((zoom < minZoom || zoom > maxZoom) && parent.isVisible()) {
+                    parent.hide();
+                } else if (minZoom <= zoom && zoom <= maxZoom && (!parent.isVisible())) {
+                    parent.show();
+                }
+            }
+        });
+    }
+
 
     onAdd() {
         super.onAdd();
@@ -650,6 +677,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         if (!this._animationBaseObjectMap) {
             this._animationBaseObjectMap = {};
         }
+        map.on('zooming zoomend', this._zoomend, this);
         return this;
     }
 
@@ -660,6 +688,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         EVENTS.forEach(event => {
             map.off(event, this._identifyBaseObjectEvents, this);
         });
+        map.off('zooming zoomend', this._zoomend, this);
         return this;
     }
 

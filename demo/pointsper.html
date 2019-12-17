@@ -157,6 +157,7 @@
 
         const layer = new maptalks.VectorLayer('vector').addTo(map);
         layer.setZIndex(-9);
+        var gridpolygons = [];
 
         function addPoints(scene) {
             d3.csv('https://gw.alipayobjects.com/os/rmsportal/BElVQFEFvpAKzddxFZxJ.txt',
@@ -168,7 +169,7 @@
                             value: Math.random() * 10000
                         };
                     });
-                    const point = threeLayer.toPoints(data, { interactive: false }, material);
+                    const point = threeLayer.toPoints(data, { interactive: false, minZoom: 10, maxZoom: 19 }, material);
                     const grids = point._grids;
                     // console.log(girds);
 
@@ -192,7 +193,8 @@
                             },
                             interactive: false
                         });
-                        layer.addGeometry(polygon);
+                        gridpolygons.push(polygon);
+                        // layer.addGeometry(polygon);
                     });
                     points.push(point);
                     threeLayer.addMesh(points);
@@ -284,7 +286,8 @@
                 show: true,
                 opacity: 1,
                 altitude: 0,
-                interactive: false
+                interactive: false,
+                grid: false
                 // animateShow: animateShow
             };
 
@@ -303,6 +306,13 @@
                 points.forEach(function (mesh) {
                     mesh.options.interactive = params.interactive;
                 });
+            });
+            gui.add(params, 'grid').onChange(function () {
+                if (params.grid) {
+                    layer.addGeometry(gridpolygons);
+                } else {
+                    layer.removeGeometry(gridpolygons);
+                }
             });
         }
 

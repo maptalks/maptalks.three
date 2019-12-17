@@ -5,7 +5,9 @@ import ToolTip from './ui/ToolTip';
 
 const OPTIONS = {
     interactive: true,
-    altitude: 0
+    altitude: 0,
+    minZoom: 0,
+    maxZoom: 30
 };
 
 /**
@@ -301,6 +303,16 @@ class BaseObject extends maptalks.Eventable(Base) {
         });
         player.play();
         return player;
+    }
+
+
+    getMinZoom() {
+        return this.getOptions().minZoom;
+    }
+
+
+    getMaxZoom() {
+        return this.getOptions().maxZoom;
     }
 
     config() {
