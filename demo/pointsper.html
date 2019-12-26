@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>point</title>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.13.0/d3.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/gcoord@0.2.3/dist/gcoord.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.97.0/build/three.min.js"></script>
+    <script type="text/javascript" src="../dist/maptalks.three.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.97.0/examples/js/libs/stats.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 900px;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            "center": [121.40478712491074, 31.161950364960347], "zoom": 10, "pitch": 11.200000000000058, "bearing": -1.800000000000182,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+            // animation: true
+        });
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+
+            addPoints(scene);
+
+        };
+        threeLayer.addTo(map);
+
+
+        function createLightMateria() {
+            const canvasDom = document.createElement('canvas');
+            const size = 32;
+            canvasDom.width = size;
+            canvasDom.height = size;
+            const ctx = canvasDom.getContext('2d');
+            const gradient = ctx.createRadialGradient(
+                canvasDom.width / 2,
+                canvasDom.height / 2,
+                0,
+                canvasDom.width / 2,
+                canvasDom.height / 2,
+                canvasDom.width / 2);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(0.005, 'rgba(139,69,19,1)');
+            gradient.addColorStop(0.4, 'rgba(139,69,19,1)');
+            gradient.addColorStop(1, 'rgba(0,0,0,1)');
+
+            ctx.fillStyle = gradient;
+            ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+            ctx.fill();
+            console.log(canvasDom.toDataURL());
+
+            // ctx.fillRect(0, 0, canvasDom.width, canvasDom.height);
+
+            const texture = new THREE.Texture(canvasDom);
+            texture.needsUpdate = true; //使用贴图时进行更新
+            return texture;
+        }
+
+
+        var points = [], selectMesh = [];
+        const material = new THREE.PointsMaterial({
+            // size: 10,
+            sizeAttenuation: false,
+            // color: 'red',
+            // alphaTest: 0.5,
+            // vertexColors: THREE.VertexColors,
+            //  transparent: true
+            // color: 0xffffff,
+            size: 1,
+            transparent: true, //使材质透明
+            // blending: THREE.AdditiveBlending,
+            depthTest: true, //深度测试关闭，不消去场景的不可见面
+            depthWrite: false,
+            map: createLightMateria() //刚刚创建的粒子贴图就在这里用上
+        });
+
+        var highlightmaterial = new THREE.PointsMaterial({
+            // size: 10,
+            sizeAttenuation: false,
+            // color: '#fff',
+            // alphaTest: 0.5,
+            // vertexColors: THREE.VertexColors,
+            //  transparent: true
+            // color: 0xffffff,
+            size: 36,
+            transparent: true, //使材质透明
+            // blending: THREE.AdditiveBlending,
+            depthTest: true, //深度测试关闭，不消去场景的不可见面
+            depthWrite: false,
+            map: new THREE.TextureLoader().load('./data/1.svg')
+        });
+
+
+        var polygon = new maptalks.Polygon([
+            [
+                [-0.131049, 51.498568],
+                [-0.107049, 51.498568],
+                [-0.107049, 51.493568],
+                [-0.131049, 51.493568],
+                [-0.131049, 51.498568]
+            ]
+        ], {
+            visible: true,
+            editable: true,
+            cursor: 'pointer',
+            shadowBlur: 0,
+            shadowColor: 'black',
+            draggable: false,
+            dragShadow: false, // display a shadow during dragging
+            drawOnAxis: null,  // force dragging stick on a axis, can be: x, y
+            symbol: {
+                'lineColor': '#34495e',
+                'lineWidth': 2,
+                'polygonFill': 'rgb(135,196,240)',
+                'polygonOpacity': 0.6
+            }
+        });
+
+        const layer = new maptalks.VectorLayer('vector').addTo(map);
+        layer.setZIndex(-9);
+        var gridpolygons = [];
+
+        function addPoints(scene) {
+            d3.csv('https://gw.alipayobjects.com/os/rmsportal/BElVQFEFvpAKzddxFZxJ.txt',
+                (error, response) => {
+                    // console.log(response);
+                    let data = response.slice(0, 5 * 100000).map(d => {
+                        return {
+                            coordinate: [Number(d.lng), Number(d.lat)],
+                            value: Math.random() * 10000
+                        };
+                    });
+                    const point = threeLayer.toPoints(data, { interactive: false, minZoom: 10, maxZoom: 19 }, material);
+                    const grids = point._grids;
+                    // console.log(girds);
+
+                    grids.forEach(grid => {
+                        const { minlng, minlat, maxlng, maxlat, key } = grid;
+                        const coordinates = [
+                            [minlng, minlat],
+                            [minlng, maxlat],
+                            [maxlng, maxlat],
+                            [maxlng, minlat]
+                        ];
+                        const polygon = new maptalks.Polygon(coordinates, {
+                            symbol: {
+                                textName: key,
+                                textFill: '#fff',
+                                textSize: 12,
+                                'lineColor': '#34495e',
+                                'lineWidth': 2,
+                                'polygonFill': 'rgb(135,196,240)',
+                                'polygonOpacity': 0
+                            },
+                            interactive: false
+                        });
+                        gridpolygons.push(polygon);
+                        // layer.addGeometry(polygon);
+                    });
+                    points.push(point);
+                    threeLayer.addMesh(points);
+
+                    // tooltip test
+                    point.setToolTip('hello', {
+                        showTimeout: 0,
+                        eventsPropagation: true,
+                        dx: 10
+                    });
+                    threeLayer.addMesh(points);
+
+
+                    //infowindow test
+                    point.setInfoWindow({
+                        content: 'hello world,height:',
+                        title: 'message',
+                        animationDuration: 0,
+                        autoOpenOn: false
+                    });
+                    ['click', 'empty', 'mousemove'].forEach(function (eventType) {
+                        point.on(eventType, function (e) {
+                            const select = e.selectMesh;
+                            if (e.type === 'empty' && selectMesh.length) {
+                                threeLayer.removeMesh(selectMesh);
+                                selectMesh = [];
+                            }
+
+                            let data, baseObject;
+                            if (select) {
+                                data = select.data;
+                                baseObject = select.baseObject;
+                                if (baseObject && !baseObject.isAdd) {
+                                    baseObject.setSymbol(highlightmaterial);
+                                    threeLayer.addMesh(baseObject);
+                                    selectMesh.push(baseObject);
+                                }
+                            }
+
+
+                            if (selectMesh.length > 1) {
+                                threeLayer.removeMesh(selectMesh);
+                                selectMesh = [];
+                            }
+                            // override tooltip
+                            if (e.type === 'mousemove' && data) {
+                                const height = data.value;
+                                const tooltip = this.getToolTip();
+                                tooltip._content = `value:${height}`;
+                            }
+                            //             //override infowindow
+                            if (e.type === 'click' && data) {
+                                const height = data.value;
+                                const infoWindow = this.getInfoWindow();
+                                infoWindow.setContent(`value:${height}`);
+                                if (infoWindow && (!infoWindow._owner)) {
+                                    infoWindow.addTo(this);
+                                }
+                                this.openInfoWindow(e.coordinate);
+                            }
+
+                        });
+                    });
+                });
+            animation();
+            initGui();
+        }
+
+
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer._renderer.clearCanvas();
+                threeLayer.renderScene();
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+        }
+
+
+        function initGui() {
+            var params = {
+                blending: false,
+                size: material.size,
+
+                color: '#fff',
+                show: true,
+                opacity: 1,
+                altitude: 0,
+                interactive: false,
+                grid: false
+                // animateShow: animateShow
+            };
+
+            var gui = new dat.GUI();
+            gui.add(params, 'blending').onChange(function () {
+                if (params.blending) {
+                    material.blending = THREE.AdditiveBlending;
+                } else {
+                    material.blending = THREE.NoBlending;
+                }
+            });
+            gui.add(params, 'size', 1, 20).onChange(function () {
+                material.size = params.size;
+            });
+            gui.add(params, 'interactive').onChange(function () {
+                points.forEach(function (mesh) {
+                    mesh.options.interactive = params.interactive;
+                });
+            });
+            gui.add(params, 'grid').onChange(function () {
+                if (params.grid) {
+                    layer.addGeometry(gridpolygons);
+                } else {
+                    layer.removeGeometry(gridpolygons);
+                }
+            });
+        }
+
+    </script>
+</body>
+
+</html>

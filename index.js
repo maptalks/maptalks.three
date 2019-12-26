@@ -7,6 +7,12 @@ import ExtrudeLine from './src/ExtrudeLine';
 import ExtrudePolygon from './src/ExtrudePolygon';
 import Model from './src/Model';
 import ExtrudeLineTrail from './src/ExtrudeLineTrail';
+import ExtrudePolygons from './src/ExtrudePolygons';
+import Point from './src/Point';
+import Points from './src/Points';
+import Bars from './src/Bars';
+import ExtrudeLines from './src/ExtrudeLines';
+import Lines from './src/Lines';
 
 const options = {
     'renderer': 'gl',
@@ -259,6 +265,71 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return new ExtrudeLineTrail(lineString, options, material, this);
     }
 
+    /**
+     *
+     * @param {*} polygons
+     * @param {*} options
+     * @param {*} material
+     */
+    toExtrudePolygons(polygons, options, material) {
+        return new ExtrudePolygons(polygons, options, material, this);
+    }
+
+
+    /**
+     *
+     * @param {maptalks.Coordinate} coordinate
+     * @param {*} options
+     * @param {*} material
+     */
+    toPoint(coordinate, options, material) {
+        return new Point(coordinate, options, material, this);
+    }
+
+
+    /**
+     *
+     * @param {Array} points
+     * @param {*} options
+     * @param {*} material
+     */
+    toPoints(points, options, material) {
+        return new Points(points, options, material, this);
+    }
+
+
+    /**
+     *
+     * @param {Array} points
+     * @param {*} options
+     * @param {*} material
+     */
+    toBars(points, options, material) {
+        return new Bars(points, options, material, this);
+    }
+
+
+    /**
+     *
+     * @param {Array[maptalks.LineString]} lineStrings
+     * @param {*} options
+     * @param {*} material
+     */
+    toExtrudeLines(lineStrings, options, material) {
+        return new ExtrudeLines(lineStrings, options, material, this);
+    }
+
+
+    /**
+     *
+     * @param {Array[maptalks.LineString]} lineStrings
+     * @param {*} options
+     * @param {*} material
+     */
+    toLines(lineStrings, options, material) {
+        return new Lines(lineStrings, options, material, this);
+    }
+
 
 
     clearMesh() {
@@ -327,7 +398,10 @@ class ThreeLayer extends maptalks.CanvasLayer {
         meshes.forEach(mesh => {
             if (mesh instanceof BaseObject) {
                 scene.add(mesh.getObject3d());
-                mesh._fire('add', { target: mesh });
+                if (!mesh.isAdd) {
+                    mesh.isAdd = true;
+                    mesh._fire('add', { target: mesh });
+                }
                 if (mesh._animation && maptalks.Util.isFunction(mesh._animation)) {
                     this._animationBaseObjectMap[mesh.getObject3d().uuid] = mesh;
                 }
@@ -335,6 +409,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 scene.add(mesh);
             }
         });
+        this._zoomend();
         this.renderScene();
         return this;
     }
@@ -352,7 +427,10 @@ class ThreeLayer extends maptalks.CanvasLayer {
         meshes.forEach(mesh => {
             if (mesh instanceof BaseObject) {
                 scene.remove(mesh.getObject3d());
-                mesh._fire('remove', { target: mesh });
+                if (mesh.isAdd) {
+                    mesh.isAdd = false;
+                    mesh._fire('remove', { target: mesh });
+                }
                 if (mesh._animation && maptalks.Util.isFunction(mesh._animation)) {
                     delete this._animationBaseObjectMap[mesh.getObject3d().uuid];
                 }
@@ -414,7 +492,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
             const parent = mesh.__parent;
             if (parent && parent.getOptions) {
                 const interactive = parent.getOptions().interactive;
-                if (interactive) {
+                if (interactive && parent.isVisible()) {
                     //If baseobject has its own hit detection
                     if (parent.identify && maptalks.Util.isFunction(parent.identify)) {
                         hasidentifyChildren.push(parent);
@@ -432,7 +510,10 @@ class ThreeLayer extends maptalks.CanvasLayer {
             baseObjects = intersects.map(intersect => {
                 let object = intersect.object;
                 object = this._recursionMesh(object);
-                return object.__parent || object;
+                const baseObject = object.__parent || object;
+                baseObject.faceIndex = intersect.faceIndex;
+                baseObject.index = intersect.index;
+                return baseObject;
             });
         }
         if (hasidentifyChildren.length) {
@@ -476,9 +557,23 @@ class ThreeLayer extends maptalks.CanvasLayer {
      */
     _identifyBaseObjectEvents(e) {
         const map = this.map || this.getMap();
+        //When map interaction, do not carry out mouse movement detection, which can have better performance
+        // if (map.isInteracting() && e.type === 'mousemove') {
+        //     return this;
+        // }
         map.resetCursor('default');
         const { type, coordinate } = e;
         const baseObjects = this.identify(coordinate);
+        const scene = this.getScene();
+        if (baseObjects.length === 0 && scene) {
+            for (let i = 0, len = scene.children.length; i < len; i++) {
+                const child = scene.children[i] || {};
+                const parent = child.__parent;
+                if (parent) {
+                    parent._fire('empty', Object.assign({}, e, { target: parent }));
+                }
+            }
+        }
         if (type === 'mousemove') {
             if (baseObjects.length) {
                 map.setCursor('pointer');
@@ -501,18 +596,27 @@ class ThreeLayer extends maptalks.CanvasLayer {
             outBaseObjects.forEach(baseObject => {
                 if (baseObject instanceof BaseObject) {
                     // reset _mouseover status
-                    baseObject._mouseover = false;
-                    baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject, type: 'mouseout' }));
-                    baseObject.closeToolTip();
+                    // Deal with the mergedmesh
+                    if (baseObject.getSelectMesh) {
+                        if (!baseObject.isHide) {
+                            baseObject._mouseover = false;
+                            baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject, type: 'mouseout', selectMesh: null }));
+                            baseObject.closeToolTip();
+                        }
+                    } else {
+                        baseObject._mouseover = false;
+                        baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject, type: 'mouseout' }));
+                        baseObject.closeToolTip();
+                    }
                 }
             });
             baseObjects.forEach(baseObject => {
                 if (baseObject instanceof BaseObject) {
                     if (!baseObject._mouseover) {
-                        baseObject._fire('mouseover', Object.assign({}, e, { target: baseObject, type: 'mouseover' }));
+                        baseObject._fire('mouseover', Object.assign({}, e, { target: baseObject, type: 'mouseover', selectMesh: (baseObject.getSelectMesh ? baseObject.getSelectMesh() : null) }));
                         baseObject._mouseover = true;
                     }
-                    baseObject._fire(type, Object.assign({}, e, { target: baseObject }));
+                    baseObject._fire(type, Object.assign({}, e, { target: baseObject, selectMesh: (baseObject.getSelectMesh ? baseObject.getSelectMesh() : null) }));
                     // tooltip
                     const tooltip = baseObject.getToolTip();
                     if (tooltip && (!tooltip._owner)) {
@@ -524,7 +628,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         } else {
             baseObjects.forEach(baseObject => {
                 if (baseObject instanceof BaseObject) {
-                    baseObject._fire(type, Object.assign({}, e, { target: baseObject }));
+                    baseObject._fire(type, Object.assign({}, e, { target: baseObject, selectMesh: (baseObject.getSelectMesh ? baseObject.getSelectMesh() : null) }));
                     if (type === 'click') {
                         const infoWindow = baseObject.getInfoWindow();
                         if (infoWindow && (!infoWindow._owner)) {
@@ -539,6 +643,28 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return this;
     }
 
+    /**
+     *map zoom event
+     */
+    _zoomend() {
+        const scene = this.getScene();
+        if (!scene) {
+            return;
+        }
+        const zoom = this.getMap().getZoom();
+        scene.children.forEach(mesh => {
+            const parent = mesh.__parent;
+            if (parent && parent.getOptions) {
+                const minZoom = parent.getMinZoom(), maxZoom = parent.getMaxZoom();
+                if ((zoom < minZoom || zoom > maxZoom) && parent.isVisible()) {
+                    parent.hide();
+                } else if (minZoom <= zoom && zoom <= maxZoom && (!parent.isVisible())) {
+                    parent.show();
+                }
+            }
+        });
+    }
+
 
     onAdd() {
         super.onAdd();
@@ -551,6 +677,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         if (!this._animationBaseObjectMap) {
             this._animationBaseObjectMap = {};
         }
+        map.on('zooming zoomend', this._zoomend, this);
         return this;
     }
 
@@ -561,6 +688,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         EVENTS.forEach(event => {
             map.off(event, this._identifyBaseObjectEvents, this);
         });
+        map.off('zooming zoomend', this._zoomend, this);
         return this;
     }
 

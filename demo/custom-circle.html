@@ -5,7 +5,7 @@
     <title>Customize your own components </title>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
     <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.min.js"></script>
+    <script type="text/javascript" src="./js/maptalks.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.97.0/build/three.min.js"></script>
     <script type="text/javascript" src="../dist/maptalks.three.js"></script>
     <style>
@@ -210,7 +210,7 @@
 
         function animateShow() {
             circles.forEach(circle => {
-                circle.animationShow({
+                circle.animateShow({
                     duration: 1000,
                     easing: 'upAndDown'
                 })
@@ -254,10 +254,10 @@
 
 
             /**
-             * animationShow test
+             * animateShow test
              * 
              * */
-            animationShow(options = {}, cb) {
+            animateShow(options = {}, cb) {
                 if (this._showPlayer) {
                     this._showPlayer.cancel();
                 }

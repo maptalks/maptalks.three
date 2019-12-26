@@ -5,7 +5,9 @@ import ToolTip from './ui/ToolTip';
 
 const OPTIONS = {
     interactive: true,
-    altitude: 0
+    altitude: 0,
+    minZoom: 0,
+    maxZoom: 30
 };
 
 /**
@@ -37,6 +39,7 @@ class Base {
     'show',
     'hide',
     'symbolchange'
+     empty
 ];
  * This is the base class for all 3D objects
  *
@@ -50,6 +53,7 @@ class BaseObject extends maptalks.Eventable(Base) {
     constructor(id) {
         super();
         this.isBaseObject = true;
+        this.isAdd = false;
         this.object3d = null;
         this.options = {};
         this.toolTip = null;
@@ -274,7 +278,41 @@ class BaseObject extends maptalks.Eventable(Base) {
      */
     // eslint-disable-next-line no-unused-vars
     animateShow(options = {}, cb) {
+        if (this._showPlayer) {
+            this._showPlayer.cancel();
+        }
+        if (maptalks.Util.isFunction(options)) {
+            options = {};
+            cb = options;
+        }
+        const duration = options['duration'] || 1000,
+            easing = options['easing'] || 'out';
+        const player = this._showPlayer = maptalks.animation.Animation.animate({
+            'scale': 1
+        }, {
+            'duration': duration,
+            'easing': easing
+        }, frame => {
+            const scale = frame.styles.scale;
+            if (scale > 0) {
+                this.getObject3d().scale.set(1, 1, scale);
+            }
+            if (cb) {
+                cb(frame, scale);
+            }
+        });
+        player.play();
+        return player;
+    }
 
+
+    getMinZoom() {
+        return this.getOptions().minZoom;
+    }
+
+
+    getMaxZoom() {
+        return this.getOptions().maxZoom;
     }
 
     config() {
@@ -321,10 +359,17 @@ class BaseObject extends maptalks.Eventable(Base) {
 
     // eslint-disable-next-line no-unused-vars
     _createPoints(geometry, material) {
+        //Serving for particles
+        this.object3d = new THREE.Points(geometry, material);
+        this.object3d.__parent = this;
+        return this;
+    }
 
-        /**
-         * todo points
-         */
+    _createLineSegments(geometry, material) {
+        this.object3d = new THREE.LineSegments(geometry, material);
+        this.object3d.computeLineDistances();
+        this.object3d.__parent = this;
+        return this;
     }
 }
 

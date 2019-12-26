@@ -9,7 +9,7 @@ const COMMA = ',';
  * @param {maptalks.LineString} lineString
  * @param {ThreeLayer} layer
  */
-export function getLinePosition(lineString, layer) {
+export function getLinePosition(lineString, layer, center) {
     const positions = [];
     const positionsV = [];
     if (Array.isArray(lineString) && lineString[0] instanceof THREE.Vector3) {
@@ -23,7 +23,7 @@ export function getLinePosition(lineString, layer) {
         if (!lineString || !(lineString instanceof maptalks.LineString)) return null;
         const z = 0;
         const coordinates = lineString.getCoordinates();
-        const centerPt = layer.coordinateToVector3(lineString.getCenter());
+        const centerPt = layer.coordinateToVector3(center || lineString.getCenter());
         for (let i = 0, len = coordinates.length; i < len; i++) {
             let coordinate = coordinates[i];
             if (Array.isArray(coordinate)) {
@@ -49,8 +49,8 @@ export function getLinePosition(lineString, layer) {
  * @param {Number} depth
  * @param {ThreeLayer} layer
  */
-export function getExtrudeLineGeometry(lineString, lineWidth = 1, depth = 1, layer) {
-    const positions = getLinePosition(lineString, layer).positionsV;
+export function getExtrudeLineGeometry(lineString, lineWidth = 1, depth = 1, layer, center) {
+    const positions = getLinePosition(lineString, layer, center).positionsV;
     const ps = [];
     for (let i = 0, len = positions.length; i < len; i++) {
         const p = positions[i];
@@ -122,8 +122,8 @@ export function getChunkLinesPosition(chunkLines, layer, positionMap, centerPt) 
  * @param {*} depth
  * @param {*} layer
  */
-export function getExtrudeLineParams(lineString, lineWidth = 1, depth = 1, layer) {
-    const positions = getLinePosition(lineString, layer).positionsV;
+export function getExtrudeLineParams(lineString, lineWidth = 1, depth = 1, layer, center) {
+    const positions = getLinePosition(lineString, layer, center).positionsV;
     const ps = [];
     for (let i = 0, len = positions.length; i < len; i++) {
         const p = positions[i];
