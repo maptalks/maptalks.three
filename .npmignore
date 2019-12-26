@@ -13,3 +13,4 @@ karma.config.js
 API.md
 circle.yml
 yarn*
+json/*
