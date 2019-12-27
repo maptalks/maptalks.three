@@ -8,8 +8,7 @@ A maptalks Layer to render with THREE.js
 ![screenshot](https://cloud.githubusercontent.com/assets/13678919/26443408/db7afe66-416a-11e7-951b-0f99beaadb5a.jpg)
 ## Examples
 
-* [Extrude Buildings](https://maptalks.github.io/maptalks.three/demo/buildings.html).
-* [Load MTL Model](https://maptalks.github.io/maptalks.three/demo/infantry.html).
+* [Demos](https://maptalks.github.io/maptalks.three/demo/index.html).
 
 ## Install
   
