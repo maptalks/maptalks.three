@@ -5,6 +5,7 @@ import BaseObject from './BaseObject';
 import { getCenterOfPoints } from './util/ExtrudeUtil';
 import { getExtrudeLineGeometry } from './util/LineUtil';
 import ExtrudeLine from './ExtrudeLine';
+import { getGeoJSONCenter, isGeoJSON } from './util/GeoJSONUtil';
 
 const OPTIONS = {
     width: 3,
@@ -24,7 +25,7 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
         const len = lineStrings.length;
         for (let i = 0; i < len; i++) {
             const lineString = lineStrings[i];
-            centers.push(lineString.getCenter());
+            centers.push(isGeoJSON(lineString) ? getGeoJSONCenter(lineString) : lineString.getCenter());
         }
         // Get the center point of the point set
         const center = getCenterOfPoints(centers);
@@ -33,7 +34,7 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
             psIndex = 0, normalIndex = 0;
         for (let i = 0; i < len; i++) {
             const lineString = lineStrings[i];
-            const opts = maptalks.Util.extend({}, OPTIONS, lineString.getProperties(), { index: i });
+            const opts = maptalks.Util.extend({}, OPTIONS, isGeoJSON(lineString) ? lineString.properties : lineString.getProperties(), { index: i });
             const { height, width } = opts;
             const w = layer.distanceToVector3(width, width).x;
             const h = layer.distanceToVector3(height, height).x;

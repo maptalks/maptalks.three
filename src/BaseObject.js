@@ -7,7 +7,8 @@ const OPTIONS = {
     interactive: true,
     altitude: 0,
     minZoom: 0,
-    maxZoom: 30
+    maxZoom: 30,
+    asynchronous: false
 };
 
 /**
@@ -60,6 +61,7 @@ class BaseObject extends maptalks.Eventable(Base) {
         this.infoWindow = null;
         this._mouseover = false;
         this._showPlayer = null;
+        this._vt = null;
         if (id === undefined) {
             id = maptalks.Util.GUID();
         }
@@ -313,6 +315,18 @@ class BaseObject extends maptalks.Eventable(Base) {
 
     getMaxZoom() {
         return this.getOptions().maxZoom;
+    }
+
+    isAsynchronous() {
+        return this.getOptions().asynchronous;
+    }
+
+    fire(eventType, param) {
+        this._fire(eventType, param);
+        if (this._vt && this._vt.onSelectMesh) {
+            this._vt.onSelectMesh(eventType, param);
+        }
+        return this;
     }
 
     config() {

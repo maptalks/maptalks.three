@@ -2,6 +2,7 @@ import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
 import { getLinePosition } from './util/LineUtil';
+import { isGeoJSON, getGeoJSONCenter } from './util/GeoJSONUtil';
 
 function initColors(cs) {
     const colors = [];
@@ -38,7 +39,7 @@ class Line extends BaseObject {
         this._createLine(geometry, material);
 
         const { altitude } = options;
-        const center = lineString.getCenter();
+        const center = (isGeoJSON(lineString) ? getGeoJSONCenter(lineString) : lineString.getCenter());
         const z = layer.distanceToVector3(altitude, altitude).x;
         const v = layer.coordinateToVector3(center, z);
         this.getObject3d().position.copy(v);

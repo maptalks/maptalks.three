@@ -1,7 +1,7 @@
 import * as maptalks from 'maptalks';
 import BaseObject from './BaseObject';
 import { getExtrudeLineGeometry } from './util/LineUtil';
-
+import { isGeoJSON, getGeoJSONCenter } from './util/GeoJSONUtil';
 
 const OPTIONS = {
     width: 3,
@@ -26,7 +26,7 @@ class ExtrudeLine extends BaseObject {
         this._createMesh(geometry, material);
 
         const { altitude } = options;
-        const center = lineString.getCenter();
+        const center = (isGeoJSON(lineString) ? getGeoJSONCenter(lineString) : lineString.getCenter());
         const z = layer.distanceToVector3(altitude, altitude).x;
         const v = layer.coordinateToVector3(center, z);
         this.getObject3d().position.copy(v);

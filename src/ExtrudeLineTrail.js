@@ -4,7 +4,7 @@ import BaseObject from './BaseObject';
 
 import { lineSlice } from './util/GeoUtil';
 import { getExtrudeLineParams, getChunkLinesPosition } from './util/LineUtil';
-
+import { isGeoJSON, getGeoJSONCenter, getGeoJSONCoordinates } from './util/GeoJSONUtil';
 
 const MAX_POINTS = 1000;
 
@@ -56,7 +56,15 @@ class ExtrudeLineTrail extends BaseObject {
         this._initOptions(options);
 
         const { width, height, altitude, speed, chunkLength, trail } = options;
-        const chunkLines = lineSlice(lineString, chunkLength);
+        let center, coordinates;
+        if (isGeoJSON(lineString)) {
+            center = getGeoJSONCenter(lineString);
+            coordinates = getGeoJSONCoordinates(lineString);
+        } else {
+            center = lineString.getCenter();
+            coordinates = lineString;
+        }
+        const chunkLines = lineSlice(coordinates, chunkLength);
 
         const centerPt = layer.coordinateToVector3(lineString.getCenter());
         //cache position for  faster computing,reduce double counting
@@ -91,7 +99,6 @@ class ExtrudeLineTrail extends BaseObject {
 
         this._createMesh(geometry, material);
         const z = layer.distanceToVector3(altitude, altitude).x;
-        const center = lineString.getCenter();
         const v = layer.coordinateToVector3(center, z);
         this.getObject3d().position.copy(v);
 

@@ -13,6 +13,7 @@ import Points from './src/Points';
 import Bars from './src/Bars';
 import ExtrudeLines from './src/ExtrudeLines';
 import Lines from './src/Lines';
+import VectorTileLayer from './src/VectorTileLayer';
 
 const options = {
     'renderer': 'gl',
@@ -331,6 +332,18 @@ class ThreeLayer extends maptalks.CanvasLayer {
     }
 
 
+    /**
+     *
+     * @param {*} url
+     * @param {*} options
+     * @param {*} getMaterial
+     * @param {*} worker
+     */
+    toVectorTileLayer(url, options, getMaterial, worker) {
+        return new VectorTileLayer(url, options, getMaterial, this, worker);
+    }
+
+
 
     clearMesh() {
         const scene = this.getScene();
@@ -570,7 +583,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 const child = scene.children[i] || {};
                 const parent = child.__parent;
                 if (parent) {
-                    parent._fire('empty', Object.assign({}, e, { target: parent }));
+                    parent.fire('empty', Object.assign({}, e, { target: parent }));
                 }
             }
         }
@@ -600,12 +613,12 @@ class ThreeLayer extends maptalks.CanvasLayer {
                     if (baseObject.getSelectMesh) {
                         if (!baseObject.isHide) {
                             baseObject._mouseover = false;
-                            baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject, type: 'mouseout', selectMesh: null }));
+                            baseObject.fire('mouseout', Object.assign({}, e, { target: baseObject, type: 'mouseout', selectMesh: null }));
                             baseObject.closeToolTip();
                         }
                     } else {
                         baseObject._mouseover = false;
-                        baseObject._fire('mouseout', Object.assign({}, e, { target: baseObject, type: 'mouseout' }));
+                        baseObject.fire('mouseout', Object.assign({}, e, { target: baseObject, type: 'mouseout' }));
                         baseObject.closeToolTip();
                     }
                 }
@@ -613,10 +626,10 @@ class ThreeLayer extends maptalks.CanvasLayer {
             baseObjects.forEach(baseObject => {
                 if (baseObject instanceof BaseObject) {
                     if (!baseObject._mouseover) {
-                        baseObject._fire('mouseover', Object.assign({}, e, { target: baseObject, type: 'mouseover', selectMesh: (baseObject.getSelectMesh ? baseObject.getSelectMesh() : null) }));
+                        baseObject.fire('mouseover', Object.assign({}, e, { target: baseObject, type: 'mouseover', selectMesh: (baseObject.getSelectMesh ? baseObject.getSelectMesh() : null) }));
                         baseObject._mouseover = true;
                     }
-                    baseObject._fire(type, Object.assign({}, e, { target: baseObject, selectMesh: (baseObject.getSelectMesh ? baseObject.getSelectMesh() : null) }));
+                    baseObject.fire(type, Object.assign({}, e, { target: baseObject, selectMesh: (baseObject.getSelectMesh ? baseObject.getSelectMesh() : null) }));
                     // tooltip
                     const tooltip = baseObject.getToolTip();
                     if (tooltip && (!tooltip._owner)) {
@@ -628,7 +641,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         } else {
             baseObjects.forEach(baseObject => {
                 if (baseObject instanceof BaseObject) {
-                    baseObject._fire(type, Object.assign({}, e, { target: baseObject, selectMesh: (baseObject.getSelectMesh ? baseObject.getSelectMesh() : null) }));
+                    baseObject.fire(type, Object.assign({}, e, { target: baseObject, selectMesh: (baseObject.getSelectMesh ? baseObject.getSelectMesh() : null) }));
                     if (type === 'click') {
                         const infoWindow = baseObject.getInfoWindow();
                         if (infoWindow && (!infoWindow._owner)) {
