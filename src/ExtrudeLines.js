@@ -1,5 +1,4 @@
 import * as maptalks from 'maptalks';
-import * as THREE from 'three';
 import MergedMixin from './MergedMixin';
 import BaseObject from './BaseObject';
 import { getCenterOfPoints } from './util/ExtrudeUtil';
@@ -16,9 +15,6 @@ const OPTIONS = {
 
 class ExtrudeLines extends MergedMixin(BaseObject) {
     constructor(lineStrings, options, material, layer) {
-        // if (!THREE.BufferGeometryUtils) {
-        //     console.error('not find BufferGeometryUtils,please include related scripts');
-        // }
         if (!Array.isArray(lineStrings)) {
             lineStrings = [lineStrings];
         }
@@ -45,13 +41,10 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
             const extrudeLine = new ExtrudeLine(lineString, opts, material, layer);
             extrudeLines.push(extrudeLine);
 
-            // const geometry = new THREE.Geometry();
-            // geometry.fromBufferGeometry(buffGeom);
             const { position, normal, indices } = buffGeom;
             const faceLen = indices.length / 3;
             faceMap[i] = [faceIndex + 1, faceIndex + faceLen];
             faceIndex += faceLen;
-            // geometry.dispose();
             const psCount = position.length / 3,
                 //  colorCount = buffGeom.attributes.color.count,
                 normalCount = normal.length / 3;

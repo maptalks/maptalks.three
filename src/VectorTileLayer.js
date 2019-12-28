@@ -32,8 +32,6 @@ function generateImage(key, debug) {
  */
 class VectorTileLayer extends maptalks.TileLayer {
     constructor(url, options = {}, getMaterial, layer, worker) {
-        // delete options.minZoom;
-        // delete options.maxZoom;
         super(maptalks.Util.GUID(), maptalks.Util.extend({ urlTemplate: url }, options));
         this._opts = options;
         this._layer = layer;

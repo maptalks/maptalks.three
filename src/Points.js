@@ -51,11 +51,6 @@ class Points extends MergedMixin(BaseObject) {
             const v = layer.coordinateToVector3(coordinate, z);
             vs.push(v.x, v.y, v.z);
             vectors.push(v);
-            //Do not initialize the monomer when the data volume is too large
-            // if (len <= MAX) {
-            //     const point = new Point(coordinate, { height, index: i }, material, layer);
-            //     pointMeshes.push(point);
-            // }
 
             geometriesAttributes[i] = {
                 position: {

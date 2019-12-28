@@ -32,9 +32,6 @@ const OPTIONS = {
 
 class ExtrudePolygons extends MergedMixin(BaseObject) {
     constructor(polygons, options, material, layer) {
-        // if (!THREE.BufferGeometryUtils) {
-        //     console.error('not find BufferGeometryUtils,please include related scripts');
-        // }
         if (!Array.isArray(polygons)) {
             polygons = [polygons];
         }
@@ -86,13 +83,10 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
                 // const extrudePolygon = new ExtrudePolygon(polygon, Object.assign({}, options, { height, index: i }), material, layer);
                 // extrudePolygons.push(extrudePolygon);
 
-                // const geometry = new THREE.Geometry();
-                // geometry.fromBufferGeometry(buffGeom);
                 const { position, normal, uv, indices } = buffGeom;
                 const faceLen = indices.length / 3;
                 faceMap[i] = [faceIndex + 1, faceIndex + faceLen];
                 faceIndex += faceLen;
-                // geometry.dispose();
                 const psCount = position.length / 3,
                     //  colorCount = buffGeom.attributes.color.count,
                     normalCount = normal.length / 3, uvCount = uv.length / 2;
