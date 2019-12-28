@@ -1,14 +1,16 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
-import { getExtrudeGeometry, initVertexColors, getCenterOfPoints } from './util/ExtrudeUtil';
+import { initVertexColors, getCenterOfPoints, getExtrudeGeometryParams } from './util/ExtrudeUtil';
 import ExtrudePolygon from './ExtrudePolygon';
 import MergedMixin from './MergedMixin';
 import { getGeoJSONCenter, isGeoJSONPolygon } from './util/GeoJSONUtil';
 import { pushQueue as meshPushQueue } from './queue/WorkerQueue';
+import { mergeBufferGeometries } from './util/MergeGeometryUtil';
 
 
 function updateAttribute(data) {
+    //arraybuffer data
     const { position, normal, uv, indices } = data;
     const color = new Float32Array(position.length);
     color.fill(1, 0, position.length);
@@ -30,9 +32,9 @@ const OPTIONS = {
 
 class ExtrudePolygons extends MergedMixin(BaseObject) {
     constructor(polygons, options, material, layer) {
-        if (!THREE.BufferGeometryUtils) {
-            console.error('not find BufferGeometryUtils,please include related scripts');
-        }
+        // if (!THREE.BufferGeometryUtils) {
+        //     console.error('not find BufferGeometryUtils,please include related scripts');
+        // }
         if (!Array.isArray(polygons)) {
             polygons = [polygons];
         }
@@ -78,21 +80,22 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
             for (let i = 0; i < len; i++) {
                 const polygon = polygons[i];
                 const height = (polygon.getProperties() || {}).height || 1;
-                const buffGeom = getExtrudeGeometry(polygon, height, layer, center);
+                const buffGeom = getExtrudeGeometryParams(polygon, height, layer, center);
                 geometries.push(buffGeom);
 
-                const extrudePolygon = new ExtrudePolygon(polygon, Object.assign({}, options, { height, index: i }), material, layer);
-                extrudePolygons.push(extrudePolygon);
+                // const extrudePolygon = new ExtrudePolygon(polygon, Object.assign({}, options, { height, index: i }), material, layer);
+                // extrudePolygons.push(extrudePolygon);
 
-                const geometry = new THREE.Geometry();
-                geometry.fromBufferGeometry(buffGeom);
-                const faceLen = geometry.faces.length;
+                // const geometry = new THREE.Geometry();
+                // geometry.fromBufferGeometry(buffGeom);
+                const { position, normal, uv, indices } = buffGeom;
+                const faceLen = indices.length / 3;
                 faceMap[i] = [faceIndex + 1, faceIndex + faceLen];
                 faceIndex += faceLen;
-                geometry.dispose();
-                const psCount = buffGeom.attributes.position.count,
+                // geometry.dispose();
+                const psCount = position.length / 3,
                     //  colorCount = buffGeom.attributes.color.count,
-                    normalCount = buffGeom.attributes.normal.count, uvCount = buffGeom.attributes.uv.count;
+                    normalCount = normal.length / 3, uvCount = uv.length / 2;
                 geometriesAttributes[i] = {
                     position: {
                         count: psCount,
@@ -121,7 +124,7 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
                 // colorIndex += colorCount * 3;
                 uvIndex += uvCount * 2;
             }
-            bufferGeometry = THREE.BufferGeometryUtils.mergeBufferGeometries(geometries);
+            bufferGeometry = mergeBufferGeometries(geometries);
             if (topColor && !material.map) {
                 initVertexColors(bufferGeometry, bottomColor, topColor);
                 material.vertexColors = THREE.VertexColors;

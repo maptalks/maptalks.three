@@ -3,9 +3,10 @@ import * as THREE from 'three';
 import MergedMixin from './MergedMixin';
 import BaseObject from './BaseObject';
 import { getCenterOfPoints } from './util/ExtrudeUtil';
-import { getExtrudeLineGeometry } from './util/LineUtil';
+import { getExtrudeLineParams } from './util/LineUtil';
 import ExtrudeLine from './ExtrudeLine';
 import { getGeoJSONCenter, isGeoJSON } from './util/GeoJSONUtil';
+import { mergeBufferGeometries } from './util/MergeGeometryUtil';
 
 const OPTIONS = {
     width: 3,
@@ -15,9 +16,9 @@ const OPTIONS = {
 
 class ExtrudeLines extends MergedMixin(BaseObject) {
     constructor(lineStrings, options, material, layer) {
-        if (!THREE.BufferGeometryUtils) {
-            console.error('not find BufferGeometryUtils,please include related scripts');
-        }
+        // if (!THREE.BufferGeometryUtils) {
+        //     console.error('not find BufferGeometryUtils,please include related scripts');
+        // }
         if (!Array.isArray(lineStrings)) {
             lineStrings = [lineStrings];
         }
@@ -38,21 +39,22 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
             const { height, width } = opts;
             const w = layer.distanceToVector3(width, width).x;
             const h = layer.distanceToVector3(height, height).x;
-            const buffGeom = getExtrudeLineGeometry(lineString, w, h, layer, center);
+            const buffGeom = getExtrudeLineParams(lineString, w, h, layer, center);
             geometries.push(buffGeom);
 
             const extrudeLine = new ExtrudeLine(lineString, opts, material, layer);
             extrudeLines.push(extrudeLine);
 
-            const geometry = new THREE.Geometry();
-            geometry.fromBufferGeometry(buffGeom);
-            const faceLen = geometry.faces.length;
+            // const geometry = new THREE.Geometry();
+            // geometry.fromBufferGeometry(buffGeom);
+            const { position, normal, indices } = buffGeom;
+            const faceLen = indices.length / 3;
             faceMap[i] = [faceIndex + 1, faceIndex + faceLen];
             faceIndex += faceLen;
-            geometry.dispose();
-            const psCount = buffGeom.attributes.position.count,
+            // geometry.dispose();
+            const psCount = position.length / 3,
                 //  colorCount = buffGeom.attributes.color.count,
-                normalCount = buffGeom.attributes.normal.count;
+                normalCount = normal.length / 3;
             geometriesAttributes[i] = {
                 position: {
                     count: psCount,
@@ -81,7 +83,7 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
             // colorIndex += colorCount * 3;
             // uvIndex += uvCount * 2;
         }
-        const geometry = THREE.BufferGeometryUtils.mergeBufferGeometries(geometries);
+        const geometry = mergeBufferGeometries(geometries);
 
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, lineStrings, coordinate: center });
         super();

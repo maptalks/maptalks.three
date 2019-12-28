@@ -11,10 +11,10 @@ onmessage = function (e) {
     let { type, datas } = data;
     if (type === 'Polygon') {
         datas = generateData(datas);
-        // const timer = 'generateExtrudePolygons';
-        // console.time(timer);
+        const timer = 'generateExtrudePolygons';
+        console.time(timer);
         const result = generateExtrudePolygons(datas);
-        // console.timeEnd(timer);
+        console.timeEnd(timer);
 
         this.postMessage(result, [result.position, result.normal, result.uv, result.indices]);
     }
@@ -29,11 +29,11 @@ function generateData(list) {
         const { data, height } = list[i];
         for (let j = 0, len1 = data.length; j < len1; j++) {
             const { outer, holes } = data[j];
-            const d = { outer: arrayBufferToVector3(outer) };
+            const d = { outer: arrayBufferToArray(outer) };
             if (holes && holes.length) {
                 d.holes = [];
                 for (let m = 0, len2 = holes.length; m < len2; m++) {
-                    d.holes.push(arrayBufferToVector3(holes[m]));
+                    d.holes.push(arrayBufferToArray(holes[m]));
                 }
             }
             newdata.push(d);
@@ -48,7 +48,7 @@ function generateData(list) {
 
 
 
-function arrayBufferToVector3(buffer) {
+function arrayBufferToArray(buffer) {
     const ps = new Float32Array(buffer);
     const vs = [];
     for (let i = 0, len = ps.length; i < len; i += 3) {
@@ -104,7 +104,7 @@ function generateExtrudePolygons(datas) {
     }
     const geometry = mergeBufferGeometries(geometries);
     const { position, normal, uv, indices } = geometry;
-    return { position: position.buffer, normal: normal.buffer, uv: uv.buffer, indices: new Uint32Array(indices).buffer, faceMap, geometriesAttributes };
+    return { position: position.buffer, normal: normal.buffer, uv: uv.buffer, indices: indices.buffer, faceMap, geometriesAttributes };
 
 }
 
@@ -227,6 +227,6 @@ function mergeBufferGeometries(geometries) {
             mergedGeometry[name] = mergedAttribute;
         }
     }
-    mergedGeometry['indices'] = mergedIndex;
+    mergedGeometry['indices'] = new Uint32Array(mergedIndex);
     return mergedGeometry;
 }

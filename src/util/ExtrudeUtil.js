@@ -34,7 +34,7 @@ export function toShape(datas = []) {
  */
 export function getExtrudeGeometry(polygon, height, layer, center) {
     const datas = getPolygonPositions(polygon, layer, center);
-    let shapes = toShape(datas);
+    const shapes = toShape(datas);
     //Possible later use of geojson
     if (!shapes) return null;
     height = layer.distanceToVector3(height, height).x;
@@ -50,6 +50,20 @@ export function getExtrudeGeometry(polygon, height, layer, center) {
     bufferGeomertry.addAttribute('uv', new THREE.BufferAttribute(uv, 2));
     bufferGeomertry.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
     return bufferGeomertry;
+}
+
+export function getExtrudeGeometryParams(polygon, height, layer, center) {
+    const datas = getPolygonPositions(polygon, layer, center);
+    const shapes = toShape(datas);
+    //Possible later use of geojson
+    if (!shapes) return null;
+    height = layer.distanceToVector3(height, height).x;
+    const { position, normal, uv, indices } = extrudePolygon(shapes, {
+        depth: height
+    });
+    return {
+        position, normal, uv, indices
+    };
 }
 
 /**
