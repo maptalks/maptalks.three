@@ -9,11 +9,7 @@ import { pushQueue as meshPushQueue } from './queue/WorkerQueue';
 
 
 function updateAttribute(data) {
-    const { position, normal, uv } = data;
-    // geometry.attributes.position.count = position.length;
-    // geometry.attributes.normal.count = normal.length;
-    // geometry.attributes.color.count = color.length;
-    // geometry.attributes.uv.count = uv.length;
+    const { position, normal, uv, indices } = data;
     const color = new Float32Array(position.length);
     color.fill(1, 0, position.length);
     const bufferGeomertry = new THREE.BufferGeometry();
@@ -21,6 +17,7 @@ function updateAttribute(data) {
     bufferGeomertry.addAttribute('normal', new THREE.BufferAttribute(new Float32Array(normal), 3));
     bufferGeomertry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(position), 3));
     bufferGeomertry.addAttribute('uv', new THREE.BufferAttribute(new Float32Array(uv), 2));
+    bufferGeomertry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
     return bufferGeomertry;
 }
 

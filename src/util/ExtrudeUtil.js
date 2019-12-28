@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as maptalks from 'maptalks';
 import { isGeoJSONPolygon, spliteGeoJSONMulti, getGeoJSONCenter, isGeoJSONMulti, getGeoJSONCoordinates } from './GeoJSONUtil';
+import { extrudePolygon } from 'geometry-extrude';
 /**
  * this is for ExtrudeMesh util
  */
@@ -14,15 +15,13 @@ export function toShape(datas = []) {
     const shapes = [];
     for (let i = 0, len = datas.length; i < len; i++) {
         const { outer, holes } = datas[i];
-        const outShape = new THREE.Shape(outer);
+        const shape = [outer];
         if (holes && holes.length) {
-            outShape.holes = [];
             for (let j = 0, len1 = holes.length; j < len1; j++) {
-                const holeShape = new THREE.Shape(holes[j]);
-                outShape.holes.push(holeShape);
+                shape.push(holes[j]);
             }
         }
-        shapes.push(outShape);
+        shapes.push(shape);
     }
     return shapes;
 }
@@ -35,19 +34,22 @@ export function toShape(datas = []) {
  */
 export function getExtrudeGeometry(polygon, height, layer, center) {
     const datas = getPolygonPositions(polygon, layer, center);
-    let shape = toShape(datas);
+    let shapes = toShape(datas);
     //Possible later use of geojson
-    if (!shape) return null;
+    if (!shapes) return null;
     height = layer.distanceToVector3(height, height).x;
-    const name = parseInt(THREE.REVISION) >= 93 ? 'depth' : 'amount';
-    const config = {
-        'bevelEnabled': false, 'bevelSize': 1
-    };
-    config[name] = height;
-    const geom = new THREE.ExtrudeGeometry(shape, config);
-    const buffGeom = new THREE.BufferGeometry();
-    buffGeom.fromGeometry(geom);
-    return buffGeom;
+    const { position, normal, uv, indices } = extrudePolygon(shapes, {
+        depth: height
+    });
+    const color = new Float32Array(position.length);
+    color.fill(1, 0, position.length);
+    const bufferGeomertry = new THREE.BufferGeometry();
+    bufferGeomertry.addAttribute('color', new THREE.BufferAttribute(color, 3));
+    bufferGeomertry.addAttribute('normal', new THREE.BufferAttribute(normal, 3));
+    bufferGeomertry.addAttribute('position', new THREE.BufferAttribute(position, 3));
+    bufferGeomertry.addAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    bufferGeomertry.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
+    return bufferGeomertry;
 }
 
 /**
@@ -161,7 +163,7 @@ export function getSinglePolygonPositions(polygon, layer, center, isArrayBuff = 
             outer[idx + 1] = v.y;
             outer[idx + 2] = v.z;
         } else {
-            outer.push(v);
+            outer.push([v.x, v.y]);
         }
     }
     const data = { outer: (isArrayBuff ? outer.buffer : outer) };
@@ -174,11 +176,11 @@ export function getSinglePolygonPositions(polygon, layer, center, isArrayBuff = 
                 const pt = layer.coordinateToVector3(c).sub(centerPt);
                 if (isArrayBuff) {
                     const idx = j * 3;
-                    outer[idx] = pt.x;
-                    outer[idx + 1] = pt.y;
-                    outer[idx + 2] = pt.z;
+                    pts[idx] = pt.x;
+                    pts[idx + 1] = pt.y;
+                    pts[idx + 2] = pt.z;
                 } else {
-                    pts.push(pt);
+                    pts.push([pt.x, pt.y]);
                 }
             }
             data.holes.push((isArrayBuff ? pts.buffer : pts));
