@@ -79,12 +79,12 @@
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
 
-            const workers = [1, 1].map(d => {
-                return new Worker('./js/worker.three.js');
-            });
-            threeLayer.initWorkers(workers);
+            // const workers = [1, 1].map(d => {
+            //     return new Worker('./js/worker.three.js');
+            // });
+            // threeLayer.initWorkers(workers);
 
-            vectortilelayer = threeLayer.toVectorTileLayer('http://localhost:9090/tile/{z}/{x}/{y}',
+            vectortilelayer = threeLayer.toThreeVectorTileLayer('http://localhost:9090/tile/{z}/{x}/{y}',
                 {
                     ...baseConfig,
                     debug: true,
@@ -109,6 +109,10 @@
 
                 });
             }
+            // fetch('./js/worker.three.js').then(res => res.text()).then(text => {
+            //    maptalks.registerWorkerAdapter('threeworker',text);
+            //    map.addLayer(vectortilelayer);
+            // });
             map.addLayer(vectortilelayer);
             animation();
             initGui();

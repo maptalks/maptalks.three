@@ -75,14 +75,14 @@
             var light = new THREE.DirectionalLight(0xffffff);
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
-            const workers = [1, 1].map(d => {
-                return new Worker('./js/worker.three.js');
-            });
-            threeLayer.initWorkers(workers);
+            // const workers = [1, 1].map(d => {
+            //     return new Worker('./js/worker.three.js');
+            // });
+            // threeLayer.initWorkers(workers);
 
 
             const url = `https://{s}.tiles.mapbox.com/v4/mapbox.mapbox-terrain-v2,mapbox.mapbox-streets-v7/{z}/{x}/{y}.vector.pbf?access_token=pk.eyJ1IjoiemhlbmZ1IiwiYSI6ImNpb284bzNoYzAwM3h1Ym02aHlrand6OTAifQ.sKX-XKJMmgtk_oI5oIUV_g`;
-            vectortilelayer = threeLayer.toVectorTileLayer(url,
+            vectortilelayer = threeLayer.toThreeVectorTileLayer(url,
                 {
                     // minZoom: 6,
                     // maxZoom: 16,

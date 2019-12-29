@@ -32,7 +32,7 @@ const OPTIONS = {
 /**
  *Provide a simple data loading layer with large amount of data
  */
-class VectorTileLayer extends maptalks.TileLayer {
+class ThreeVectorTileLayer extends maptalks.TileLayer {
     constructor(url, options = {}, getMaterial, layer) {
         super(maptalks.Util.GUID(), maptalks.Util.extend({ urlTemplate: url }, OPTIONS, options));
         this._opts = options;
@@ -394,4 +394,4 @@ class VectorTileLayer extends maptalks.TileLayer {
     }
 }
 
-export default VectorTileLayer;
+export default ThreeVectorTileLayer;

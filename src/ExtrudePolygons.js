@@ -5,8 +5,8 @@ import { initVertexColors, getCenterOfPoints, getExtrudeGeometryParams } from '.
 import ExtrudePolygon from './ExtrudePolygon';
 import MergedMixin from './MergedMixin';
 import { getGeoJSONCenter, isGeoJSONPolygon } from './util/GeoJSONUtil';
-import { pushQueue as meshPushQueue } from './queue/WorkerQueue';
 import { mergeBufferGeometries } from './util/MergeGeometryUtil';
+import { getActor } from './worker/MeshActor';
 
 
 function updateAttribute(data) {
@@ -48,9 +48,10 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
         let bufferGeometry;
         const extrudePolygons = [], faceMap = [], geometriesAttributes = [];
         if (asynchronous) {
+            var actor = getActor();
             const SIZE = 0.000001;
             bufferGeometry = new THREE.BoxBufferGeometry(SIZE, SIZE, SIZE * 5);
-            meshPushQueue({
+            actor.pushQueue({
                 type: 'Polygon',
                 layer,
                 key: options.key,
