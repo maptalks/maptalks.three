@@ -76,7 +76,7 @@
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
 
-            const worker = new Worker('./js/worker.three.js');
+            // const worker = new Worker('./js/worker.three.js');
             const url = `http://localhost/{z}/{x}/{y}`;
             vectortilelayer = threeLayer.toVectorTileLayer(url,
                 {
@@ -86,7 +86,7 @@
                     interactive: false,
                     subdomains: ['a', 'b', 'c', 'd'],
                 },
-                getMaterial, worker);
+                getMaterial);
             // vectortilelayer.debug = true;
 
             vectortilelayer.onSelectMesh = onSelectMesh;

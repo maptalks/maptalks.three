@@ -76,7 +76,7 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
             let faceIndex = 0, psIndex = 0, normalIndex = 0, uvIndex = 0;
             for (let i = 0; i < len; i++) {
                 const polygon = polygons[i];
-                const height = (polygon.getProperties() || {}).height || 1;
+                const height = (isGeoJSONPolygon(polygon) ? polygon.properties : polygon.getProperties() || {}).height || 1;
                 const buffGeom = getExtrudeGeometryParams(polygon, height, layer, center);
                 geometries.push(buffGeom);
 

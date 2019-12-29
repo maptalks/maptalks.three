@@ -75,8 +75,12 @@
             var light = new THREE.DirectionalLight(0xffffff);
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
+            const workers = [1, 1].map(d => {
+                return new Worker('./js/worker.three.js');
+            });
+            threeLayer.initWorkers(workers);
 
-            const worker = new Worker('./js/worker.three.js');
+
             const url = `https://{s}.tiles.mapbox.com/v4/mapbox.mapbox-terrain-v2,mapbox.mapbox-streets-v7/{z}/{x}/{y}.vector.pbf?access_token=pk.eyJ1IjoiemhlbmZ1IiwiYSI6ImNpb284bzNoYzAwM3h1Ym02aHlrand6OTAifQ.sKX-XKJMmgtk_oI5oIUV_g`;
             vectortilelayer = threeLayer.toVectorTileLayer(url,
                 {
@@ -84,10 +88,11 @@
                     // maxZoom: 16,
                     debug: true,
                     interactive: false,
+                    worker: true,
                     subdomains: ['a', 'b', 'c', 'd'],
                     // tileSize: [512, 512]
                 },
-                getMaterial, worker);
+                getMaterial);
             // vectortilelayer.debug = true;
 
             vectortilelayer.onSelectMesh = onSelectMesh;

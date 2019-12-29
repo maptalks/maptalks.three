@@ -14,6 +14,7 @@ import Bars from './src/Bars';
 import ExtrudeLines from './src/ExtrudeLines';
 import Lines from './src/Lines';
 import VectorTileLayer from './src/VectorTileLayer';
+import { setWorker } from './src/queue/WorkerQueue';
 
 const options = {
     'renderer': 'gl',
@@ -339,8 +340,17 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * @param {*} getMaterial
      * @param {*} worker
      */
-    toVectorTileLayer(url, options, getMaterial, worker) {
-        return new VectorTileLayer(url, options, getMaterial, this, worker);
+    toVectorTileLayer(url, options, getMaterial) {
+        return new VectorTileLayer(url, options, getMaterial, this);
+    }
+
+
+    /**
+     *Global registration workers
+     * @param {*} workers
+     */
+    initWorkers(workers) {
+        setWorker(workers);
     }
 
 

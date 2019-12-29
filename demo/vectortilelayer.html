@@ -79,11 +79,18 @@
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
 
-            const worker = new Worker('./js/worker.three.js');
+            const workers = [1, 1].map(d => {
+                return new Worker('./js/worker.three.js');
+            });
+            threeLayer.initWorkers(workers);
 
             vectortilelayer = threeLayer.toVectorTileLayer('http://localhost:9090/tile/{z}/{x}/{y}',
-                { ...baseConfig, debug: true, interactive: false }, getMaterial, worker);
-            // vectortilelayer.debug = true;
+                {
+                    ...baseConfig,
+                    debug: true,
+                    interactive: false,
+                    worker: true
+                }, getMaterial);
 
             vectortilelayer.onSelectMesh = onSelectMesh;
 

@@ -1,55 +1,114 @@
 import { isGeoJSONPolygon, getGeoJSONCenter } from '../util/GeoJSONUtil';
 import { getPolygonPositions, getCenterOfPoints } from '../util/ExtrudeUtil';
 
-var worker;
-const waitingQueue = [
-    // {
-    //     key,
-    //     type,
-    //     layer
-    //     data,
-    //     callback
-    // }
-];
+/*
 
-var runing = false;
+Global sharing
 
-export function setWorker(meshWorker) {
-    worker = meshWorker;
+*/
+const workerQueues = [];
+
+class WorkerQueue {
+    constructor(worker) {
+        this.worker = worker;
+        this.waitingQueue = [
+            // {
+            //     key,
+            //     type,
+            //     layer
+            //     data,
+            //     callback
+            // }
+        ];
+        this.runing = false;
+    }
+
+
+
+    pushQueue(q = {}) {
+        const { worker, waitingQueue, runing } = this;
+        if (worker) {
+            waitingQueue.push(q);
+        }
+        if (!runing) {
+            this.message();
+        }
+    }
+
+
+    message() {
+        const { worker, waitingQueue } = this;
+        if (waitingQueue.length > 0) {
+            const { type, data, callback, layer, key } = waitingQueue[0];
+            let params;
+            if (type === 'Polygon') {
+                params = gengerateExtrudePolygons(data, layer);
+            } else if (type === 'Line') {
+                //todo liness
+            } else if (type === 'Point') {
+                //todo points
+            }
+            this.runing = true;
+            worker.postMessage({ type, datas: params.datas }, params.transfer);
+            worker.onmessage = (e) => {
+                e.data.key = key;
+                callback(e.data);
+                this.waitingQueue.splice(0, 1);
+                this.message();
+            };
+        } else {
+            this.runing = false;
+        }
+    }
+}
+
+
+export function setWorker(meshWorkers = []) {
+    if (!Array.isArray(meshWorkers)) {
+        meshWorkers = [meshWorkers];
+    }
+    (meshWorkers || []).forEach(meshWorker => {
+        if (meshWorker instanceof Worker) {
+            workerQueues.push(new WorkerQueue(meshWorker));
+        }
+    });
+}
+
+
+function getFreeWorkerQueue() {
+    let index = 0, minValue = Infinity;
+    for (let i = 0, len = workerQueues.length; i < len; i++) {
+        const { waitingQueue } = workerQueues[i];
+        if (waitingQueue.length < minValue) {
+            minValue = waitingQueue.length;
+            index = i;
+        }
+    }
+    return workerQueues[index];
 }
 
 export function pushQueue(q = {}) {
-    if (worker) {
-        waitingQueue.push(q);
+    const workerQueue = getFreeWorkerQueue();
+    if (workerQueue) {
+        workerQueue.pushQueue(q);
     }
-    if (!runing) {
-        message();
+    if (workerQueues.length === 0) {
+        console.error('not find worker');
     }
 }
 
-function message() {
-    if (waitingQueue.length > 0) {
-        const { type, data, callback, layer, key } = waitingQueue[0];
-        let params;
-        if (type === 'Polygon') {
-            params = gengerateExtrudePolygons(data, layer);
-        } else if (type === 'Line') {
-            //todo liness
-        } else if (type === 'Point') {
-            //todo points
-        }
-        runing = true;
-        worker.postMessage({ type, datas: params.datas }, params.transfer);
-        worker.onmessage = (e) => {
-            e.data.key = key;
-            callback(e.data);
-            waitingQueue.splice(0, 1);
-            message();
-        };
-    } else {
-        runing = false;
+export function isFree() {
+    let maxValue = -Infinity;
+    for (let i = 0, len = workerQueues.length; i < len; i++) {
+        const { waitingQueue } = workerQueues[i];
+        maxValue = Math.max(waitingQueue.length, maxValue);
     }
+    if (maxValue > 0) {
+        return false;
+    }
+    return true;
 }
+
 
 /**
  * generate extrudepolygons data for worker

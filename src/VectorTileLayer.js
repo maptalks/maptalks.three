@@ -1,7 +1,6 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import { pushQueue, outQueue, getQueues, nextLoop } from './queue/TileDataQueue';
-import { setWorker } from './queue/WorkerQueue';
 import { isGeoJSONPolygon, isGeoJSONLine, spliteGeoJSONMulti, isGeoJSONPoint, getGeoJSONCoordinates } from './util/GeoJSONUtil';
 
 let canvas;
@@ -27,26 +26,27 @@ function generateImage(key, debug) {
     return canvas.toDataURL();
 }
 
+const OPTIONS = {
+    worker: false
+};
 /**
  *Provide a simple data loading layer with large amount of data
  */
 class VectorTileLayer extends maptalks.TileLayer {
-    constructor(url, options = {}, getMaterial, layer, worker) {
-        super(maptalks.Util.GUID(), maptalks.Util.extend({ urlTemplate: url }, options));
+    constructor(url, options = {}, getMaterial, layer) {
+        super(maptalks.Util.GUID(), maptalks.Util.extend({ urlTemplate: url }, OPTIONS, options));
         this._opts = options;
         this._layer = layer;
         this.getMaterial = getMaterial;
         this._baseObjectKeys = {};
         this._loadTiles = {};
         this._add = null;
-        this._worker = worker;
         this._layerLaodTime = new Date().getTime();
-        setWorker(worker);
         this._init();
     }
 
     isAsynchronous() {
-        return !!this._worker;
+        return this._opts.worker;
     }
 
     /**
