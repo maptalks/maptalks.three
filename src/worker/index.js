@@ -44,7 +44,7 @@ function generateData(list) {
 function arrayBufferToArray(buffer) {
     const ps = new Float32Array(buffer);
     const vs = [];
-    for (let i = 0, len = ps.length; i < len; i += 3) {
+    for (let i = 0, len = ps.length; i < len; i += 2) {
         const x = ps[i], y = ps[i + 1];
         vs.push([x, y]);
     }

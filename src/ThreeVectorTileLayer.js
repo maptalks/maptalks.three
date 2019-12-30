@@ -3,13 +3,10 @@ import * as THREE from 'three';
 import { pushQueue, outQueue, getQueues, nextLoop } from './queue/TileDataQueue';
 import { isGeoJSONPolygon, isGeoJSONLine, spliteGeoJSONMulti, isGeoJSONPoint, getGeoJSONCoordinates } from './util/GeoJSONUtil';
 
-let canvas;
+const canvas = document.createElement('canvas');
 const SIZE = 256;
+canvas.width = canvas.height = SIZE;
 function generateImage(key, debug) {
-    if (!canvas) {
-        canvas = document.createElement('canvas');
-        canvas.width = canvas.height = SIZE;
-    }
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, SIZE, SIZE);
     ctx.save();
@@ -163,12 +160,36 @@ class ThreeVectorTileLayer extends maptalks.TileLayer {
         });
     }
 
+    _getCurentTileKeys() {
+        const tileGrids = this.getTiles().tileGrids || [];
+        const keys = [], keysMap = {};
+        tileGrids.forEach(d => {
+            const tiles = d.tiles || [];
+            for (let i = 0, len = tiles.length; i < len; i++) {
+                const { dupKey } = tiles[i];
+                keys.push(dupKey);
+                keysMap[dupKey] = true;
+            }
+        });
+        return { keys, keysMap };
+    }
+
+
+    _isLoad() {
+        const { keys } = this._getCurentTileKeys();
+        const keys1 = Object.keys(this._renderer.tilesInView);
+        if (keys.length === keys1.length) {
+            return true;
+        }
+        return false;
+    }
+
 
     _layerOnLoad() {
         // This event will be triggered multiple times per unit time
         const time = new Date().getTime();
         const offsetTime = time - this._layerLaodTime;
-        if (offsetTime < 100) {
+        if (offsetTime < 20) {
             return;
         }
         this._layerLaodTime = time;
@@ -214,11 +235,21 @@ class ThreeVectorTileLayer extends maptalks.TileLayer {
                 this._layer.addMesh(baseobjects);
             }
             this._add = true;
+            /**
+             * layerload have a bug ,Sometimes it doesn't trigger,I don't know why
+             * Add heartbeat detection mechanism
+             */
+            this.intervalId = setInterval(() => {
+                if (this._isLoad()) {
+                    this.fire('layerload');
+                }
+            }, 1000);
         });
         this.on('remove', () => {
             this._add = false;
             const baseobjects = this.getBaseObjects();
             this._layer.removeMesh(baseobjects);
+            clearInterval(this.intervalId);
         });
         this.on('show', () => {
             const baseobjects = this.getBaseObjects();
@@ -298,6 +329,12 @@ class ThreeVectorTileLayer extends maptalks.TileLayer {
 
     _generateBaseObjects(index, json, img) {
         if (json && img) {
+            const { keysMap } = this._getCurentTileKeys();
+            //not in current ,ignore
+            if (!keysMap[index]) {
+                img.src = generateImage(index, this._opts.debug);
+                return;
+            }
             const baseobjects = this.formatBaseObjects(index, json);
             if (baseobjects.length) {
                 img.needCount = baseobjects.length;
@@ -314,6 +351,7 @@ class ThreeVectorTileLayer extends maptalks.TileLayer {
                         img.currentCount++;
                     }
                 }
+
                 this._layer.addMesh(baseobjects);
                 if (img.needCount === img.currentCount) {
                     img.src = generateImage(index, this._opts.debug);
@@ -356,7 +394,7 @@ class ThreeVectorTileLayer extends maptalks.TileLayer {
                 }
             }
             // Batch deletion can have better performance
-            if (needsRemoveBaseObjects) {
+            if (needsRemoveBaseObjects.length) {
                 this._layer.removeMesh(needsRemoveBaseObjects);
             }
         }

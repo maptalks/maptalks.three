@@ -158,7 +158,7 @@ export function getSinglePolygonPositions(polygon, layer, center, isArrayBuff = 
     const centerPt = layer.coordinateToVector3(center);
     let outer;
     if (isArrayBuff) {
-        outer = new Float32Array(shell.length * 3);
+        outer = new Float32Array(shell.length * 2);
     } else {
         outer = [];
     }
@@ -166,10 +166,10 @@ export function getSinglePolygonPositions(polygon, layer, center, isArrayBuff = 
         const c = shell[i];
         const v = layer.coordinateToVector3(c).sub(centerPt);
         if (isArrayBuff) {
-            const idx = i * 3;
+            const idx = i * 2;
             outer[idx] = v.x;
             outer[idx + 1] = v.y;
-            outer[idx + 2] = v.z;
+            // outer[idx + 2] = v.z;
         } else {
             outer.push([v.x, v.y]);
         }
@@ -178,15 +178,15 @@ export function getSinglePolygonPositions(polygon, layer, center, isArrayBuff = 
     if (holes && holes.length > 0) {
         data.holes = [];
         for (let i = 0, len = holes.length; i < len; i++) {
-            const pts = (isArrayBuff ? new Float32Array(holes[i].length * 3) : []);
+            const pts = (isArrayBuff ? new Float32Array(holes[i].length * 2) : []);
             for (let j = 0, len1 = holes[i].length; j < len1; j++) {
                 const c = holes[i][j];
                 const pt = layer.coordinateToVector3(c).sub(centerPt);
                 if (isArrayBuff) {
-                    const idx = j * 3;
+                    const idx = j * 2;
                     pts[idx] = pt.x;
                     pts[idx + 1] = pt.y;
-                    pts[idx + 2] = pt.z;
+                    // pts[idx + 2] = pt.z;
                 } else {
                     pts.push([pt.x, pt.y]);
                 }
