@@ -87,7 +87,7 @@
             vectortilelayer = threeLayer.toThreeVectorTileLayer('http://localhost:9090/tile/{z}/{x}/{y}',
                 {
                     ...baseConfig,
-                    debug: true,
+                    // debug: true,
                     interactive: false,
                     worker: true
                 }, getMaterial);
@@ -304,9 +304,9 @@
                 // case 'places': {
                 //     return poiMaterial;
                 // }
-                case 'pois': {
-                    return pointMaterial;
-                }
+                // case 'pois': {
+                //     return pointMaterial;
+                // }
 
                 default: {
                     return null;
@@ -318,7 +318,7 @@
 
         function animation() {
             // layer animation support Skipping frames
-            // threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
             if (threeLayer._needsUpdate) {
                 threeLayer._renderer.clearCanvas();
                 threeLayer.renderScene();
