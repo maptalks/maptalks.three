@@ -352,7 +352,7 @@ class ThreeVectorTileLayer extends maptalks.TileLayer {
                     }
                 }
 
-                this._layer.addMesh(baseobjects);
+                this._layer.addMesh(baseobjects, false);
                 if (img.needCount === img.currentCount) {
                     img.src = generateImage(index, this._opts.debug);
                 }

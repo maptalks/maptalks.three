@@ -404,7 +404,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * add object3ds
      * @param {BaseObject} meshes
      */
-    addMesh(meshes) {
+    addMesh(meshes, render = true) {
         if (!meshes) return this;
         if (!Array.isArray(meshes)) {
             meshes = [meshes];
@@ -425,7 +425,9 @@ class ThreeLayer extends maptalks.CanvasLayer {
             }
         });
         this._zoomend();
-        this.renderScene();
+        if (render) {
+            this.renderScene();
+        }
         return this;
     }
 
