@@ -46,12 +46,13 @@
             center: [13.416935229170008, 52.529564137540376],
             zoom: 16,
             pitch: 60,
+            maxPitch: 60,
             // pitch: 60,
             // bearing: 180,
 
             centerCross: true,
             doubleClickZoom: false,
-            // baseLayer: baseLaer,
+            baseLayer: baseLaer,
             zoomControl: {
                 'position': 'bottom-left'
             }
@@ -87,7 +88,7 @@
             vectortilelayer = threeLayer.toThreeVectorTileLayer('http://localhost:9090/tile/{z}/{x}/{y}',
                 {
                     ...baseConfig,
-                    // debug: true,
+                    debug: true,
                     interactive: false,
                     worker: true
                 }, getMaterial);
@@ -101,7 +102,11 @@
                     timeout: 10000
                 }).then(function (response) {
                     // handle success
-                    callback(key, response.data, img);
+                    //模拟ajax延时,可以防止单位时间内多个数据同时返回，从而导致单位时间内处理多个mesh导致掉帧
+                    setTimeout(() => {
+                        callback(key, response.data, img);
+                    }, 500 * Math.random());
+                 
                 }).catch(function (error) {
                     console.error(error);
                     callback(key, null, img);
@@ -109,10 +114,6 @@
 
                 });
             }
-            // fetch('./js/worker.three.js').then(res => res.text()).then(text => {
-            //    maptalks.registerWorkerAdapter('threeworker',text);
-            //    map.addLayer(vectortilelayer);
-            // });
             map.addLayer(vectortilelayer);
             animation();
             initGui();

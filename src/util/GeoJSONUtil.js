@@ -24,36 +24,24 @@ export function isGeoJSON(feature = {}) {
 
 export function isGeoJSONPolygon(feature = {}) {
     const type = getGeoJSONType(feature);
-    if (type) {
-        for (let i = 4, len = TYPES.length; i < len; i++) {
-            if (TYPES[i] === type) {
-                return true;
-            }
-        }
+    if (type && (type === TYPES[4] || type === TYPES[5])) {
+        return true;
     }
     return false;
 }
 
 export function isGeoJSONLine(feature = {}) {
     const type = getGeoJSONType(feature);
-    if (type) {
-        for (let i = 2, len = 4; i < len; i++) {
-            if (TYPES[i] === type) {
-                return true;
-            }
-        }
+    if (type && (type === TYPES[2] || type === TYPES[3])) {
+        return true;
     }
     return false;
 }
 
 export function isGeoJSONPoint(feature = {}) {
     const type = getGeoJSONType(feature);
-    if (type) {
-        for (let i = 0, len = 2; i < len; i++) {
-            if (TYPES[i] === type) {
-                return true;
-            }
-        }
+    if (type && (type === TYPES[0] || type === TYPES[1])) {
+        return true;
     }
     return false;
 }

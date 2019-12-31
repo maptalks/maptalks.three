@@ -163,14 +163,16 @@ class ThreeVectorTileLayer extends maptalks.TileLayer {
     _getCurentTileKeys() {
         const tileGrids = this.getTiles().tileGrids || [];
         const keys = [], keysMap = {};
-        tileGrids.forEach(d => {
+        for (let i = 0, len = tileGrids.length; i < len; i++) {
+            const d = tileGrids[i];
             const tiles = d.tiles || [];
-            for (let i = 0, len = tiles.length; i < len; i++) {
-                const { dupKey } = tiles[i];
+            for (let j = 0, len1 = tiles.length; j < len1; j++) {
+                const { dupKey } = tiles[j];
                 keys.push(dupKey);
                 keysMap[dupKey] = true;
             }
-        });
+
+        }
         return { keys, keysMap };
     }
 
@@ -208,7 +210,7 @@ class ThreeVectorTileLayer extends maptalks.TileLayer {
             }
         }
         if (needsRemoveBaseObjects.length) {
-            threeLayer.removeMesh(needsRemoveBaseObjects);
+            threeLayer.removeMesh(needsRemoveBaseObjects, false);
         }
         if (tilesInViewLen && loadTilesLen) {
             for (let index in tilesInView) {
@@ -240,7 +242,7 @@ class ThreeVectorTileLayer extends maptalks.TileLayer {
              * Add heartbeat detection mechanism
              */
             this.intervalId = setInterval(() => {
-                if (this._isLoad()) {
+                if (this._isLoad() && (!this._layer.getMap().isInteracting())) {
                     this.fire('layerload');
                 }
             }, 1000);
@@ -301,10 +303,8 @@ class ThreeVectorTileLayer extends maptalks.TileLayer {
                 img._key = key;
                 pushQueue(key, url, (index, json, image) => {
                     // img.src = generateImage(key, this._opts.debug);
+                    this._generateBaseObjects(index, json, image);
                     nextLoop(index, this);
-                    setTimeout(() => {
-                        this._generateBaseObjects(index, json, image);
-                    }, 5);
                 }, img, this);
             };
         });
@@ -375,9 +375,9 @@ class ThreeVectorTileLayer extends maptalks.TileLayer {
     }
 
     _diffCache() {
-        if (this._layer.getMap().isInteracting()) {
-            return;
-        }
+        // if (this._layer.getMap().isInteracting()) {
+        //     return;
+        // }
         if (Object.keys(this._baseObjectKeys).length > this._renderer.tileCache.max) {
             const tileCache = this._renderer.tileCache.data;
             const tilesInView = this._renderer.tilesInView;
@@ -395,7 +395,7 @@ class ThreeVectorTileLayer extends maptalks.TileLayer {
             }
             // Batch deletion can have better performance
             if (needsRemoveBaseObjects.length) {
-                this._layer.removeMesh(needsRemoveBaseObjects);
+                this._layer.removeMesh(needsRemoveBaseObjects, false);
             }
         }
     }

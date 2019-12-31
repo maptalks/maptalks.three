@@ -6,7 +6,7 @@ Global sharing
 
 
 //Maximum concurrent
-const MAX = 5;
+const MAX = 10;
 const waitingQueue = [
     // {
     //     key,

@@ -435,7 +435,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * remove object3ds
      * @param {BaseObject} meshes
      */
-    removeMesh(meshes) {
+    removeMesh(meshes, render = true) {
         if (!meshes) return this;
         if (!Array.isArray(meshes)) {
             meshes = [meshes];
@@ -455,7 +455,9 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 scene.remove(mesh);
             }
         });
-        this.renderScene();
+        if (render) {
+            this.renderScene();
+        }
         return this;
     }
 
