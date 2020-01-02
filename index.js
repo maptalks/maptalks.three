@@ -749,7 +749,7 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
 
     _drawLayer() {
         super._drawLayer.apply(this, arguments);
-        this.renderScene();
+        // this.renderScene();
     }
 
     hitDetect() {
