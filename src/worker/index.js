@@ -7,7 +7,7 @@ export const onmessage = function (message, postResponse) {
     const data = message.data;
     let { type, datas } = data;
     if (type === 'Polygon') {
-        datas = generateData(datas);
+        generateData(datas);
         const result = generateExtrudePolygons(datas);
         postResponse(null, result, [result.position, result.normal, result.uv, result.indices]);
     }
@@ -15,28 +15,17 @@ export const onmessage = function (message, postResponse) {
 
 
 function generateData(list) {
-    const datas = [];
     const len = list.length;
     for (let i = 0; i < len; i++) {
-        const newdata = [];
-        const { data, height } = list[i];
+        const { data } = list[i];
         for (let j = 0, len1 = data.length; j < len1; j++) {
-            const { outer, holes } = data[j];
-            const d = { outer: arrayBufferToArray(outer) };
-            if (holes && holes.length) {
-                d.holes = [];
-                for (let m = 0, len2 = holes.length; m < len2; m++) {
-                    d.holes.push(arrayBufferToArray(holes[m]));
-                }
+            const d = data[j];
+            for (let m = 0, len2 = d.length; m < len2; m++) {
+                //ring
+                list[i].data[j][m] = arrayBufferToArray(d[m]);
             }
-            newdata.push(d);
         }
-        datas.push({
-            data: newdata,
-            height
-        });
     }
-    return datas;
 }
 
 
@@ -104,21 +93,10 @@ function generateExtrudePolygons(datas) {
 
 function extrudePolygons(d) {
     const { data, height } = d;
-    const shapes = [];
-    for (let i = 0, len = data.length; i < len; i++) {
-        const { outer, holes } = data[i];
-        const shape = [outer];
-        if (holes && holes.length) {
-            for (let j = 0, len1 = holes.length; j < len1; j++) {
-                shape.push(holes[j]);
-            }
-        }
-        shapes.push(shape);
-    }
     const { position, normal, uv, indices } = extrudePolygon(
         // polygons same with coordinates of MultiPolygon type geometry in GeoJSON
         // See http://wiki.geojson.org/GeoJSON_draft_version_6#MultiPolygon
-        shapes,
+        data,
         // Options of extrude
         {
             // Can be a constant value, or a function.

@@ -1,6 +1,6 @@
 import * as maptalks from 'maptalks';
-import { isGeoJSONPolygon, getGeoJSONCenter } from '../util/GeoJSONUtil';
-import { getPolygonPositions, getCenterOfPoints } from '../util/ExtrudeUtil';
+import { isGeoJSONPolygon } from '../util/GeoJSONUtil';
+import { getPolygonPositions } from '../util/ExtrudeUtil';
 import pkg from './../../package.json';
 
 
@@ -12,10 +12,10 @@ const MeshActor = class extends maptalks.worker.Actor {
     }
 
     pushQueue(q = {}) {
-        const { type, data, callback, layer, key } = q;
+        const { type, data, callback, layer, key, center } = q;
         let params;
         if (type === 'Polygon') {
-            params = gengerateExtrudePolygons(data, layer);
+            params = gengerateExtrudePolygons(data, center, layer);
         } else if (type === 'Line') {
             //todo liness
         } else if (type === 'Point') {
@@ -50,26 +50,17 @@ export function getActor() {
  * @param {*} polygons
  * @param {*} layer
  */
-function gengerateExtrudePolygons(polygons = [], layer) {
+function gengerateExtrudePolygons(polygons = [], center, layer) {
     const len = polygons.length;
-    const centers = [];
-    for (let i = 0; i < len; i++) {
-        const polygon = polygons[i];
-        centers.push(isGeoJSONPolygon(polygon) ? getGeoJSONCenter(polygon) : polygon.getCenter());
-    }
-    // Get the center point of the point set
-    const center = getCenterOfPoints(centers);
     const datas = [], transfer = [];
     for (let i = 0; i < len; i++) {
         const polygon = polygons[i];
         const data = getPolygonPositions(polygon, layer, center, true);
         for (let j = 0, len1 = data.length; j < len1; j++) {
-            const { outer, holes } = data[j];
-            transfer.push(outer);
-            if (holes && holes.length) {
-                for (let m = 0, len2 = holes.length; m < len2; m++) {
-                    transfer.push(holes[m]);
-                }
+            const d = data[j];
+            for (let m = 0, len2 = d.length; m < len2; m++) {
+                //ring
+                transfer.push(d[m]);
             }
         }
         let height = (isGeoJSONPolygon(polygon) ? polygon.properties : polygon.getProperties() || {}).height || 1;

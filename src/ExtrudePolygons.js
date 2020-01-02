@@ -55,6 +55,7 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
                 type: 'Polygon',
                 layer,
                 key: options.key,
+                center,
                 data: polygons,
                 callback: (e) => {
                     const { faceMap, geometriesAttributes } = e;

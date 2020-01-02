@@ -11,20 +11,20 @@ import { extrudePolygon } from 'geometry-extrude';
  * @param {maptalks.Polygon} polygon
  * @param {*} layer
  */
-export function toShape(datas = []) {
-    const shapes = [];
-    for (let i = 0, len = datas.length; i < len; i++) {
-        const { outer, holes } = datas[i];
-        const shape = [outer];
-        if (holes && holes.length) {
-            for (let j = 0, len1 = holes.length; j < len1; j++) {
-                shape.push(holes[j]);
-            }
-        }
-        shapes.push(shape);
-    }
-    return shapes;
-}
+// export function toShape(datas = []) {
+//     const shapes = [];
+//     for (let i = 0, len = datas.length; i < len; i++) {
+//         const { outer, holes } = datas[i];
+//         const shape = [outer];
+//         if (holes && holes.length) {
+//             for (let j = 0, len1 = holes.length; j < len1; j++) {
+//                 shape.push(holes[j]);
+//             }
+//         }
+//         shapes.push(shape);
+//     }
+//     return shapes;
+// }
 
 /**
  *  Support custom center point
@@ -48,7 +48,7 @@ export function getExtrudeGeometry(polygon, height, layer, center) {
 
 export function getExtrudeGeometryParams(polygon, height, layer, center) {
     const datas = getPolygonPositions(polygon, layer, center);
-    const shapes = toShape(datas);
+    const shapes = datas;
     //Possible later use of geojson
     if (!shapes) return null;
     height = layer.distanceToVector3(height, height).x;
@@ -174,9 +174,8 @@ export function getSinglePolygonPositions(polygon, layer, center, isArrayBuff = 
             outer.push([v.x, v.y]);
         }
     }
-    const data = { outer: (isArrayBuff ? outer.buffer : outer) };
+    const data = [(isArrayBuff ? outer.buffer : outer)];
     if (holes && holes.length > 0) {
-        data.holes = [];
         for (let i = 0, len = holes.length; i < len; i++) {
             const pts = (isArrayBuff ? new Float32Array(holes[i].length * 2) : []);
             for (let j = 0, len1 = holes[i].length; j < len1; j++) {
@@ -191,7 +190,7 @@ export function getSinglePolygonPositions(polygon, layer, center, isArrayBuff = 
                     pts.push([pt.x, pt.y]);
                 }
             }
-            data.holes.push((isArrayBuff ? pts.buffer : pts));
+            data.push((isArrayBuff ? pts.buffer : pts));
         }
     }
     return data;
