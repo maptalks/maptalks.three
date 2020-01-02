@@ -319,16 +319,19 @@
 
         function animation() {
             // layer animation support Skipping frames
-            threeLayer._needsUpdate = !threeLayer._needsUpdate;
-            if (threeLayer._needsUpdate) {
-                threeLayer._renderer.clearCanvas();
-                threeLayer.renderScene();
+            if ((!map.isMoving()) && (!map.isZooming()) && (!map.isRotating()) && (!params.rotate)) {
+                threeLayer._needsUpdate = !threeLayer._needsUpdate;
+                if (threeLayer._needsUpdate) {
+                    threeLayer._renderer.clearCanvas();
+                    threeLayer.renderScene();
+                }
             }
             stats.update();
             requestAnimationFrame(animation);
             if (params.rotate) {
-                map.setBearing(map.getBearing() + 0.1);
+                map.setBearing(map.getBearing() + 0.3);
             }
+
 
         }
 

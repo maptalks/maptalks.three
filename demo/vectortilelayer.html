@@ -52,7 +52,7 @@
 
             centerCross: true,
             doubleClickZoom: false,
-            baseLayer: baseLaer,
+            // baseLayer: baseLaer,
             zoomControl: {
                 'position': 'bottom-left'
             }
@@ -88,7 +88,7 @@
             vectortilelayer = threeLayer.toThreeVectorTileLayer('http://localhost:9090/tile/{z}/{x}/{y}',
                 {
                     ...baseConfig,
-                    debug: true,
+                    // debug: true,
                     interactive: false,
                     worker: true
                 }, getMaterial);
@@ -105,8 +105,8 @@
                     //模拟ajax延时,可以防止单位时间内多个数据同时返回，从而导致单位时间内处理多个mesh导致掉帧
                     setTimeout(() => {
                         callback(key, response.data, img);
-                    }, 500 * Math.random());
-                 
+                    }, 400 * Math.random());
+
                 }).catch(function (error) {
                     console.error(error);
                     callback(key, null, img);
@@ -319,15 +319,17 @@
 
         function animation() {
             // layer animation support Skipping frames
-            threeLayer._needsUpdate = !threeLayer._needsUpdate;
-            if (threeLayer._needsUpdate) {
-                threeLayer._renderer.clearCanvas();
-                threeLayer.renderScene();
+            if ((!map.isMoving()) && (!map.isZooming()) && (!map.isRotating()) && (!params.rotate)) {
+                threeLayer._needsUpdate = !threeLayer._needsUpdate;
+                if (threeLayer._needsUpdate) {
+                    threeLayer._renderer.clearCanvas();
+                    threeLayer.renderScene();
+                }
             }
             stats.update();
             requestAnimationFrame(animation);
             if (params.rotate) {
-                map.setBearing(map.getBearing() + 0.1);
+                map.setBearing(map.getBearing() + 0.3);
             }
 
         }
