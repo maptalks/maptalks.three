@@ -14,3 +14,5 @@ API.md
 circle.yml
 yarn*
 json/*
+demo/*
+server.js
