@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeBufferGeometries } from './MergeGeometryUtil';
 const barGeometryCache = {};
 const KEY = '-';
 
@@ -74,6 +75,31 @@ export function initVertexColors(geometry, color, _topColor, key = 'y', v = 0) {
     }
     geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3, true));
     return colors;
+}
+
+
+export function mergeBarGeometry(geometries) {
+    const attributes = [], colors = [];
+    for (let i = 0, len = geometries.length; i < len; i++) {
+        const { color, normal, position, uv } = geometries[i].attributes;
+        const index = geometries[i].index;
+        for (let j = 0, len1 = color.array.length; j < len1; j++) {
+            colors.push(color.array[j]);
+        }
+        attributes.push({
+            // color: color.array,
+            normal: normal.array,
+            uv: uv.array,
+            position: position.array,
+            indices: index.array
+        });
+    }
+    const bufferGeometry = mergeBufferGeometries(attributes);
+    for (let i = 0, len = colors.length; i < len; i++) {
+        bufferGeometry.attributes.color.array[i] = colors[i];
+    }
+    return bufferGeometry;
+
 }
 
 
