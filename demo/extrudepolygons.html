@@ -92,7 +92,7 @@
 
                 });
                 if (polygons.length > 0) {
-                    var mesh = threeLayer.toExtrudePolygons(polygons.slice(0, Infinity), { topColor: '#fff' }, material);
+                    var mesh = threeLayer.toExtrudePolygons(polygons.slice(0, Infinity), { topColor: '#fff', interactive: false }, material);
                     threeLayer.addMesh(mesh);
                     meshs.push(mesh);
                     polygons = [];
@@ -189,7 +189,8 @@
                 show: true,
                 opacity: 1,
                 altitude: 0,
-                animateShow: animateShow
+                animateShow: animateShow,
+                interactive: false
             };
             var gui = new dat.GUI();
             gui.add(params, 'add').onChange(function () {
@@ -226,6 +227,11 @@
                 });
             });
             gui.add(params, 'animateShow');
+            gui.add(params, 'interactive').onChange(function () {
+                meshs.forEach(function (mesh) {
+                    mesh.options.interactive = params.interactive;
+                });
+            });
         }
 
         function animateShow() {

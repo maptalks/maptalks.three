@@ -1,7 +1,7 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
-import { getGeometry, initVertexColors } from './util/BarUtil';
+import { getGeometry, initVertexColors, mergeBarGeometry } from './util/BarUtil';
 import Bar from './Bar';
 import MergedMixin from './MergedMixin';
 
@@ -21,9 +21,6 @@ const OPTIONS = {
  */
 class Bars extends MergedMixin(BaseObject) {
     constructor(points, options, material, layer) {
-        if (!THREE.BufferGeometryUtils) {
-            console.error('not find BufferGeometryUtils,please include related scripts');
-        }
         if (!Array.isArray(points)) {
             points = [points];
         }
@@ -95,7 +92,7 @@ class Bars extends MergedMixin(BaseObject) {
         super();
         options = maptalks.Util.extend({}, { altitude: 0, layer, points }, options);
         this._initOptions(options);
-        const geometry = THREE.BufferGeometryUtils.mergeBufferGeometries(geometries);
+        const geometry = mergeBarGeometry(geometries);
         this._createMesh(geometry, material);
 
         this._faceMap = faceMap;

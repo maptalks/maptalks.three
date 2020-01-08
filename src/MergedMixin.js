@@ -12,7 +12,7 @@ const MergedMixin = (Base) => {
 
         // this._faceMap=[];
         // this._baseObjects = [];
-        // this._data = [];
+        // this._datas = [];
         // this.faceIndex = null;
         // this.index=null;
         // this._geometriesAttributes = [];
@@ -46,11 +46,11 @@ const MergedMixin = (Base) => {
             });
             baseObject.on('mouseout', (e) => {
                 this._mouseover = false;
-                this._fire('mouseout', Object.assign({}, e, { target: this, selectMesh: (this.getSelectMesh ? this.getSelectMesh() : null) }));
+                this.fire('mouseout', Object.assign({}, e, { target: this, selectMesh: (this.getSelectMesh ? this.getSelectMesh() : null) }));
                 // this._showGeometry(e.target, false);
             });
             baseObject.on(EVENTS, (e) => {
-                this._fire(e.type, Object.assign({}, e, { target: this, selectMesh: (this.getSelectMesh ? this.getSelectMesh() : null) }));
+                this.fire(e.type, Object.assign({}, e, { target: this, selectMesh: (this.getSelectMesh ? this.getSelectMesh() : null) }));
             });
         }
 

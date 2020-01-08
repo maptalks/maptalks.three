@@ -10,7 +10,6 @@ const OPTIONS = {
     altitude: 0
 };
 
-const MAX = 100000;
 const vector = new THREE.Vector3();
 
 /**
@@ -52,11 +51,6 @@ class Points extends MergedMixin(BaseObject) {
             const v = layer.coordinateToVector3(coordinate, z);
             vs.push(v.x, v.y, v.z);
             vectors.push(v);
-            //Do not initialize the monomer when the data volume is too large
-            if (len <= MAX) {
-                const point = new Point(coordinate, { height, index: i }, material, layer);
-                pointMeshes.push(point);
-            }
 
             geometriesAttributes[i] = {
                 position: {
@@ -91,7 +85,7 @@ class Points extends MergedMixin(BaseObject) {
         this.getObject3d().position.z = z;
 
         this._baseObjects = pointMeshes;
-        this._data = points;
+        this._datas = points;
         this.faceIndex = null;
         this._geometriesAttributes = geometriesAttributes;
         this._geometryCache = geometry.clone();
@@ -126,13 +120,13 @@ class Points extends MergedMixin(BaseObject) {
         const index = this.faceIndex;
         if (index != null) {
             if (!this._baseObjects[index]) {
-                const data = this._data[index];
+                const data = this._datas[index];
                 const { coordinate, height, color } = data;
                 this._baseObjects[index] = new Point(coordinate, { height, index, color }, this.getObject3d().material, this.getLayer());
                 this._proxyEvent(this._baseObjects[index]);
             }
             return {
-                data: this._data[index],
+                data: this._datas[index],
                 baseObject: this._baseObjects[index]
             };
         }

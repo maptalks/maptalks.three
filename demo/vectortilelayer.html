@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>vectortile test</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/axios@0.19.0/dist/axios.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.109.0/build/three.min.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.109.0/examples/js/utils/BufferGeometryUtils.js"></script>
+    <script type="text/javascript" src="../dist/maptalks.three.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.109.0/examples/js/libs/stats.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        const baseConfig = {
+            // minZoom: 10,
+            maxZoom: 16
+        };
+        var baseLaer = new maptalks.TileLayer('tile', {
+            urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+            subdomains: ['a', 'b', 'c', 'd'],
+            attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+        });
+        var map = new maptalks.Map("map", {
+            center: [13.416935229170008, 52.529564137540376],
+            zoom: 16,
+            pitch: 60,
+            maxPitch: 60,
+            // pitch: 60,
+            // bearing: 180,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            // baseLayer: baseLaer,
+            zoomControl: {
+                'position': 'bottom-left'
+            }
+        });
+
+        baseLaer.on('layerload', function () {
+            // console.log('layerload');
+        })
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+            // animation: true
+        });
+
+
+        var vectortilelayer;
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+
+            // const workers = [1, 1].map(d => {
+            //     return new Worker('./js/worker.three.js');
+            // });
+            // threeLayer.initWorkers(workers);
+
+            vectortilelayer = threeLayer.toThreeVectorTileLayer('http://localhost:9090/tile/{z}/{x}/{y}',
+                {
+                    ...baseConfig,
+                    // debug: true,
+                    interactive: false,
+                    worker: true
+                }, getMaterial);
+
+            vectortilelayer.onSelectMesh = onSelectMesh;
+
+            //自定义数据访问方法
+            vectortilelayer.getTileData = function (q) {
+                const { key, url, callback, img } = q;
+                axios.get(url, {
+                    timeout: 10000
+                }).then(function (response) {
+                    // handle success
+                    //模拟ajax延时,可以防止单位时间内多个数据同时返回，从而导致单位时间内处理多个mesh导致掉帧
+                    setTimeout(() => {
+                        callback(key, response.data, img);
+                    }, 400 * Math.random());
+
+                }).catch(function (error) {
+                    console.error(error);
+                    callback(key, null, img);
+                }).finally(() => {
+
+                });
+            }
+            map.addLayer(vectortilelayer);
+            animation();
+            initGui();
+
+
+        };
+        threeLayer.addTo(map);
+
+
+        function createLightMateria() {
+            const canvasDom = document.createElement('canvas');
+            const size = 32;
+            canvasDom.width = size;
+            canvasDom.height = size;
+            const ctx = canvasDom.getContext('2d');
+            const gradient = ctx.createRadialGradient(
+                canvasDom.width / 2,
+                canvasDom.height / 2,
+                0,
+                canvasDom.width / 2,
+                canvasDom.height / 2,
+                canvasDom.width / 2);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(0.005, 'rgba(139,69,19,1)');
+            gradient.addColorStop(0.4, 'rgba(139,69,19,1)');
+            gradient.addColorStop(1, 'rgba(0,0,0,1)');
+
+            ctx.fillStyle = gradient;
+            ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+            ctx.fill();
+            console.log(canvasDom.toDataURL());
+
+            // ctx.fillRect(0, 0, canvasDom.width, canvasDom.height);
+
+            const texture = new THREE.Texture(canvasDom);
+            texture.needsUpdate = true; //使用贴图时进行更新
+            return texture;
+        }
+
+        //高亮材质
+        const roadhighMaterial = new THREE.LineDashedMaterial({
+            linewidth: 1,
+            color: 'yellow',
+            // opacity: 0.8,
+            transparent: true,
+            dashSize: 0.05,
+            gapSize: 0.05
+        });
+        const buildhighMaterial = new THREE.MeshBasicMaterial({ color: 'yellow', transparent: true });
+        const pointhighMaterial = new THREE.PointsMaterial({
+            // size: 10,
+            sizeAttenuation: false,
+            color: 'yellow',
+            // alphaTest: 0.5,
+            // vertexColors: THREE.VertexColors,
+            //  transparent: true
+            // color: 0xffffff,
+            size: 10,
+            transparent: true, //使材质透明
+            // blending: THREE.AdditiveBlending,
+            depthTest: true, //深度测试关闭，不消去场景的不可见面
+            depthWrite: false,
+            //刚刚创建的粒子贴图就在这里用上
+        });
+
+        //事件处理
+        var selectMesh = [];
+        function onSelectMesh(type, e) {
+            // console.log(type);
+            // console.log(e.target);
+            const { target } = e;
+            const select = e.selectMesh;
+            if (type === 'empty' && selectMesh.length) {
+                // if (selectMesh) {
+                threeLayer.removeMesh(selectMesh);
+                selectMesh = [];
+                // }
+                return;
+            }
+
+            let data, baseObject;
+            if (select) {
+                data = select.data;
+                baseObject = select.baseObject;
+                if (baseObject && (!baseLaer.isAdd)) {
+                    // console.log(baseObject);
+                    // if (selectMesh) {
+                    //     threeLayer.removeMesh(selectMesh);
+                    // }
+                    const meshType = baseObject.getType();
+                    if (meshType.includes('Polygon')) {
+                        baseObject.setSymbol(buildhighMaterial);
+                    } else if (meshType.includes('Line')) {
+                        baseObject.setSymbol(roadhighMaterial);
+                    } else if (meshType.includes('Point')) {
+                        baseObject.setSymbol(pointhighMaterial);
+                    }
+                    threeLayer.addMesh(baseObject);
+                    selectMesh.push(baseObject);
+                    // selectMesh = baseObject;
+                }
+            }
+            if (selectMesh.length > 20) {
+                threeLayer.removeMesh(selectMesh);
+                selectMesh = [];
+            }
+            // override tooltip
+            if (type === 'mousemove' && data) {
+                let tooltip = target.getToolTip();
+                if (!tooltip) {
+                    target.setToolTip(target.getId(), {
+                        showTimeout: 0,
+                        eventsPropagation: true,
+                        dx: 10
+                    });
+                    tooltip = target.getToolTip();
+                }
+                const id = baseObject.getId();
+                tooltip._content = `id:${id}`;
+            }
+            //override infowindow
+            if (type === 'click' && data) {
+                let infoWindow = target.getInfoWindow();
+                if (!infoWindow) {
+                    target.setInfoWindow({
+                        content: '',
+                        title: 'message',
+                        animationDuration: 0,
+                        autoOpenOn: false
+                    });
+                    infoWindow = target.getInfoWindow();
+                }
+                const id = baseObject.getId();
+                infoWindow.setContent(`id:${id}`);
+                if (infoWindow && (!infoWindow._owner)) {
+                    infoWindow.addTo(this);
+                }
+                target.openInfoWindow(e.coordinate);
+            }
+        }
+
+
+
+        const roadMaterial = new THREE.LineBasicMaterial({ color: 'rgb(43,69,107)', transparent: true, opacity: 1 });
+        const waterlineMaterial = new THREE.LineBasicMaterial({ color: 'blue', transparent: true, opacity: 1 });
+        const buildMaterial = new THREE.MeshPhongMaterial({ color: '#fff', transparent: true });
+        const waterMaterial = new THREE.MeshBasicMaterial({ color: 'green', transparent: true });
+        const pointMaterial = new THREE.PointsMaterial({
+            // size: 10,
+            sizeAttenuation: false,
+            // color: fillStyle,
+            // alphaTest: 0.5,
+            // vertexColors: THREE.VertexColors,
+            //  transparent: true
+            // color: 0xffffff,
+            size: 5,
+            transparent: true, //使材质透明
+            // blending: THREE.AdditiveBlending,
+            depthTest: true, //深度测试关闭，不消去场景的不可见面
+            depthWrite: false,
+            map: createLightMateria()
+            //刚刚创建的粒子贴图就在这里用上
+        });
+        const poiMaterial = new THREE.PointsMaterial({
+            // size: 10,
+            sizeAttenuation: false,
+            // color: fillStyle,
+            // alphaTest: 0.5,
+            // vertexColors: THREE.VertexColors,
+            //  transparent: true
+            // color: 0xffffff,
+            size: 20,
+            transparent: true, //使材质透明
+            // blending: THREE.AdditiveBlending,
+            depthTest: true, //深度测试关闭，不消去场景的不可见面
+            depthWrite: false,
+            map: new THREE.TextureLoader().load('./data/1.svg')
+            //刚刚创建的粒子贴图就在这里用上
+        });
+
+        function getMaterial(layerName, data, key, geojson) {
+            switch (layerName) {
+                case 'roads': {
+                    return roadMaterial;
+                }
+                case 'buildings': {
+                    return buildMaterial;
+                }
+                // case 'places': {
+                //     return poiMaterial;
+                // }
+                // case 'pois': {
+                //     return pointMaterial;
+                // }
+
+                default: {
+                    return null;
+                }
+            }
+
+        }
+
+
+        function animation() {
+            // layer animation support Skipping frames
+            if ((!map.isMoving()) && (!map.isZooming()) && (!map.isRotating()) && (!params.rotate)) {
+                threeLayer._needsUpdate = !threeLayer._needsUpdate;
+                if (threeLayer._needsUpdate) {
+                    threeLayer._renderer.clearCanvas();
+                    threeLayer.renderScene();
+                }
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+            if (params.rotate) {
+                map.setBearing(map.getBearing() + 0.3);
+            }
+
+        }
+
+
+        var params = {
+            add: true,
+            buildingColor: buildMaterial.color.getStyle(),
+            buildingOpacity: 1,
+            animateShow: animateShow,
+
+            waterColor: waterMaterial.color.getStyle(),
+            waterOpacity: 1,
+
+            roadColor: roadMaterial.color.getStyle(),
+            roadOpacity: 1,
+
+            pointSize: pointMaterial.size,
+            blending: false,
+
+            show: true,
+            altitude: 0,
+            rotate: false,
+            interactive: false
+        };
+
+        function initGui() {
+
+            var gui = new dat.GUI();
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    map.addLayer(vectortilelayer);
+                } else {
+                    map.removeLayer(vectortilelayer);
+                }
+            });
+            gui.addColor(params, 'buildingColor').name('buildingColor').onChange(function () {
+                buildMaterial.color.set(params.buildingColor);
+            });
+            gui.add(params, 'buildingOpacity', 0, 1).onChange(function () {
+                buildMaterial.opacity = params.buildingOpacity;
+            });
+
+
+            gui.addColor(params, 'waterColor').name('waterColor').onChange(function () {
+                waterMaterial.color.set(params.waterColor);
+            });
+            gui.add(params, 'waterOpacity', 0, 1).onChange(function () {
+                waterMaterial.opacity = params.waterOpacity;
+            });
+
+
+            gui.addColor(params, 'roadColor').name('roadColor').onChange(function () {
+                roadMaterial.color.set(params.roadColor);
+            });
+            gui.add(params, 'roadOpacity', 0, 1).onChange(function () {
+                roadMaterial.opacity = params.roadOpacity;
+
+            });
+
+
+            gui.add(params, 'blending').onChange(function () {
+                if (params.blending) {
+                    pointMaterial.blending = THREE.AdditiveBlending;
+                } else {
+                    pointMaterial.blending = THREE.NoBlending;
+                }
+            });
+            gui.add(params, 'pointSize', 2, 20).onChange(function () {
+                pointMaterial.size = params.pointSize;
+            });
+
+
+
+            gui.add(params, 'show').onChange(function () {
+                if (params.show) {
+                    vectortilelayer.show();
+                } else {
+                    vectortilelayer.hide();
+                }
+            });
+            gui.add(params, 'altitude', 0, 300).onChange(function () {
+                const meshs = vectortilelayer.getBaseObjects();
+                meshs.forEach(function (mesh) {
+                    mesh.setAltitude(params.altitude);
+                });
+            });
+            gui.add(params, 'animateShow');
+            gui.add(params, 'rotate');
+            gui.add(params, 'interactive').onChange(function () {
+                vectortilelayer._opts.interactive = params.interactive;
+                const meshs = vectortilelayer.getBaseObjects();
+                meshs.forEach(function (mesh) {
+                    mesh.options.interactive = params.interactive;
+                });
+            });
+        }
+
+        function animateShow() {
+            const meshs = vectortilelayer.getBaseObjects();
+            meshs.forEach(function (mesh) {
+                mesh.animateShow({
+                    duration: 1300
+                });
+            });
+        }
+
+
+    </script>
+</body>
+
+</html>

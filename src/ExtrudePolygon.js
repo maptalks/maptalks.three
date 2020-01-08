@@ -2,6 +2,7 @@ import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
 import { getExtrudeGeometry, initVertexColors } from './util/ExtrudeUtil';
+import { getGeoJSONCenter, isGeoJSONPolygon } from './util/GeoJSONUtil';
 
 const OPTIONS = {
     altitude: 0,
@@ -20,12 +21,13 @@ class ExtrudePolygon extends BaseObject {
         this._initOptions(options);
         const { height, topColor, bottomColor, altitude } = options;
         const geometry = getExtrudeGeometry(polygon, height, layer);
+        const center = (isGeoJSONPolygon(polygon) ? getGeoJSONCenter(polygon) : polygon.getCenter());
+
         if (topColor && !material.map) {
             initVertexColors(geometry, bottomColor, topColor);
             material.vertexColors = THREE.VertexColors;
         }
         this._createMesh(geometry, material);
-        const center = polygon.getCenter();
         const z = layer.distanceToVector3(altitude, altitude).x;
         const v = layer.coordinateToVector3(center, z);
         this.getObject3d().position.copy(v);

@@ -5,7 +5,7 @@ import { getLinePosition } from './util/LineUtil';
 import MergedMixin from './MergedMixin';
 import { getCenterOfPoints } from './util/ExtrudeUtil';
 import Line from './Line';
-
+import { getGeoJSONCenter, isGeoJSONLine } from './util/GeoJSONUtil';
 
 const OPTIONS = {
     altitude: 0,
@@ -25,7 +25,7 @@ class Lines extends MergedMixin(BaseObject) {
         const len = lineStrings.length;
         for (let i = 0; i < len; i++) {
             const lineString = lineStrings[i];
-            centers.push(lineString.getCenter());
+            centers.push(isGeoJSONLine(lineString) ? getGeoJSONCenter(lineString) : lineString.getCenter());
         }
         // Get the center point of the point set
         const center = getCenterOfPoints(centers);
@@ -36,7 +36,7 @@ class Lines extends MergedMixin(BaseObject) {
             psIndex = 0, ps = [];
         for (let i = 0; i < len; i++) {
             const lineString = lineStrings[i];
-            const opts = maptalks.Util.extend({}, { altitude: options.altitude, index: i }, lineString.getProperties());
+            // const opts = maptalks.Util.extend({}, { altitude: options.altitude, index: i }, lineString.getProperties());
             const { positionsV } = getLinePosition(lineString, layer, center);
 
             for (let j = 0, len1 = positionsV.length; j < len1; j++) {
@@ -47,8 +47,8 @@ class Lines extends MergedMixin(BaseObject) {
                 ps.push(v.x, v.y, v.z);
             }
 
-            const line = new Line(lineString, opts, material, layer);
-            lines.push(line);
+            // const line = new Line(lineString, opts, material, layer);
+            // lines.push(line);
 
             const psCount = positionsV.length + positionsV.length - 2;
             const faceLen = psCount;
@@ -94,6 +94,13 @@ class Lines extends MergedMixin(BaseObject) {
     getSelectMesh() {
         const index = this._getIndex();
         if (index != null) {
+            if (!this._baseObjects[index]) {
+                const lineString = this._datas[index];
+                const opts = maptalks.Util.extend({}, this.getOptions(), { index },
+                    isGeoJSONLine(lineString) ? lineString.properties : lineString.getProperties());
+                this._baseObjects[index] = new Line(lineString, opts, this.getObject3d().material, this.getLayer());
+                this._proxyEvent(this._baseObjects[index]);
+            }
             return {
                 data: this._datas[index],
                 baseObject: this._baseObjects[index]

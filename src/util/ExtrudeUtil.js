@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as maptalks from 'maptalks';
-
+import { isGeoJSONPolygon, spliteGeoJSONMulti, getGeoJSONCenter, isGeoJSONMulti, getGeoJSONCoordinates } from './GeoJSONUtil';
+import { extrudePolygon } from 'geometry-extrude';
 /**
  * this is for ExtrudeMesh util
  */
@@ -10,28 +11,20 @@ import * as maptalks from 'maptalks';
  * @param {maptalks.Polygon} polygon
  * @param {*} layer
  */
-export function toShape(polygon, layer, center) {
-    let shell, holes;
-    //it is pre for geojson,Possible later use of geojson
-    if (Array.isArray(polygon)) {
-        shell = polygon[0];
-        holes = polygon.slice(1, polygon.length);
-    } else {
-        shell = polygon.getShell();
-        holes = polygon.getHoles();
-    }
-    center = center || polygon.getCenter();
-    const centerPt = layer.coordinateToVector3(center);
-    const outer = shell.map(c => layer.coordinateToVector3(c).sub(centerPt));
-    const shape = new THREE.Shape(outer);
-    if (holes && holes.length > 0) {
-        shape.holes = holes.map(item => {
-            const pts = item.map(c => layer.coordinateToVector3(c).sub(centerPt));
-            return new THREE.Shape(pts);
-        });
-    }
-    return shape;
-}
+// export function toShape(datas = []) {
+//     const shapes = [];
+//     for (let i = 0, len = datas.length; i < len; i++) {
+//         const { outer, holes } = datas[i];
+//         const shape = [outer];
+//         if (holes && holes.length) {
+//             for (let j = 0, len1 = holes.length; j < len1; j++) {
+//                 shape.push(holes[j]);
+//             }
+//         }
+//         shapes.push(shape);
+//     }
+//     return shapes;
+// }
 
 /**
  *  Support custom center point
@@ -40,29 +33,31 @@ export function toShape(polygon, layer, center) {
  * @param {*} layer
  */
 export function getExtrudeGeometry(polygon, height, layer, center) {
-    if (!polygon) {
-        return null;
-    }
-    let shape;
-    if (polygon instanceof maptalks.MultiPolygon) {
-        shape = polygon.getGeometries().map(p => {
-            return toShape(p, layer, center || polygon.getCenter());
-        });
-    } else if (polygon instanceof maptalks.Polygon) {
-        shape = toShape(polygon, layer, center || polygon.getCenter());
-    }
+    const { position, normal, uv, indices } = getExtrudeGeometryParams(polygon, height, layer, center);
+    const color = new Float32Array(position.length);
+    color.fill(1, 0, position.length);
+    const bufferGeomertry = new THREE.BufferGeometry();
+    bufferGeomertry.addAttribute('color', new THREE.BufferAttribute(color, 3));
+    bufferGeomertry.addAttribute('normal', new THREE.BufferAttribute(normal, 3));
+    bufferGeomertry.addAttribute('position', new THREE.BufferAttribute(position, 3));
+    bufferGeomertry.addAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    bufferGeomertry.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
+    return bufferGeomertry;
+}
+
+
+export function getExtrudeGeometryParams(polygon, height, layer, center) {
+    const datas = getPolygonPositions(polygon, layer, center);
+    const shapes = datas;
     //Possible later use of geojson
-    if (!shape) return null;
+    if (!shapes) return null;
     height = layer.distanceToVector3(height, height).x;
-    const name = parseInt(THREE.REVISION) >= 93 ? 'depth' : 'amount';
-    const config = {
-        'bevelEnabled': false, 'bevelSize': 1
+    const { position, normal, uv, indices } = extrudePolygon(shapes, {
+        depth: height
+    });
+    return {
+        position, normal, uv, indices
     };
-    config[name] = height;
-    const geom = new THREE.ExtrudeGeometry(shape, config);
-    const buffGeom = new THREE.BufferGeometry();
-    buffGeom.fromGeometry(geom);
-    return buffGeom;
 }
 
 /**
@@ -112,3 +107,92 @@ export function getCenterOfPoints(coordinates = []) {
     }
     return new maptalks.Coordinate((minX + maxX) / 2, (minY + maxY) / 2);
 }
+
+
+/**
+ *
+ * @param {*} polygon
+ * @param {*} layer
+ * @param {*} center
+ */
+export function getPolygonPositions(polygon, layer, center, isArrayBuff = false) {
+    if (!polygon) {
+        return null;
+    }
+    let datas = [];
+    if (polygon instanceof maptalks.MultiPolygon) {
+        datas = polygon.getGeometries().map(p => {
+            return getSinglePolygonPositions(p, layer, center || polygon.getCenter(), isArrayBuff);
+        });
+    } else if (polygon instanceof maptalks.Polygon) {
+        const data = getSinglePolygonPositions(polygon, layer, center || polygon.getCenter(), isArrayBuff);
+        datas.push(data);
+    } else if (isGeoJSONPolygon(polygon)) {
+        const cent = getGeoJSONCenter(polygon);
+        if (!isGeoJSONMulti(polygon)) {
+            const data = getSinglePolygonPositions(polygon, layer, center || cent, isArrayBuff);
+            datas.push(data);
+        } else {
+            const fs = spliteGeoJSONMulti(polygon);
+            for (let i = 0, len = fs.length; i < len; i++) {
+                datas.push(getSinglePolygonPositions(fs[i], layer, center || cent, isArrayBuff));
+            }
+        }
+    }
+    return datas;
+}
+
+export function getSinglePolygonPositions(polygon, layer, center, isArrayBuff = false) {
+    let shell, holes;
+    //it is pre for geojson,Possible later use of geojson
+    if (isGeoJSONPolygon(polygon)) {
+        const coordinates = getGeoJSONCoordinates(polygon);
+        shell = coordinates[0];
+        holes = coordinates.slice(1, coordinates.length);
+        center = center || getGeoJSONCenter(polygon);
+    } else {
+        shell = polygon.getShell();
+        holes = polygon.getHoles();
+        center = center || polygon.getCenter();
+    }
+    const centerPt = layer.coordinateToVector3(center);
+    let outer;
+    if (isArrayBuff) {
+        outer = new Float32Array(shell.length * 2);
+    } else {
+        outer = [];
+    }
+    for (let i = 0, len = shell.length; i < len; i++) {
+        const c = shell[i];
+        const v = layer.coordinateToVector3(c).sub(centerPt);
+        if (isArrayBuff) {
+            const idx = i * 2;
+            outer[idx] = v.x;
+            outer[idx + 1] = v.y;
+            // outer[idx + 2] = v.z;
+        } else {
+            outer.push([v.x, v.y]);
+        }
+    }
+    const data = [(isArrayBuff ? outer.buffer : outer)];
+    if (holes && holes.length > 0) {
+        for (let i = 0, len = holes.length; i < len; i++) {
+            const pts = (isArrayBuff ? new Float32Array(holes[i].length * 2) : []);
+            for (let j = 0, len1 = holes[i].length; j < len1; j++) {
+                const c = holes[i][j];
+                const pt = layer.coordinateToVector3(c).sub(centerPt);
+                if (isArrayBuff) {
+                    const idx = j * 2;
+                    pts[idx] = pt.x;
+                    pts[idx + 1] = pt.y;
+                    // pts[idx + 2] = pt.z;
+                } else {
+                    pts.push([pt.x, pt.y]);
+                }
+            }
+            data.push((isArrayBuff ? pts.buffer : pts));
+        }
+    }
+    return data;
+}
+

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as maptalks from 'maptalks';
 import { extrudePolyline } from 'geometry-extrude';
-
+import { isGeoJSON, getGeoJSONCoordinates, getGeoJSONCenter } from './GeoJSONUtil';
 const COMMA = ',';
 
 /**
@@ -19,11 +19,20 @@ export function getLinePosition(lineString, layer, center) {
             positionsV.push(v);
         }
     } else {
-        if (Array.isArray(lineString)) lineString = new maptalks.LineString(lineString);
-        if (!lineString || !(lineString instanceof maptalks.LineString)) return null;
+        if (Array.isArray(lineString)) {
+            lineString = new maptalks.LineString(lineString);
+        }
         const z = 0;
-        const coordinates = lineString.getCoordinates();
-        const centerPt = layer.coordinateToVector3(center || lineString.getCenter());
+        //support geojson
+        let coordinates, cent;
+        if (isGeoJSON(lineString)) {
+            coordinates = getGeoJSONCoordinates(lineString);
+            cent = getGeoJSONCenter(lineString);
+        } else {
+            coordinates = lineString.getCoordinates();
+            cent = lineString.getCenter();
+        }
+        const centerPt = layer.coordinateToVector3(center || cent);
         for (let i = 0, len = coordinates.length; i < len; i++) {
             let coordinate = coordinates[i];
             if (Array.isArray(coordinate)) {
