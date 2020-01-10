@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import BaseObject from './BaseObject';
 import { getLinePosition } from './util/LineUtil';
 import { isGeoJSON, getGeoJSONCenter } from './util/GeoJSONUtil';
+import { addAttribute } from './util/ThreeAdaptUtil';
 
 function initColors(cs) {
     const colors = [];
@@ -30,10 +31,10 @@ class Line extends BaseObject {
         this._initOptions(options);
         const positions = getLinePosition(lineString, layer).positions;
         const geometry = new THREE.BufferGeometry();
-        geometry.addAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        addAttribute(geometry, 'position', new THREE.Float32BufferAttribute(positions, 3));
         const colors = initColors(options.colors);
         if (colors && colors.length) {
-            geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            addAttribute(geometry, 'color', new THREE.Float32BufferAttribute(colors, 3));
             material.vertexColors = THREE.VertexColors;
         }
         this._createLine(geometry, material);

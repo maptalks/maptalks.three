@@ -5,6 +5,7 @@ import Point from './Point';
 import { vector2Pixel } from './util/IdentifyUtil';
 import MergedMixin from './MergedMixin';
 import BBox from './util/BBox';
+import { addAttribute } from './util/ThreeAdaptUtil';
 
 const OPTIONS = {
     altitude: 0
@@ -70,9 +71,9 @@ class Points extends MergedMixin(BaseObject) {
             }
         }
         const geometry = new THREE.BufferGeometry();
-        geometry.addAttribute('position', new THREE.Float32BufferAttribute(vs, 3, true));
+        addAttribute(geometry, 'position', new THREE.Float32BufferAttribute(vs, 3, true));
         if (colors.length) {
-            geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3, true));
+            addAttribute(geometry, 'color', new THREE.Float32BufferAttribute(colors, 3, true));
         }
 
         //for identify

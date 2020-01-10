@@ -6,6 +6,7 @@ import MergedMixin from './MergedMixin';
 import { getCenterOfPoints } from './util/ExtrudeUtil';
 import Line from './Line';
 import { getGeoJSONCenter, isGeoJSONLine } from './util/GeoJSONUtil';
+import { addAttribute } from './util/ThreeAdaptUtil';
 
 const OPTIONS = {
     altitude: 0,
@@ -67,7 +68,7 @@ class Lines extends MergedMixin(BaseObject) {
         }
 
         const geometry = new THREE.BufferGeometry();
-        geometry.addAttribute('position', new THREE.Float32BufferAttribute(ps, 3));
+        addAttribute(geometry, 'position', new THREE.Float32BufferAttribute(ps, 3));
         super();
         this._initOptions(options);
 

@@ -7,6 +7,7 @@ import MergedMixin from './MergedMixin';
 import { getGeoJSONCenter, isGeoJSONPolygon } from './util/GeoJSONUtil';
 import { mergeBufferGeometries } from './util/MergeGeometryUtil';
 import { getActor } from './worker/MeshActor';
+import { addAttribute } from './util/ThreeAdaptUtil';
 
 
 function updateAttribute(data) {
@@ -15,10 +16,10 @@ function updateAttribute(data) {
     const color = new Float32Array(position.length);
     color.fill(1, 0, position.length);
     const bufferGeomertry = new THREE.BufferGeometry();
-    bufferGeomertry.addAttribute('color', new THREE.BufferAttribute(color, 3));
-    bufferGeomertry.addAttribute('normal', new THREE.BufferAttribute(new Float32Array(normal), 3));
-    bufferGeomertry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(position), 3));
-    bufferGeomertry.addAttribute('uv', new THREE.BufferAttribute(new Float32Array(uv), 2));
+    addAttribute(bufferGeomertry, 'color', new THREE.BufferAttribute(color, 3));
+    addAttribute(bufferGeomertry, 'normal', new THREE.BufferAttribute(new Float32Array(normal), 3));
+    addAttribute(bufferGeomertry, 'position', new THREE.BufferAttribute(new Float32Array(position), 3));
+    addAttribute(bufferGeomertry, 'uv', new THREE.BufferAttribute(new Float32Array(uv), 2));
     bufferGeomertry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
     return bufferGeomertry;
 }

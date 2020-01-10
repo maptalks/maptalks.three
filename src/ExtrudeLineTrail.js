@@ -5,6 +5,7 @@ import BaseObject from './BaseObject';
 import { lineSlice } from './util/GeoUtil';
 import { getExtrudeLineParams, getChunkLinesPosition } from './util/LineUtil';
 import { isGeoJSON, getGeoJSONCenter, getGeoJSONCoordinates } from './util/GeoJSONUtil';
+import { addAttribute } from './util/ThreeAdaptUtil';
 
 const MAX_POINTS = 1000;
 
@@ -87,8 +88,8 @@ class ExtrudeLineTrail extends BaseObject {
         const ps = new Float32Array(MAX_POINTS * 3); // 3 vertices per point
         const norls = new Float32Array(MAX_POINTS * 3); // 3 vertices per point
         const inds = new Uint16Array(MAX_POINTS);
-        geometry.addAttribute('position', new THREE.BufferAttribute(ps, 3).setDynamic(true));
-        geometry.addAttribute('normal', new THREE.BufferAttribute(norls, 3).setDynamic(true));
+        addAttribute(geometry, 'position', (new THREE.BufferAttribute(ps, 3)));
+        addAttribute(geometry, 'normal', (new THREE.BufferAttribute(norls, 3)));
         geometry.setIndex(new THREE.BufferAttribute(inds, 1));
 
 
