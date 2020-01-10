@@ -2,6 +2,7 @@ import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
 import { vector2Pixel } from './util/IdentifyUtil';
+import { addAttribute } from './util/ThreeAdaptUtil';
 
 const OPTIONS = {
     altitude: 0,
@@ -24,9 +25,9 @@ class Point extends BaseObject {
         const v = layer.coordinateToVector3(coordinate, z);
         vs.push(v.x, v.y, v.z);
         const geometry = new THREE.BufferGeometry();
-        geometry.addAttribute('position', new THREE.Float32BufferAttribute(vs, 3, true));
+        addAttribute(geometry, 'position', new THREE.Float32BufferAttribute(vs, 3, true));
         if (colors.length) {
-            geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3, true));
+            addAttribute(geometry, 'color', new THREE.Float32BufferAttribute(colors, 3, true));
         }
 
         options.positions = v;

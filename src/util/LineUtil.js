@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import * as maptalks from 'maptalks';
 import { extrudePolyline } from 'geometry-extrude';
 import { isGeoJSON, getGeoJSONCoordinates, getGeoJSONCenter } from './GeoJSONUtil';
+import { addAttribute } from './ThreeAdaptUtil';
 const COMMA = ',';
 
 /**
@@ -74,8 +75,8 @@ export function getExtrudeLineGeometry(lineString, lineWidth = 1, depth = 1, lay
         depth
     });
     const geometry = new THREE.BufferGeometry();
-    geometry.addAttribute('position', new THREE.Float32BufferAttribute(position, 3));
-    geometry.addAttribute('normal', new THREE.Float32BufferAttribute(normal, 3));
+    addAttribute(geometry, 'position', new THREE.Float32BufferAttribute(position, 3));
+    addAttribute(geometry, 'normal', new THREE.Float32BufferAttribute(normal, 3));
     geometry.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
     return geometry;
 }

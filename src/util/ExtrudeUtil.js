@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import * as maptalks from 'maptalks';
 import { isGeoJSONPolygon, spliteGeoJSONMulti, getGeoJSONCenter, isGeoJSONMulti, getGeoJSONCoordinates } from './GeoJSONUtil';
 import { extrudePolygon } from 'geometry-extrude';
+import { addAttribute } from './ThreeAdaptUtil';
 /**
  * this is for ExtrudeMesh util
  */
@@ -37,10 +38,10 @@ export function getExtrudeGeometry(polygon, height, layer, center) {
     const color = new Float32Array(position.length);
     color.fill(1, 0, position.length);
     const bufferGeomertry = new THREE.BufferGeometry();
-    bufferGeomertry.addAttribute('color', new THREE.BufferAttribute(color, 3));
-    bufferGeomertry.addAttribute('normal', new THREE.BufferAttribute(normal, 3));
-    bufferGeomertry.addAttribute('position', new THREE.BufferAttribute(position, 3));
-    bufferGeomertry.addAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    addAttribute(bufferGeomertry, 'color', new THREE.BufferAttribute(color, 3));
+    addAttribute(bufferGeomertry, 'normal', new THREE.BufferAttribute(normal, 3));
+    addAttribute(bufferGeomertry, 'position', new THREE.BufferAttribute(position, 3));
+    addAttribute(bufferGeomertry, 'uv', new THREE.BufferAttribute(uv, 2));
     bufferGeomertry.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
     return bufferGeomertry;
 }
@@ -80,7 +81,7 @@ export function initVertexColors(geometry, color, _topColor) {
             colors.push(bottomColor.r, bottomColor.r, bottomColor.b);
         }
     }
-    geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3, true));
+    addAttribute(geometry, 'color', new THREE.Float32BufferAttribute(colors, 3, true));
     return colors;
 }
 

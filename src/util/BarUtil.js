@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mergeBufferGeometries } from './MergeGeometryUtil';
+import { addAttribute } from './ThreeAdaptUtil';
 const barGeometryCache = {};
 const KEY = '-';
 
@@ -73,7 +74,7 @@ export function initVertexColors(geometry, color, _topColor, key = 'y', v = 0) {
             colors.push(bottomColor.r, bottomColor.r, bottomColor.b);
         }
     }
-    geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3, true));
+    addAttribute(geometry, 'color', new THREE.Float32BufferAttribute(colors, 3, true));
     return colors;
 }
 
