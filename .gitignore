@@ -47,3 +47,4 @@ node_modules
 #example deploy config
 examples/replace.json
 json/*
+dist/*
