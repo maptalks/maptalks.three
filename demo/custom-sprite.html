@@ -23,7 +23,7 @@
 
         #map {
             width: 100%;
-            height: 700px;
+            height: 100%;
             background-color: #000;
         }
 
@@ -287,23 +287,11 @@
                         }
                     });
                 });
-                textSprite.push(new TextSprite(geometry.coordinates, { text: name, altitude: 5 }, threeLayer));
+                textSprite.push(new TextSprite(geometry.coordinates, { text: name, altitude: 5, minZoom: 17 }, threeLayer));
                 return sprite;
             });
             threeLayer.addMesh(sprites);
-            // threeLayer.addMesh(textSprite);
-            var isAdd = false;
-            map.on('zoomend', function () {
-                var zoom = map.getZoom();
-                if (zoom >= 17 && (!isAdd)) {
-                    threeLayer.addMesh(textSprite);
-                    isAdd = true;
-                } else if (zoom < 17 && isAdd) {
-                    threeLayer.removeMesh(textSprite);
-                    isAdd = false;
-                }
-
-            })
+            threeLayer.addMesh(textSprite);
             initGui();
         }
 
