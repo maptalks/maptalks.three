@@ -132,3 +132,9 @@ $ npm run build
 ```shell
 $ npm run lint
 ```
+
+## Publication
+```shell
+npm version ${version}
+npm publish
+```
