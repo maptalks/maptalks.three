@@ -137,4 +137,5 @@ $ npm run lint
 ```shell
 npm version ${version}
 npm publish
+npm push master ${version}
 ```
