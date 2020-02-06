@@ -1,5 +1,5 @@
 /*!
- * maptalks.three v0.7.2
+ * maptalks.three v0.7.3
  * LICENSE : MIT
  * (c) 2016-2020 maptalks.org
  */
@@ -4698,4 +4698,4 @@ function getTargetZoom(map) {
 
 export { ThreeLayer, ThreeRenderer, BaseObject$$1 as BaseObject };
 
-typeof console !== 'undefined' && console.log('maptalks.three v0.7.2, requires maptalks@>=0.39.0.');
+typeof console !== 'undefined' && console.log('maptalks.three v0.7.3, requires maptalks@>=0.39.0.');
