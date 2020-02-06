@@ -1,7 +1,7 @@
 /*!
- * maptalks.three v0.7.0
+ * maptalks.three v0.7.2
  * LICENSE : MIT
- * (c) 2016-2019 maptalks.org
+ * (c) 2016-2020 maptalks.org
  */
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('maptalks'), require('three')) :
@@ -202,8 +202,8 @@
 
     _proto.getLayer = function getLayer() {
       return this.options.layer;
-    } // eslint-disable-next-line consistent-return
-    ;
+    }; // eslint-disable-next-line consistent-return
+
 
     _proto.getMap = function getMap() {
       var layer = this.getLayer();
@@ -211,8 +211,8 @@
       if (layer) {
         return layer.getMap();
       }
-    } // eslint-disable-next-line consistent-return
-    ;
+    }; // eslint-disable-next-line consistent-return
+
 
     _proto.getCenter = function getCenter() {
       var options = this.getOptions();
@@ -233,12 +233,12 @@
 
     _proto.getAltitude = function getAltitude() {
       return this.getOptions().altitude;
-    }
+    };
     /**
      * Different objects need to implement their own methods
      * @param {*} altitude
      */
-    ;
+
 
     _proto.setAltitude = function setAltitude(altitude) {
       if (maptalks.Util.isNumber(altitude)) {
@@ -268,20 +268,20 @@
 
     _proto.isVisible = function isVisible() {
       return !!this.getObject3d().visible;
-    }
+    };
     /**
      *  Different objects need to implement their own methods
      */
-    ;
+
 
     _proto.getSymbol = function getSymbol() {
       return this.getObject3d().material;
-    }
+    };
     /**
      *  Different objects need to implement their own methods
      * @param {*} material
      */
-    ;
+
 
     _proto.setSymbol = function setSymbol(material) {
       if (material && material instanceof THREE.Material) {
@@ -352,14 +352,14 @@
       // eslint-disable-next-line no-unused-expressions
       this.toolTip && this.toolTip.remove() && delete this.toolTip;
       return this;
-    }
+    };
     /**
      * different components should implement their own animation methods
      * @param {*} options
      * @param {*} cb
      */
     // eslint-disable-next-line no-unused-vars
-    ;
+
 
     _proto.animateShow = function animateShow(options, cb) {
       var _this2 = this;
@@ -409,7 +409,7 @@
 
     _proto.config = function config() {
       return this;
-    }
+    };
     /**
      * more method support
      * @param {*} options
@@ -419,7 +419,7 @@
      *
      * @param {*} options
      */
-    ;
+
 
     _proto._initOptions = function _initOptions(options) {
       this.options = maptalks.Util.extend({}, OPTIONS, options);
@@ -443,8 +443,8 @@
       this.object3d.computeLineDistances();
       this.object3d.__parent = this;
       return this;
-    } // eslint-disable-next-line no-unused-vars
-    ;
+    }; // eslint-disable-next-line no-unused-vars
+
 
     _proto._createPoints = function _createPoints(geometry, material) {
       //Serving for particles
@@ -1261,20 +1261,20 @@
 
     for (var _d = 0; _d < preparedData.length; _d++) {
       var _preparedData$_d = preparedData[_d],
-          _holes = _preparedData$_d.holes,
-          _vertices = _preparedData$_d.vertices;
-      var topVertexCount = _vertices.length / 2;
+          holes = _preparedData$_d.holes,
+          vertices = _preparedData$_d.vertices;
+      var topVertexCount = vertices.length / 2;
       var _start = 0;
 
-      var _end = _holes && _holes.length ? _holes[0] : topVertexCount; // Add exterior
+      var _end = holes && holes.length ? holes[0] : topVertexCount; // Add exterior
 
 
       addExtrudeSide(data, preparedData[_d], _start, _end, cursors, opts); // Add holes
 
-      if (_holes) {
-        for (var _h = 0; _h < _holes.length; _h++) {
-          _start = _holes[_h];
-          _end = _holes[_h + 1] || topVertexCount;
+      if (holes) {
+        for (var _h = 0; _h < holes.length; _h++) {
+          _start = holes[_h];
+          _end = holes[_h + 1] || topVertexCount;
           addExtrudeSide(data, preparedData[_d], _start, _end, cursors, opts);
         }
       }
@@ -2363,12 +2363,12 @@
           }
 
           return this;
-        }
+        };
         /**
          *Events representing the merge
          * @param {*} baseObject
          */
-        ;
+
 
         _proto._proxyEvent = function _proxyEvent(baseObject) {
           var _this = this;
@@ -2394,12 +2394,12 @@
               selectMesh: _this.getSelectMesh ? _this.getSelectMesh() : null
             }));
           });
-        }
+        };
         /**
          * Get the index of the monomer to be hidden
          * @param {*} attribute
          */
-        ;
+
 
         _proto._getHideGeometryIndex = function _getHideGeometryIndex(attribute) {
           var indexs = [];
@@ -2416,13 +2416,13 @@
             indexs: indexs,
             count: count
           };
-        }
+        };
         /**
          * update geometry attributes
          * @param {*} bufferAttribute
          * @param {*} attribute
          */
-        ;
+
 
         _proto._updateAttribute = function _updateAttribute(bufferAttribute, attribute) {
           var _this$_getHideGeometr = this._getHideGeometryIndex(attribute),
@@ -2453,13 +2453,13 @@
           }
 
           return this;
-        }
+        };
         /**
          * show or hide monomer
          * @param {*} baseObject
          * @param {*} isHide
          */
-        ;
+
 
         _proto._showGeometry = function _showGeometry(baseObject, isHide) {
           var index;
@@ -2492,11 +2492,11 @@
           }
 
           return this;
-        }
+        };
         /**
          * Get selected monomer
          */
-        ;
+
 
         _proto.getSelectMesh = function getSelectMesh() {
           return {
@@ -2659,8 +2659,8 @@
           baseObject: this._baseObjects[index]
         };
       }
-    } // eslint-disable-next-line consistent-return
-    ;
+    }; // eslint-disable-next-line consistent-return
+
 
     _proto._getIndex = function _getIndex(faceIndex) {
       if (faceIndex == null) {
@@ -2851,12 +2851,12 @@
       this.maxx = maxx;
       this.maxy = maxy;
       return this;
-    }
+    };
     /**
      *Determine whether a point is included
      * @param {*} c
      */
-    ;
+
 
     _proto.containsCoordinate = function containsCoordinate(c) {
       var lng, lat;
@@ -2879,13 +2879,13 @@
       }
 
       return false;
-    }
+    };
     /**
      *Judge rectangle intersection
      * @param {*} pixel
      * @param {*} size
      */
-    ;
+
 
     _proto.isRecCross = function isRecCross(pixel, size) {
       var x = pixel.x,
@@ -2906,7 +2906,7 @@
       }
 
       return false;
-    }
+    };
     /**
      *generate grids
      * @param {*} minlng
@@ -2914,7 +2914,7 @@
      * @param {*} maxlng
      * @param {*} maxlat
      */
-    ;
+
 
     BBox.initGrids = function initGrids(minlng, minlat, maxlng, maxlat) {
       var grids = [],
@@ -3001,7 +3001,7 @@
 
       for (var _i = 0, _len = points.length; _i < _len; _i++) {
         var _points$_i = points[_i],
-            _coordinate = _points$_i.coordinate,
+            coordinate = _points$_i.coordinate,
             height = _points$_i.height,
             color = _points$_i.color;
 
@@ -3011,12 +3011,12 @@
         }
 
         var _z = layer.distanceToVector3(height, height).x;
-        var v = layer.coordinateToVector3(_coordinate, _z);
+        var v = layer.coordinateToVector3(coordinate, _z);
         vs.push(v.x, v.y, v.z);
         vectors.push(v); //Do not initialize the monomer when the data volume is too large
 
         if (_len <= MAX) {
-          var point = new Point(_coordinate, {
+          var point = new Point(coordinate, {
             height: height,
             index: _i
           }, material, layer);
@@ -3033,7 +3033,7 @@
         };
 
         for (var j = 0; j < gridslen; j++) {
-          if (grids[j].containsCoordinate(_coordinate)) {
+          if (grids[j].containsCoordinate(coordinate)) {
             // grids[j].coordinates.push(coordinate);
             grids[j].positions.push(v);
             grids[j].indexs.push(_i);
@@ -3100,8 +3100,8 @@
           b.updateBBoxPixel(map);
         }
       });
-    } // eslint-disable-next-line consistent-return
-    ;
+    }; // eslint-disable-next-line consistent-return
+
 
     _proto.getSelectMesh = function getSelectMesh() {
       var index = this.faceIndex;
@@ -3126,12 +3126,12 @@
           baseObject: this._baseObjects[index]
         };
       }
-    }
+    };
     /**
     *
     * @param {maptalks.Coordinate} coordinate
     */
-    ;
+
 
     _proto.identify = function identify(coordinate) {
       var layer = this.getLayer(),
@@ -3351,8 +3351,8 @@
           baseObject: this._baseObjects[index]
         };
       }
-    } // eslint-disable-next-line consistent-return
-    ;
+    }; // eslint-disable-next-line consistent-return
+
 
     _proto._getIndex = function _getIndex(faceIndex) {
       if (faceIndex == null) {
@@ -3515,8 +3515,8 @@
           baseObject: this._baseObjects[index]
         };
       }
-    } // eslint-disable-next-line consistent-return
-    ;
+    }; // eslint-disable-next-line consistent-return
+
 
     _proto._getIndex = function _getIndex(faceIndex) {
       if (faceIndex == null) {
@@ -3659,8 +3659,8 @@
           baseObject: this._baseObjects[index]
         };
       }
-    } // eslint-disable-next-line consistent-return
-    ;
+    }; // eslint-disable-next-line consistent-return
+
 
     _proto._getIndex = function _getIndex(faceIndex) {
       if (faceIndex == null) {
@@ -3733,23 +3733,23 @@
      */
     _proto.draw = function draw() {
       this.renderScene();
-    }
+    };
     /**
      * Draw method of ThreeLayer when map is interacting
      * In default, it calls renderScene, refresh the camera and the scene
      */
-    ;
+
 
     _proto.drawOnInteracting = function drawOnInteracting() {
       this.renderScene();
-    }
+    };
     /**
      * Convert a geographic coordinate to THREE Vector3
      * @param  {maptalks.Coordinate} coordinate - coordinate
      * @param {Number} [z=0] z value
      * @return {THREE.Vector3}
      */
-    ;
+
 
     _proto.coordinateToVector3 = function coordinateToVector3(coordinate, z) {
       if (z === void 0) {
@@ -3768,14 +3768,14 @@
 
       var p = map.coordinateToPoint(coordinate, getTargetZoom(map));
       return new THREE.Vector3(p.x, p.y, z);
-    }
+    };
     /**
      * Convert geographic distance to THREE Vector3
      * @param  {Number} w - width
      * @param  {Number} h - height
      * @return {THREE.Vector3}
      */
-    ;
+
 
     _proto.distanceToVector3 = function distanceToVector3(w, h, coord) {
       var map = this.getMap();
@@ -3792,13 +3792,13 @@
       var x = Math.abs(p1.x - p0.x) * maptalks.Util.sign(w);
       var y = Math.abs(p1.y - p0.y) * maptalks.Util.sign(h);
       return new THREE.Vector3(x, y, 0);
-    }
+    };
     /**
      * Convert a Polygon or a MultiPolygon to THREE shape
      * @param  {maptalks.Polygon|maptalks.MultiPolygon} polygon - polygon or multipolygon
      * @return {THREE.Shape}
      */
-    ;
+
 
     _proto.toShape = function toShape(polygon) {
       var _this = this;
@@ -3832,7 +3832,7 @@
       }
 
       return shape;
-    }
+    };
     /**
      * todo   This should also be extracted as a component
      * @param {*} polygon
@@ -3840,7 +3840,7 @@
      * @param {*} material
      * @param {*} height
      */
-    ;
+
 
     _proto.toExtrudeMesh = function toExtrudeMesh(polygon, altitude, material, height) {
       var _this2 = this;
@@ -3884,134 +3884,134 @@
       var mesh = new THREE.Mesh(buffGeom, material);
       mesh.position.set(center.x, center.y, amount - height);
       return mesh;
-    }
+    };
     /**
      *
      * @param {maptalks.Polygon|maptalks.MultiPolygon} polygon
      * @param {Object} options
      * @param {THREE.Material} material
      */
-    ;
+
 
     _proto.toExtrudePolygon = function toExtrudePolygon(polygon, options, material) {
       return new ExtrudePolygon(polygon, options, material, this);
-    }
+    };
     /**
      *
      * @param {maptalks.Coordinate} coordinate
      * @param {Object} options
      * @param {THREE.Material} material
      */
-    ;
+
 
     _proto.toBar = function toBar(coordinate, options, material) {
       return new Bar(coordinate, options, material, this);
-    }
+    };
     /**
     *
     * @param {maptalks.LineString} lineString
     * @param {Object} options
     * @param {THREE.LineMaterial} material
     */
-    ;
+
 
     _proto.toLine = function toLine(lineString, options, material) {
       return new Line(lineString, options, material, this);
-    }
+    };
     /**
      *
      * @param {maptalks.LineString} lineString
      * @param {Object} options
      * @param {THREE.Material} material
      */
-    ;
+
 
     _proto.toExtrudeLine = function toExtrudeLine(lineString, options, material) {
       return new ExtrudeLine(lineString, options, material, this);
-    }
+    };
     /**
      *
      * @param {THREE.Mesh|THREE.Group} model
      * @param {Object} options
      */
-    ;
+
 
     _proto.toModel = function toModel(model, options) {
       return new Model(model, options, this);
-    }
+    };
     /**
      *
      * @param {maptalks.LineString} lineString
      * @param {*} options
      * @param {THREE.Material} material
      */
-    ;
+
 
     _proto.toExtrudeLineTrail = function toExtrudeLineTrail(lineString, options, material) {
       return new ExtrudeLineTrail(lineString, options, material, this);
-    }
+    };
     /**
      *
      * @param {*} polygons
      * @param {*} options
      * @param {*} material
      */
-    ;
+
 
     _proto.toExtrudePolygons = function toExtrudePolygons(polygons, options, material) {
       return new ExtrudePolygons(polygons, options, material, this);
-    }
+    };
     /**
      *
      * @param {maptalks.Coordinate} coordinate
      * @param {*} options
      * @param {*} material
      */
-    ;
+
 
     _proto.toPoint = function toPoint(coordinate, options, material) {
       return new Point(coordinate, options, material, this);
-    }
+    };
     /**
      *
      * @param {Array} points
      * @param {*} options
      * @param {*} material
      */
-    ;
+
 
     _proto.toPoints = function toPoints(points, options, material) {
       return new Points(points, options, material, this);
-    }
+    };
     /**
      *
      * @param {Array} points
      * @param {*} options
      * @param {*} material
      */
-    ;
+
 
     _proto.toBars = function toBars(points, options, material) {
       return new Bars(points, options, material, this);
-    }
+    };
     /**
      *
      * @param {Array[maptalks.LineString]} lineStrings
      * @param {*} options
      * @param {*} material
      */
-    ;
+
 
     _proto.toExtrudeLines = function toExtrudeLines(lineStrings, options, material) {
       return new ExtrudeLines(lineStrings, options, material, this);
-    }
+    };
     /**
      *
      * @param {Array[maptalks.LineString]} lineStrings
      * @param {*} options
      * @param {*} material
      */
-    ;
+
 
     _proto.toLines = function toLines(lineStrings, options, material) {
       return new Lines(lineStrings, options, material, this);
@@ -4081,12 +4081,12 @@
       }
 
       return null;
-    }
+    };
     /**
      * add object3ds
      * @param {BaseObject} meshes
      */
-    ;
+
 
     _proto.addMesh = function addMesh(meshes) {
       var _this3 = this;
@@ -4122,12 +4122,12 @@
 
       this.renderScene();
       return this;
-    }
+    };
     /**
      * remove object3ds
      * @param {BaseObject} meshes
      */
-    ;
+
 
     _proto.removeMesh = function removeMesh(meshes) {
       var _this4 = this;
@@ -4169,14 +4169,14 @@
       }
 
       return this;
-    }
+    };
     /**
      *
      * @param {Coordinate} coordinate
      * @param {Object} options
      * @return {Array}
      */
-    ;
+
 
     _proto.identify = function identify(coordinate, options) {
       var _this5 = this;
@@ -4264,12 +4264,12 @@
       options = maptalks.Util.extend({}, options);
       var count = options.count;
       return maptalks.Util.isNumber(count) && count > 0 ? baseObjects.slice(0, count) : baseObjects;
-    }
+    };
     /**
     * Recursively finding the root node of mesh,Until it is scene node
     * @param {*} mesh
     */
-    ;
+
 
     _proto._recursionMesh = function _recursionMesh(mesh) {
       while (mesh && !(mesh.parent instanceof THREE.Scene)) {
@@ -4277,8 +4277,8 @@
       }
 
       return mesh || {};
-    } //get Line Precision by Resolution
-    ;
+    }; //get Line Precision by Resolution
+
 
     _proto._getLinePrecision = function _getLinePrecision(res) {
       if (res === void 0) {
@@ -4296,12 +4296,12 @@
       }
 
       return 0.01;
-    }
+    };
     /**
      * fire baseObject events
      * @param {*} e
      */
-    ;
+
 
     _proto._identifyBaseObjectEvents = function _identifyBaseObjectEvents(e) {
       var map = this.map || this.getMap(); //When map interaction, do not carry out mouse movement detection, which can have better performance
@@ -4429,11 +4429,11 @@
 
       this._baseObjects = baseObjects;
       return this;
-    }
+    };
     /**
      *map zoom event
      */
-    ;
+
 
     _proto._zoomend = function _zoomend() {
       var scene = this.getScene();
@@ -4505,14 +4505,14 @@
       }
 
       return this;
-    }
+    };
     /**
      * To make map's 2d point's 1 pixel euqal with 1 pixel on XY plane in THREE's scene:
      * 1. fov is 90 and camera's z is height / 2 * scale,
      * 2. if fov is not 90, a ratio is caculated to transfer z to the equivalent when fov is 90
      * @return {Number} fov ratio on z axis
      */
-    ;
+
 
     _proto._getFovRatio = function _getFovRatio() {
       var map = this.getMap();
@@ -4705,6 +4705,6 @@
 
   Object.defineProperty(exports, '__esModule', { value: true });
 
-  typeof console !== 'undefined' && console.log('maptalks.three v0.7.0, requires maptalks@>=0.39.0.');
+  typeof console !== 'undefined' && console.log('maptalks.three v0.7.2, requires maptalks@>=0.39.0.');
 
 })));
