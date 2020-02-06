@@ -1,10 +1,10 @@
 /*!
- * maptalks.three v0.7.3
+ * maptalks.three v0.7.4
  * LICENSE : MIT
  * (c) 2016-2020 maptalks.org
  */
 import { Coordinate, Util, MultiPolygon, CanvasLayer, Browser, renderer, ui, animation, Eventable, LineString, Polygon } from 'maptalks';
-import { Matrix4, Vector3, Shape, REVISION, ExtrudeGeometry, BufferGeometry, Mesh, Object3D, Raycaster, Vector2, Group, Scene, WebGLRenderer, Color, PerspectiveCamera, Material, Line, Points, LineSegments, VertexColors, Float32BufferAttribute, BufferAttribute, BufferGeometryUtils, Geometry, CylinderBufferGeometry, Uint32BufferAttribute } from 'three';
+import { Matrix4, Vector3, Shape, REVISION, ExtrudeGeometry, BufferGeometry, Mesh, Object3D, Raycaster, Vector2, Group, Scene, WebGLRenderer, Color, PerspectiveCamera, VertexColors, Material, Line, Points, LineSegments, Float32BufferAttribute, BufferAttribute, BufferGeometryUtils, Geometry, CylinderBufferGeometry, Uint32BufferAttribute } from 'three';
 
 function _inheritsLoose(subClass, superClass) {
   subClass.prototype = Object.create(superClass.prototype);
@@ -4542,9 +4542,8 @@ function (_maptalks$renderer$Ca) {
   };
 
   _proto2._drawLayer = function _drawLayer() {
-    _maptalks$renderer$Ca.prototype._drawLayer.apply(this, arguments);
+    _maptalks$renderer$Ca.prototype._drawLayer.apply(this, arguments); // this.renderScene();
 
-    this.renderScene();
   };
 
   _proto2.hitDetect = function hitDetect() {
@@ -4698,4 +4697,4 @@ function getTargetZoom(map) {
 
 export { ThreeLayer, ThreeRenderer, BaseObject$$1 as BaseObject };
 
-typeof console !== 'undefined' && console.log('maptalks.three v0.7.3, requires maptalks@>=0.39.0.');
+typeof console !== 'undefined' && console.log('maptalks.three v0.7.4, requires maptalks@>=0.39.0.');

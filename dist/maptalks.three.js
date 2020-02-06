@@ -1,5 +1,5 @@
 /*!
- * maptalks.three v0.7.3
+ * maptalks.three v0.7.4
  * LICENSE : MIT
  * (c) 2016-2020 maptalks.org
  */
@@ -4545,9 +4545,8 @@
     };
 
     _proto2._drawLayer = function _drawLayer() {
-      _maptalks$renderer$Ca.prototype._drawLayer.apply(this, arguments);
+      _maptalks$renderer$Ca.prototype._drawLayer.apply(this, arguments); // this.renderScene();
 
-      this.renderScene();
     };
 
     _proto2.hitDetect = function hitDetect() {
@@ -4705,6 +4704,6 @@
 
   Object.defineProperty(exports, '__esModule', { value: true });
 
-  typeof console !== 'undefined' && console.log('maptalks.three v0.7.3, requires maptalks@>=0.39.0.');
+  typeof console !== 'undefined' && console.log('maptalks.three v0.7.4, requires maptalks@>=0.39.0.');
 
 })));
