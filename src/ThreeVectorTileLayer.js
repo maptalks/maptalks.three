@@ -196,7 +196,7 @@ class ThreeVectorTileLayer extends maptalks.TileLayer {
         }
         this._layerLaodTime = time;
         const tilesInView = this._renderer.tilesInView, loadTiles = this._loadTiles, threeLayer = this._layer, keys = this._baseObjectKeys;
-        const tilesInViewLen = Object.keys(tilesInView), loadTilesLen = Object.keys(loadTiles).length;
+        const tilesInViewLen = Object.keys(tilesInView).length, loadTilesLen = Object.keys(loadTiles).length;
         const needsRemoveBaseObjects = [];
         if (tilesInViewLen && loadTilesLen) {
             for (let index in loadTiles) {
@@ -219,7 +219,8 @@ class ThreeVectorTileLayer extends maptalks.TileLayer {
                         const baseobject = keys[index];
                         threeLayer.addMesh(baseobject);
                     } else {
-                        const [y, x, z] = index.split('_').slice(1, 4);
+                        const splitstr = index.indexOf('_') > -1 ? '_' : '-';
+                        const [y, x, z] = index.split(splitstr).slice(1, 4);
                         this.getTileUrl(x, y, z);
                     }
                 }

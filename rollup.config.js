@@ -13,6 +13,26 @@ if (pkg.peerDependencies && pkg.peerDependencies['maptalks']) {
 }
 
 outro = `typeof console !== 'undefined' && console.log('${outro}');`;
+const intro = `
+    var IS_NODE = typeof exports === 'object' && typeof module !== 'undefined';
+    var maptalks = maptalks;
+    if (IS_NODE) {
+        maptalks = maptalks || require('maptalks');
+    }
+    var workerLoaded;
+    function define(_, chunk) {
+    if (!workerLoaded) {
+        if(maptalks.registerWorkerAdapter){
+            maptalks.registerWorkerAdapter('${pkg.name}', chunk);
+            workerLoaded = true;
+        }else{
+          console.warn('maptalks.registerWorkerAdapter is not defined,If you need to use ThreeVectorTileLayer,you can npm i maptalks@next,more https://github.com/maptalks/maptalks.js/tree/next');
+        }
+    } else {
+        var exports = IS_NODE ? module.exports : maptalks;
+        chunk(exports, maptalks);
+    }
+}`;
 
 
 function removeGlobal() {
@@ -73,17 +93,18 @@ module.exports = [
     {
         input: 'index.js',
         plugins: basePlugins.concat([uglify()]),
-        external : ['maptalks', 'three'],
+        external: ['maptalks', 'three'],
         output: {
             'sourcemap': false,
             'format': 'umd',
             'name': 'maptalks',
             'banner': banner,
-            'outro' : outro,
-            'extend' : true,
-            'globals' : {
-                'maptalks' : 'maptalks',
-                'THREE' : 'three'
+            'outro': outro,
+            'intro': intro,
+            'extend': true,
+            'globals': {
+                'maptalks': 'maptalks',
+                'THREE': 'three'
             },
             'file': 'dist/maptalks.three.min.js'
         }
@@ -99,22 +120,7 @@ module.exports = [
             'banner': banner,
             'outro': outro,
             'extend': true,
-            intro: `
-                var IS_NODE = typeof exports === 'object' && typeof module !== 'undefined';
-                var maptalks = maptalks;
-                if (IS_NODE) {
-                    maptalks = maptalks || require('maptalks');
-                }
-                var workerLoaded;
-                function define(_, chunk) {
-                if (!workerLoaded) {
-                    maptalks.registerWorkerAdapter('${pkg.name}', chunk);
-                    workerLoaded = true;
-                } else {
-                    var exports = IS_NODE ? module.exports : maptalks;
-                    chunk(exports, maptalks);
-                }
-            }`,
+            'intro': intro,
             'globals': {
                 'maptalks': 'maptalks',
                 'THREE': 'three'
@@ -125,12 +131,13 @@ module.exports = [
     {
         input: 'index.js',
         plugins: basePlugins,
-        external : ['maptalks', 'three'],
+        external: ['maptalks', 'three'],
         output: {
             'sourcemap': false,
             'format': 'es',
             'banner': banner,
-            'outro' : outro,
+            'outro': outro,
+            'intro': intro,
             'file': pkg.module
         }
     }
