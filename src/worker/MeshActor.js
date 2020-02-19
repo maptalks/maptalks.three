@@ -3,42 +3,46 @@ import { isGeoJSONPolygon } from '../util/GeoJSONUtil';
 import { getPolygonPositions } from '../util/ExtrudeUtil';
 import pkg from './../../package.json';
 
-
-
-const MeshActor = class extends maptalks.worker.Actor {
-    test(info, cb) {
-        //send data to worker thread
-        this.send(info, null, cb);
-    }
-
-    pushQueue(q = {}) {
-        const { type, data, callback, layer, key, center } = q;
-        let params;
-        if (type === 'Polygon') {
-            params = gengerateExtrudePolygons(data, center, layer);
-        } else if (type === 'Line') {
-            //todo liness
-        } else if (type === 'Point') {
-            //todo points
+let MeshActor;
+if (maptalks.worker) {
+    MeshActor = class extends maptalks.worker.Actor {
+        test(info, cb) {
+            //send data to worker thread
+            this.send(info, null, cb);
         }
-        this.send({ type, datas: params.datas }, params.transfe, function (err, message) {
-            if (err) {
-                console.error(err);
+
+        pushQueue(q = {}) {
+            const { type, data, callback, layer, key, center } = q;
+            let params;
+            if (type === 'Polygon') {
+                params = gengerateExtrudePolygons(data, center, layer);
+            } else if (type === 'Line') {
+                //todo liness
+            } else if (type === 'Point') {
+                //todo points
             }
-            message.key = key;
-            callback(message);
-        });
-    }
+            this.send({ type, datas: params.datas }, params.transfe, function (err, message) {
+                if (err) {
+                    console.error(err);
+                }
+                message.key = key;
+                callback(message);
+            });
+        }
 
 
-    // eslint-disable-next-line no-unused-vars
-    // receive(message) {
-    //     console.log(message);
-    // }
-};
+        // eslint-disable-next-line no-unused-vars
+        // receive(message) {
+        //     console.log(message);
+        // }
+    };
+}
 
 var actor;
 export function getActor() {
+    if (!maptalks.worker) {
+        console.error('maptalks.worker is not defined,You can\'t use ThreeVectorTileLayer');
+    }
     if (!actor) {
         actor = new MeshActor(pkg.name);
     }

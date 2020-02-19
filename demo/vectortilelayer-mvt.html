@@ -98,7 +98,8 @@
             //自定义数据访问方法
             vectortilelayer.getTileData = function (q) {
                 const { key, url, callback, img } = q;
-                let [id, y, x, z] = key.split('_');
+                const splitstr = key.includes('_') ? '_' : '-';
+                let [id, y, x, z] = key.split(splitstr);
                 x = parseInt(x);
                 y = parseInt(y);
                 z = parseInt(z);
