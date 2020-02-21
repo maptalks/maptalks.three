@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>vectortile test</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/axios@0.19.0/dist/axios.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.109.0/build/three.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks.three/dist/maptalks.three.js"></script>
+    <!-- <script type="text/javascript" src="./js/mvttogeojson.bundle.js"></script> -->
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.109.0/examples/js/libs/stats.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var baseLaer = new maptalks.TileLayer('tile', {
+            urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+            subdomains: ['a', 'b', 'c', 'd'],
+            attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+        });
+        var map = new maptalks.Map("map", {
+            center: [13.416935229170008, 52.529564137540376],
+            zoom: 4,
+            pitch: 60,
+            // pitch: 60,
+            // bearing: 180,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: baseLaer,
+            zoomControl: {
+                'position': 'bottom-left'
+            }
+        });
+
+        baseLaer.on('layerload', function () {
+            // console.log('layerload');
+        })
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+            // animation: true
+        });
+
+
+        var vectortilelayer;
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);;
+
+
+            const url = `http://localhost/{z}/{x}/{y}`;
+            vectortilelayer = threeLayer.toThreeVectorTileLayer(url,
+                {
+                    // minZoom: 6,
+                    // maxZoom: 16,
+                    // debug: true,
+                    interactive: false,
+                    worker: true,
+                    subdomains: ['a', 'b', 'c', 'd'],
+                    // tileSize: [512, 512]
+                },
+                getMaterial);
+            // vectortilelayer.debug = true;
+
+            vectortilelayer.onSelectMesh = onSelectMesh;
+
+            const config = {
+                returnGeometry: 'true',
+                where: '1=1',
+                outSR: '4326',
+                outFields: '*',
+                inSr: '4326',
+                geometry: '{"xmin":-123.75,"ymin":36.59788913307022,"xmax":-118.125,"ymax":40.979898069620155,"spatialReference":{"wkid":4326}}',
+                geometryType: 'esriGeometryEnvelope',
+                spatialRel: 'esriSpatialRelIntersects',
+                geometryPrecision: '6',
+                f: 'geojson'
+            };
+
+            function generateWFSUrl(extent) {
+                let url = 'https://sampleserver6.arcgisonline.com/arcgis/rest/services/Earthquakes_Since1970/MapServer/0/query?';
+                const conf = Object.assign({}, config);
+                // conf.geometry = JSON.parse(conf.geometry);
+                const { xmin, ymin, xmax, ymax } = extent;
+                conf.geometry = { xmin, ymin, xmax, ymax, "spatialReference": { "wkid": 4326 } };
+                conf.geometry = JSON.stringify(conf.geometry);
+                const keys = Object.keys(conf);
+                for (let i = 0, len = keys.length; i < len; i++) {
+                    url += `${keys[i]}=${encodeURIComponent(conf[keys[i]])}&`;
+                }
+                url = url.substr(0, url.length - 1);
+                return url;
+            }
+
+            //自定义数据访问方法
+            vectortilelayer.getTileData = function (q) {
+                const { key, url, callback, img } = q;
+                const splitstr = key.includes('_') ? '_' : '-';
+                let [id, y, x, z] = key.split(splitstr);
+                x = parseInt(x);
+                y = parseInt(y);
+                z = parseInt(z);
+                const extent = this._getTileLngLatExtent(x, y, z);
+                const wfsurl = generateWFSUrl(extent);
+                // console.log(wfsurl);
+                axios.get(wfsurl, {
+                    timeout: 10000,
+                    responseType: 'json'
+                }).then(function (response) {
+                    // console.log(url);
+                    //https://github.com/mapbox/vector-tile-js
+                    // const geojson = mvt2GeoJSON(response.data, x, y, z)
+                    // console.log(geojson);
+                    // handle success
+                    callback(key, { Earthquakes_Since1970: response.data }, img);
+                }).catch(function (error) {
+                    console.error(error);
+                    callback(key, null, img);
+                }).finally(() => {
+
+                });
+            }
+
+
+            vectortilelayer._getTileExtent = function (x, y, z) {
+                const map = this.getMap(),
+                    res = map._getResolution(z),
+                    tileConfig = this._getTileConfig(),
+                    tileExtent = tileConfig.getTilePrjExtent(x, y, res);
+                return tileExtent;
+            }
+
+            /**
+             *
+             * @param {} x
+             * @param {*} y
+             * @param {*} z
+             */
+            vectortilelayer._getTileLngLatExtent = function (x, y, z) {
+                const tileExtent = this._getTileExtent(x, y, z);
+                let max = tileExtent.getMax(),
+                    min = tileExtent.getMin();
+                const map = this.getMap();
+                const projection = map.getProjection();
+                min = projection.unproject(min); // 将二维平面坐标转化为经纬度坐标
+                max = projection.unproject(max);
+                return new maptalks.Extent(min, max);
+            }
+
+            map.addLayer(vectortilelayer);
+            animation();
+            initGui();
+
+
+        };
+        threeLayer.addTo(map);
+
+
+        function createLightMateria() {
+            const canvasDom = document.createElement('canvas');
+            const size = 32;
+            canvasDom.width = size;
+            canvasDom.height = size;
+            const ctx = canvasDom.getContext('2d');
+            const gradient = ctx.createRadialGradient(
+                canvasDom.width / 2,
+                canvasDom.height / 2,
+                0,
+                canvasDom.width / 2,
+                canvasDom.height / 2,
+                canvasDom.width / 2);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(0.005, 'rgba(139,69,19,1)');
+            gradient.addColorStop(0.4, 'rgba(139,69,19,1)');
+            gradient.addColorStop(1, 'rgba(0,0,0,1)');
+
+            ctx.fillStyle = gradient;
+            ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+            ctx.fill();
+            console.log(canvasDom.toDataURL());
+
+            // ctx.fillRect(0, 0, canvasDom.width, canvasDom.height);
+
+            const texture = new THREE.Texture(canvasDom);
+            texture.needsUpdate = true; //使用贴图时进行更新
+            return texture;
+        }
+
+        //高亮材质
+        const roadhighMaterial = new THREE.LineBasicMaterial({
+            linewidth: 1,
+            color: 'yellow',
+            // opacity: 0.8,
+            transparent: true,
+            // dashSize: 0.05,
+            // gapSize: 0.05
+        });
+        const buildhighMaterial = new THREE.MeshBasicMaterial({ color: 'yellow', transparent: true });
+        const pointhighMaterial = new THREE.PointsMaterial({
+            // size: 10,
+            sizeAttenuation: false,
+            color: 'yellow',
+            // alphaTest: 0.5,
+            // vertexColors: THREE.VertexColors,
+            //  transparent: true
+            // color: 0xffffff,
+            size: 10,
+            transparent: true, //使材质透明
+            // blending: THREE.AdditiveBlending,
+            depthTest: true, //深度测试关闭，不消去场景的不可见面
+            depthWrite: false,
+            //刚刚创建的粒子贴图就在这里用上
+        });
+
+        //事件处理
+        var selectMesh = [];
+        function onSelectMesh(type, e) {
+            // console.log(type);
+            // console.log(e.target);
+            const { target } = e;
+            const select = e.selectMesh;
+            if (type === 'empty' && selectMesh.length) {
+                // if (selectMesh) {
+                threeLayer.removeMesh(selectMesh);
+                selectMesh = [];
+                // }
+                return;
+            }
+
+            let data, baseObject;
+            if (select) {
+                data = select.data;
+                baseObject = select.baseObject;
+                if (baseObject && (!baseLaer.isAdd)) {
+                    // console.log(baseObject);
+                    // if (selectMesh) {
+                    //     threeLayer.removeMesh(selectMesh);
+                    // }
+                    const meshType = baseObject.getType();
+                    if (meshType.includes('Polygon')) {
+                        baseObject.setSymbol(buildhighMaterial);
+                    } else if (meshType.includes('Line')) {
+                        baseObject.setSymbol(roadhighMaterial);
+                    } else if (meshType.includes('Point')) {
+                        baseObject.setSymbol(pointhighMaterial);
+                    }
+                    threeLayer.addMesh(baseObject);
+                    selectMesh.push(baseObject);
+                    // selectMesh = baseObject;
+                }
+            }
+            if (selectMesh.length > 20) {
+                threeLayer.removeMesh(selectMesh);
+                selectMesh = [];
+            }
+            // override tooltip
+            if (type === 'mousemove' && data) {
+                let tooltip = target.getToolTip();
+                if (!tooltip) {
+                    target.setToolTip(`name:${data.properties.name}`, {
+                        showTimeout: 0,
+                        eventsPropagation: true,
+                        dx: 10
+                    });
+                    tooltip = target.getToolTip();
+                }
+                const id = baseObject.getId();
+                tooltip._content = `name:${data.properties.name}`;
+            }
+            //override infowindow
+            if (type === 'click' && data) {
+                let infoWindow = target.getInfoWindow();
+                if (!infoWindow) {
+                    target.setInfoWindow({
+                        content: '',
+                        title: 'message',
+                        animationDuration: 0,
+                        autoOpenOn: false
+                    });
+                    infoWindow = target.getInfoWindow();
+                }
+                const id = baseObject.getId();
+                infoWindow.setContent(`id:${id}`);
+                if (infoWindow && (!infoWindow._owner)) {
+                    infoWindow.addTo(this);
+                }
+                target.openInfoWindow(e.coordinate);
+            }
+        }
+
+
+        const roadMaterial = new THREE.LineBasicMaterial({ color: 'rgb(43,69,107)', transparent: true, opacity: 1 });
+        const waterMaterial = new THREE.MeshBasicMaterial({ color: 'green', transparent: true });
+        const waterwayMaterial = new THREE.LineBasicMaterial({ color: 'green', transparent: true, opacity: 1 });
+        const buildMaterial = new THREE.MeshPhongMaterial({ color: '#fff', transparent: true });
+        const pointMaterial = new THREE.PointsMaterial({
+            // size: 10,
+            sizeAttenuation: false,
+            // color: fillStyle,
+            // alphaTest: 0.5,
+            // vertexColors: THREE.VertexColors,
+            //  transparent: true
+            // color: 0xffffff,
+            size: 10,
+            transparent: true, //使材质透明
+            // blending: THREE.AdditiveBlending,
+            depthTest: true, //深度测试关闭，不消去场景的不可见面
+            depthWrite: false,
+            map: createLightMateria()
+            //刚刚创建的粒子贴图就在这里用上
+        });
+
+        function getMaterial(layerName, data, key, geojson) {
+            // console.log(layerName, data);
+            switch (layerName) {
+                case 'Earthquakes_Since1970': {
+                    return pointMaterial;
+                }
+                case 'waterway': {
+                    return waterwayMaterial;
+                }
+                case 'road': {
+                    // console.log(data[0]);
+                    const type = data[0].geometry.type;
+                    if (type === 'LineString') {
+                        return roadMaterial;
+                    } else if (type === 'Polygon') {
+                        // return waterMaterial;
+                    }
+                }
+                case 'building': {
+                    return buildMaterial;
+                }
+                // case 'poi_label': {
+                //     return pointMaterial;
+                // }
+
+                default: {
+                    // return null;
+                }
+            }
+
+        }
+
+
+        function animation() {
+            // layer animation support Skipping frames
+            if ((!map.isMoving()) && (!map.isZooming()) && (!map.isRotating()) && (!params.rotate)) {
+                threeLayer._needsUpdate = !threeLayer._needsUpdate;
+                if (threeLayer._needsUpdate) {
+                    threeLayer._renderer.clearCanvas();
+                    threeLayer.renderScene();
+                }
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+            if (params.rotate) {
+                map.setBearing(map.getBearing() + 0.3);
+            }
+
+
+        }
+
+
+        var params = {
+            add: true,
+            buildingColor: buildMaterial.color.getStyle(),
+            buildingOpacity: 1,
+            animateShow: animateShow,
+
+            waterColor: waterMaterial.color.getStyle(),
+            waterOpacity: 1,
+
+            roadColor: roadMaterial.color.getStyle(),
+            roadOpacity: 1,
+
+            pointSize: pointMaterial.size,
+            blending: false,
+
+            show: true,
+            altitude: 0,
+            rotate: false,
+            interactive: false
+        };
+
+        function initGui() {
+
+            var gui = new dat.GUI();
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    map.addLayer(vectortilelayer);
+                } else {
+                    map.removeLayer(vectortilelayer);
+                }
+            });
+            gui.addColor(params, 'buildingColor').name('buildingColor').onChange(function () {
+                buildMaterial.color.set(params.buildingColor);
+            });
+            gui.add(params, 'buildingOpacity', 0, 1).onChange(function () {
+                buildMaterial.opacity = params.buildingOpacity;
+            });
+
+
+            gui.addColor(params, 'waterColor').name('waterColor').onChange(function () {
+                waterMaterial.color.set(params.waterColor);
+            });
+            gui.add(params, 'waterOpacity', 0, 1).onChange(function () {
+                waterMaterial.opacity = params.waterOpacity;
+            });
+
+
+            gui.addColor(params, 'roadColor').name('roadColor').onChange(function () {
+                roadMaterial.color.set(params.roadColor);
+            });
+            gui.add(params, 'roadOpacity', 0, 1).onChange(function () {
+                roadMaterial.opacity = params.roadOpacity;
+
+            });
+
+
+            gui.add(params, 'blending').onChange(function () {
+                if (params.blending) {
+                    pointMaterial.blending = THREE.AdditiveBlending;
+                } else {
+                    pointMaterial.blending = THREE.NoBlending;
+                }
+            });
+            gui.add(params, 'pointSize', 2, 20).onChange(function () {
+                pointMaterial.size = params.pointSize;
+            });
+
+
+
+            gui.add(params, 'show').onChange(function () {
+                if (params.show) {
+                    vectortilelayer.show();
+                } else {
+                    vectortilelayer.hide();
+                }
+            });
+            gui.add(params, 'altitude', 0, 300).onChange(function () {
+                const meshs = vectortilelayer.getBaseObjects();
+                meshs.forEach(function (mesh) {
+                    mesh.setAltitude(params.altitude);
+                });
+            });
+            gui.add(params, 'animateShow');
+            gui.add(params, 'rotate');
+            gui.add(params, 'interactive').onChange(function () {
+                vectortilelayer._opts.interactive = params.interactive;
+                const meshs = vectortilelayer.getBaseObjects();
+                meshs.forEach(function (mesh) {
+                    mesh.options.interactive = params.interactive;
+                });
+            });
+        }
+
+        function animateShow() {
+            const meshs = vectortilelayer.getBaseObjects();
+            meshs.forEach(function (mesh) {
+                mesh.animateShow({
+                    duration: 1300
+                });
+            });
+        }
+
+
+    </script>
+</body>
+
+</html>
