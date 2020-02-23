@@ -15,6 +15,8 @@ import Bars from './src/Bars';
 import ExtrudeLines from './src/ExtrudeLines';
 import Lines from './src/Lines';
 import ThreeVectorTileLayer from './src/ThreeVectorTileLayer';
+import Terrain from './src/Terrain';
+import TerrainVectorTileLayer from './src/TerrainVectorTileLayer';
 
 const options = {
     'renderer': 'gl',
@@ -342,6 +344,26 @@ class ThreeLayer extends maptalks.CanvasLayer {
      */
     toThreeVectorTileLayer(url, options, getMaterial) {
         return new ThreeVectorTileLayer(url, options, getMaterial, this);
+    }
+
+    /**
+     *
+     * @param {*} extent
+     * @param {*} options
+     * @param {*} material
+     */
+    toTerrain(extent, options, material) {
+        return new Terrain(extent, options, material, this);
+    }
+
+    /**
+     *
+     * @param {*} url
+     * @param {*} options
+     * @param {*} material
+     */
+    toTerrainVectorTileLayer(url, options, material) {
+        return new TerrainVectorTileLayer(url, options, material, this);
     }
 
 
