@@ -23,7 +23,7 @@ class Point extends BaseObject {
         }
         const z = layer.distanceToVector3(height, height).x;
         const v = layer.coordinateToVector3(coordinate, z);
-        vs.push(v.x, v.y, v.z);
+        vs.push(0, 0, v.z);
         const geometry = new THREE.BufferGeometry();
         addAttribute(geometry, 'position', new THREE.Float32BufferAttribute(vs, 3, true));
         if (colors.length) {
@@ -34,7 +34,8 @@ class Point extends BaseObject {
         this._initOptions(options);
         this._createPoints(geometry, material);
         const z1 = layer.distanceToVector3(altitude, altitude).x;
-        this.getObject3d().position.z = z1;
+        const v1 = new THREE.Vector3(v.x, v.y, z1);
+        this.getObject3d().position.copy(v1);
     }
 
     /**
