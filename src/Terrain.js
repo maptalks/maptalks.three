@@ -75,7 +75,7 @@ class Terrain extends BaseObject {
         });
         const w = Math.abs(vxmax - vxmin), h = Math.abs(vymax - vymin);
         const rgbImg = generateImage(image), img = generateImage(texture);
-        const geometry = new THREE.PlaneBufferGeometry(w, h, imageWidth - 1, imageWidth - 1);
+        const geometry = new THREE.PlaneBufferGeometry(w, h, imageWidth - 1, imageHeight - 1);
         super();
         this._initOptions(options);
         this._createMesh(geometry, material);

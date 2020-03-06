@@ -38,6 +38,7 @@ class Points extends MergedMixin(BaseObject) {
             maxX = Math.max(maxX, x);
             maxY = Math.max(maxY, y);
         }
+        const centerPt = layer.coordinateToVector3([(minX + maxX) / 2, (minY + maxY) / 2]);
         const grids = BBox.initGrids(minX, minY, maxX, maxY);
         const gridslen = grids.length;
 
@@ -50,7 +51,9 @@ class Points extends MergedMixin(BaseObject) {
             }
             const z = layer.distanceToVector3(height, height).x;
             const v = layer.coordinateToVector3(coordinate, z);
-            vs.push(v.x, v.y, v.z);
+            const v1 = v.clone().sub(centerPt);
+            vs.push(v1.x, v1.y, v1.z);
+
             vectors.push(v);
 
             geometriesAttributes[i] = {
@@ -83,7 +86,9 @@ class Points extends MergedMixin(BaseObject) {
         this._createPoints(geometry, material);
         const altitude = options.altitude;
         const z = layer.distanceToVector3(altitude, altitude).x;
-        this.getObject3d().position.z = z;
+        const v = centerPt.clone();
+        v.z = z;
+        this.getObject3d().position.copy(v);
 
         this._baseObjects = pointMeshes;
         this._datas = points;

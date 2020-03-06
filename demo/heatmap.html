@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>heatmap</title>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.13.0/d3.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/gcoord@0.2.3/dist/gcoord.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.109.0/build/three.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks.three/dist/maptalks.three.js"></script>
+    <!-- <script type="text/javascript" src="./../dist/maptalks.three.js"></script> -->
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.97.0/examples/js/libs/stats.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            // "center": [114.02886943761405, 22.536328869597213], "zoom": 13, "pitch": 12.000000000000057, "bearing": -3.0000000000001137,
+            "center": [121.40478712491074, 31.161950364960347], "zoom": 10, "pitch": 60, "bearing": -1.800000000000182,
+            // bearing: 180,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+            // animation: true
+        });
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+
+            addHeatMap1(scene);
+            addAxesHelper();
+
+        };
+        threeLayer.addTo(map);
+
+
+        function addAxesHelper() {
+            const axisHelper = new THREE.AxesHelper(1000000);
+            axisHelper.position.copy(threeLayer.coordinateToVector3(map.getCenter()));
+            threeLayer.addMesh(axisHelper);
+
+        }
+
+
+        var heatmap;
+        var material = new THREE.MeshBasicMaterial({ transparent: true, wireframe: false, color: '#ac3d3d' });
+        // var highlightmaterial = new THREE.MeshBasicMaterial({ color: 'yellow', transparent: true });
+
+        function addHeatMap() {
+            d3.csv('https://gw.alipayobjects.com/os/rmsportal/BElVQFEFvpAKzddxFZxJ.txt',
+                (error, response) => {
+                    // console.log(response);
+                    let data = response.slice(0, 1 * 100000).map(d => {
+                        return {
+                            coordinate: [Number(d.lng), Number(d.lat)],
+                            value: Math.random() * 10,
+                            count: 30 * Math.random(),
+                        };
+                    });
+                    heatmap = threeLayer.toHeatMap(data,
+                        {
+                            gridScale: 2,
+                            size: 2,
+                            gradient: { 0.25: 'rgb(0,0,200)', 0.55: 'rgb(0,255,0)', 0.85: 'yellow', 1.0: 'rgb(255,0,0)' },
+                        }, material);
+                    threeLayer.addMesh(heatmap);
+                    initGui();
+                    animation();
+
+                });
+        }
+
+
+        function addHeatMap1(scene) {
+            map.setCenter([114.0096989253791, 22.535747885527798]).setZoom(14);
+            fetch('https://gw.alipayobjects.com/os/basement_prod/513add53-dcb2-4295-8860-9e7aa5236699.json').then((function (res) {
+                return res.json();
+            })).then(function (json) {
+                const data = json.features.slice(0, Infinity).map(function (dataItem) {
+                    dataItem = gcoord.transform(dataItem, gcoord.AMap, gcoord.WGS84);
+                    return {
+                        coordinate: dataItem.geometry.coordinates,
+                        height: 0,
+                        count: 30 * Math.random(),
+                        value: Math.random() * 10000
+                    }
+                });
+                heatmap = threeLayer.toHeatMap(data,
+                    {
+                        gridScale: 10,
+                        size: 4,
+                        gradient: { 0.25: 'rgb(0,1,200)', 0.55: 'rgb(0,255,0)', 0.85: 'yellow', 1.0: 'rgb(255,0,0)' },
+                    }, material);
+                threeLayer.addMesh(heatmap);
+                heatmap.getObject3d().scale.z = 2;
+                initGui();
+
+            });
+            animation();
+        }
+
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer._renderer.clearCanvas();
+                threeLayer.renderScene();
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+        }
+
+
+        function initGui() {
+            var params = {
+                add: true,
+                color: material.color.getStyle(),
+                wireframe: material.wireframe,
+                show: true,
+                opacity: 1,
+                altitude: 0,
+                scaleZ: heatmap.getObject3d().scale.z
+                // animateShow: animateShow
+            };
+
+            var gui = new dat.GUI();
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    threeLayer.addMesh(heatmap);
+                } else {
+                    threeLayer.removeMesh(heatmap);
+                }
+            });
+            gui.addColor(params, 'color').name('bar color').onChange(function () {
+                material.color.set(params.color);
+            });
+            gui.add(params, 'wireframe').onChange(function () {
+                material.wireframe = params.wireframe;
+            });
+            gui.add(params, 'opacity', 0, 1).onChange(function () {
+                material.opacity = params.opacity;
+                heatmap.setSymbol(material);
+            });
+            gui.add(params, 'show').onChange(function () {
+                if (params.show) {
+                    heatmap.show();
+                } else {
+                    heatmap.hide();
+                }
+            });
+            gui.add(params, 'altitude', 0, 2000).onChange(function () {
+                heatmap.setAltitude(params.altitude);
+            });
+            gui.add(params, 'scaleZ', 0.0001, 10).onChange(function () {
+                heatmap.getObject3d().scale.z = params.scaleZ;
+            })
+
+        }
+
+    </script>
+</body>
+
+</html>

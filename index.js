@@ -17,6 +17,7 @@ import Lines from './src/Lines';
 import ThreeVectorTileLayer from './src/ThreeVectorTileLayer';
 import Terrain from './src/Terrain';
 import TerrainVectorTileLayer from './src/TerrainVectorTileLayer';
+import HeatMap from './src/HeatMap';
 
 const options = {
     'renderer': 'gl',
@@ -364,6 +365,17 @@ class ThreeLayer extends maptalks.CanvasLayer {
      */
     toTerrainVectorTileLayer(url, options, material) {
         return new TerrainVectorTileLayer(url, options, material, this);
+    }
+
+
+    /**
+     *
+     * @param {*} data
+     * @param {*} options
+     * @param {*} material
+     */
+    toHeatMap(data, options, material) {
+        return new HeatMap(data, options, material, this);
     }
 
 
