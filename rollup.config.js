@@ -22,7 +22,7 @@ const intro = `
     var workerLoaded;
     function define(_, chunk) {
     if (!workerLoaded) {
-        if(maptalks.registerWorkerAdapter){
+        if(maptalks&&maptalks.registerWorkerAdapter){
             maptalks.registerWorkerAdapter('${pkg.name}', chunk);
             workerLoaded = true;
         }else{
