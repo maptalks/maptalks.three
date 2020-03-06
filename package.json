@@ -7,6 +7,12 @@
     "type": "git",
     "url": "https://github.com/maptalks/maptalks.three.js.git"
   },
+  "files": [
+    "dist/maptalks.three.js",
+    "dist/maptalks.three.min.js",
+    "dist/maptalks.three.es.js",
+    "dist/maptalks.three.js.map",
+  ],
   "main": "dist/maptalks.three.js",
   "module": "dist/maptalks.three.es.js",
   "jsnext:main": "dist/maptalks.three.es.js",
