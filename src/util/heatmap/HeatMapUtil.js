@@ -1,7 +1,14 @@
-/**
- * code https://github.com/huiyan-fe/mapv/blob/master/src/canvas/draw/heatmap.js
+/*!
+ * Code from baidu mapv
+ * License: BSD-3
+ * https://github.com/huiyan-fe/mapv
+ *
  */
-import Canvas from '../Canvas';
+
+/**
+ * https://github.com/huiyan-fe/mapv/blob/master/src/canvas/draw/heatmap.js
+ */
+import { Canvas } from './../CanvasUtil';
 import Intensity from './Intensity';
 
 function createCircle(size) {

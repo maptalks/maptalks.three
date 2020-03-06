@@ -2,7 +2,7 @@ import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
 import HeatMapUitl from './util/heatmap/HeatMapUtil';
-import Canvas from './util/Canvas';
+import { Canvas } from './util/CanvasUtil';
 import Intensity from './util/heatmap/Intensity';
 import { addAttribute } from './util/ThreeAdaptUtil';
 

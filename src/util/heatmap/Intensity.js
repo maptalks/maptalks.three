@@ -1,10 +1,18 @@
+/*!
+ * Code from baidu mapv
+ * License: BSD-3
+ * https://github.com/huiyan-fe/mapv
+ *
+ */
+
+
 /* eslint-disable no-trailing-spaces */
 
-// code :  https://github.com/huiyan-fe/mapv/blob/master/src/utils/data-range/Intensity.js
 /**
+ * https://github.com/huiyan-fe/mapv/blob/master/src/utils/data-range/Intensity.js
  * @author kyle / http://nikai.us/
  */
-import Canvas from '../Canvas';
+import { Canvas } from './../CanvasUtil';
 
 /**
  * Category
