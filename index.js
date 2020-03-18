@@ -18,6 +18,7 @@ import ThreeVectorTileLayer from './src/ThreeVectorTileLayer';
 import Terrain from './src/Terrain';
 import TerrainVectorTileLayer from './src/TerrainVectorTileLayer';
 import HeatMap from './src/HeatMap';
+import { setRaycasterLinePrecision } from './src/util/ThreeAdaptUtil';
 
 const options = {
     'renderer': 'gl',
@@ -539,7 +540,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         mouse.y = -(y / height) * 2 + 1;
         raycaster.setFromCamera(mouse, camera);
         //set linePrecision for THREE.Line
-        raycaster.linePrecision = this._getLinePrecision(this.getMap().getResolution());
+        setRaycasterLinePrecision(raycaster, this._getLinePrecision(this.getMap().getResolution()));
         const children = [], hasidentifyChildren = [];
         scene.children.forEach(mesh => {
             const parent = mesh.__parent;
