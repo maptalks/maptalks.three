@@ -20,3 +20,11 @@ export function addAttribute(bufferGeomertry, key, value) {
     }
     return bufferGeomertry;
 }
+
+export function setRaycasterLinePrecision(raycaster, linePrecision) {
+    if (REVISION > 113) {
+        raycaster.params.Line.threshold = linePrecision;
+    } else {
+        raycaster.linePrecision = linePrecision;
+    }
+}
