@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>fatline test</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.104.0/build/three.min.js"></script>
+    <!--fatline script-->
+    <!-- https://threejs.org/examples/#webgl_lines_fat -->
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.104.0/examples/js/lines/LineMaterial.js"></script>
+    <!---->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lz-string@1.4.4/libs/lz-string.min.js"></script>
+    <!-- <script type="text/javascript" src="./../dist/maptalks.three.js"></script> -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks.three/dist/maptalks.three.js"></script>
+    <script type="text/javascript" src="./js/geoutil.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.104.0/examples/js/libs/stats.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: black;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map" class="map"></div>
+    <div id="map1" class="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            center: [13.416935229170008, 52.529564137540376],
+            zoom: 15,
+            pitch: 70,
+            bearing: 180,
+            // bearing: 180,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+            // animation: true
+        });
+
+
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            addLines();
+        };
+        threeLayer.addTo(map);
+
+
+
+        //https://threejs.org/examples/#webgl_lines_fat
+        var material = new THREE.LineMaterial({
+            color: 0x00ffff,
+            transparent: true,
+            // vertexColors: THREE.VertexColors,
+            // side: THREE.BackSide,
+            linewidth: 4 // in pixels
+            // vertexColors: THREE.VertexColors,
+            // dashed: false
+        });
+
+        var highlightmaterial = new THREE.LineMaterial({
+            linewidth: 4,
+            // side: THREE.BackSide,
+            color: 'yellow',
+            dashSize: 0.1,
+            gapSize: 0.1,
+            dashed: true
+            // opacity: 0.8,
+        });
+        highlightmaterial.defines.USE_DASH = '';
+
+        var selectMesh = [];
+        var lines = [];
+        function addLines() {
+            fetch('./data/berlin-roads.txt').then(function (res) {
+                return res.text();
+            }).then(function (geojson) {
+                geojson = LZString.decompressFromBase64(geojson);
+                geojson = JSON.parse(geojson);
+                var lineStrings = maptalks.GeoJSON.toGeometry(geojson);
+                lineStrings.forEach(lineString => {
+                    lineString.setId(maptalks.Util.GUID());
+                });
+                var list = [];
+                lineStrings.forEach(function (lineString) {
+                    list.push({
+                        lineString,
+                        //geoutil.js lineLength
+                        len: lineLength(lineString)
+                    });
+                });
+                list = list.sort(function (a, b) {
+                    return b.len - a.len
+                });
+                lineStrings = list.map(l => {
+                    return l.lineString;
+                })
+
+                const line = threeLayer.toFatLines(lineStrings.slice(0, 1000), { interactive: false }, material);
+                line.setToolTip('hello', {
+                    showTimeout: 0,
+                    eventsPropagation: true,
+                    dx: 10
+                });
+
+                //infowindow test
+                line.setInfoWindow({
+                    content: 'hello world',
+                    title: 'message',
+                    animationDuration: 0,
+                    autoOpenOn: false
+                });
+
+                //event test
+                ['click', 'mousemove', 'empty', 'mouseout', 'mouseover', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].forEach(function (eventType) {
+                    line.on(eventType, function (e) {
+                        // console.log(e.type);
+                        const select = e.selectMesh;
+                        if (e.type === 'empty' && selectMesh.length) {
+                            threeLayer.removeMesh(selectMesh);
+                            selectMesh = [];
+                        }
+
+                        let data, baseObject;
+                        // console.log(select)
+                        if (select) {
+                            data = select.data;
+                            baseObject = select.baseObject;
+                            if (baseObject && !baseObject.isAdd) {
+                                baseObject.setSymbol(highlightmaterial);
+                                threeLayer.addMesh(baseObject);
+                                selectMesh.push(baseObject);
+                            }
+                        }
+
+
+                        if (selectMesh.length > 1) {
+                            threeLayer.removeMesh(selectMesh);
+                            selectMesh = [];
+                        }
+
+
+                        // override tooltip
+                        if (e.type === 'mousemove' && data) {
+                            const id = data.getId();
+                            const tooltip = this.getToolTip();
+                            tooltip._content = `id:${id}`;
+                        }
+                        //override infowindow
+                        if (e.type === 'click' && data) {
+                            const height = JSON.stringify(data.getProperties());
+                            const infoWindow = this.getInfoWindow();
+                            infoWindow.setContent(`property:${height}`);
+                            if (infoWindow && (!infoWindow._owner)) {
+                                infoWindow.addTo(this);
+                            }
+                            this.openInfoWindow(e.coordinate);
+
+                        }
+                    });
+                });
+
+                threeLayer.addMesh(line);
+                lines.push(line);
+                animation();
+                initGui();
+                // initMap1Data();
+            })
+        }
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer._renderer.clearCanvas();
+                threeLayer.renderScene();
+                threeLayer.renderPickScene();
+
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+        }
+
+        function initGui() {
+            var params = {
+                add: true,
+                color: 0x00ffff,
+                show: true,
+                opacity: 1,
+                altitude: 0,
+                interactive: false
+            };
+            var gui = new dat.GUI();
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    threeLayer.addMesh(lines);
+                } else {
+                    threeLayer.removeMesh(lines);
+                }
+            });
+            gui.addColor(params, 'color').name('line color').onChange(function () {
+                material.color.set(params.color);
+                lines.forEach(function (mesh) {
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'opacity', 0, 1).onChange(function () {
+                material.uniforms.opacity.value = (params.opacity);
+                lines.forEach(function (mesh) {
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'show').onChange(function () {
+                lines.forEach(function (mesh) {
+                    if (params.show) {
+                        mesh.show();
+                    } else {
+                        mesh.hide();
+                    }
+                });
+            });
+            gui.add(params, 'altitude', 0, 300).onChange(function () {
+                lines.forEach(function (mesh) {
+                    mesh.setAltitude(params.altitude);
+                });
+            });
+            gui.add(params, 'interactive').onChange(function () {
+                lines.forEach(function (mesh) {
+                    mesh.options.interactive = params.interactive;
+                });
+            });
+        }
+    </script>
+</body>
+
+</html>
