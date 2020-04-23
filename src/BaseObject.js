@@ -175,6 +175,14 @@ class BaseObject extends maptalks.Eventable(Base) {
             if (this.pickObject3d) {
                 this.pickObject3d.position.z = z;
             }
+            //fix merged mesh
+            if (this._baseObjects && Array.isArray(this._baseObjects)) {
+                for (let i = 0, len = this._baseObjects.length; i < len; i++) {
+                    if (this._baseObjects[i]) {
+                        this._baseObjects[i].getObject3d().position.z = z;
+                    }
+                }
+            }
         }
         return this;
     }
