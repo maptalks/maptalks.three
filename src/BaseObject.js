@@ -2,6 +2,7 @@ import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import { ThreeLayer } from './../index';
 import ToolTip from './ui/ToolTip';
+import Line2 from './util/fatline/Line2';
 
 const OPTIONS = {
     interactive: true,
@@ -62,6 +63,8 @@ class BaseObject extends maptalks.Eventable(Base) {
         this._mouseover = false;
         this._showPlayer = null;
         this._vt = null;
+        this.picked = false;
+        this.pickObject3d = null;
         if (id === undefined) {
             id = maptalks.Util.GUID();
         }
@@ -169,6 +172,9 @@ class BaseObject extends maptalks.Eventable(Base) {
             const z = this.getLayer().distanceToVector3(altitude, altitude).x;
             this.getObject3d().position.z = z;
             this.options.altitude = altitude;
+            if (this.pickObject3d) {
+                this.pickObject3d.position.z = z;
+            }
         }
         return this;
     }
@@ -334,6 +340,12 @@ class BaseObject extends maptalks.Eventable(Base) {
         return this;
     }
 
+    setPickObject3d(object3d) {
+        this.pickObject3d = object3d;
+        this.pickObject3d.__parent = this;
+        return this;
+    }
+
 
     /**
      * more method support
@@ -365,6 +377,13 @@ class BaseObject extends maptalks.Eventable(Base) {
 
     _createLine(geometry, material) {
         this.object3d = new THREE.Line(geometry, material);
+        this.object3d.computeLineDistances();
+        this.object3d.__parent = this;
+        return this;
+    }
+
+    _createLine2(geometry, material) {
+        this.object3d = new Line2(geometry, material);
         this.object3d.computeLineDistances();
         this.object3d.__parent = this;
         return this;
