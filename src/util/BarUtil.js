@@ -84,8 +84,10 @@ export function mergeBarGeometry(geometries) {
     for (let i = 0, len = geometries.length; i < len; i++) {
         const { color, normal, position, uv } = geometries[i].attributes;
         const index = geometries[i].index;
-        for (let j = 0, len1 = color.array.length; j < len1; j++) {
-            colors.push(color.array[j]);
+        if (color) {
+            for (let j = 0, len1 = color.array.length; j < len1; j++) {
+                colors.push(color.array[j]);
+            }
         }
         attributes.push({
             // color: color.array,
@@ -96,8 +98,10 @@ export function mergeBarGeometry(geometries) {
         });
     }
     const bufferGeometry = mergeBufferGeometries(attributes);
-    for (let i = 0, len = colors.length; i < len; i++) {
-        bufferGeometry.attributes.color.array[i] = colors[i];
+    if (colors.length) {
+        for (let i = 0, len = colors.length; i < len; i++) {
+            bufferGeometry.attributes.color.array[i] = colors[i];
+        }
     }
     return bufferGeometry;
 
