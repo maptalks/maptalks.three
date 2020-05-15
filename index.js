@@ -19,6 +19,9 @@ import Terrain from './src/Terrain';
 import TerrainVectorTileLayer from './src/TerrainVectorTileLayer';
 import HeatMap from './src/HeatMap';
 import { setRaycasterLinePrecision } from './src/util/ThreeAdaptUtil';
+import GPUPick from './src/GPUPick';
+import FatLine from './src/FatLine';
+import FatLines from './src/FatLines';
 
 const options = {
     'renderer': 'gl',
@@ -379,6 +382,26 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return new HeatMap(data, options, material, this);
     }
 
+    /**
+     *
+     * @param {*} lineString
+     * @param {*} options
+     * @param {*} material
+     */
+    toFatLine(lineString, options, material) {
+        return new FatLine(lineString, options, material, this);
+    }
+
+    /**
+     *
+     * @param {*} lineStrings
+     * @param {*} options
+     * @param {*} material
+     */
+    toFatLines(lineStrings, options, material) {
+        return new FatLines(lineStrings, options, material, this);
+    }
+
 
 
 
@@ -427,10 +450,29 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return this;
     }
 
+    renderPickScene() {
+        const renderer = this._getRenderer();
+        if (renderer) {
+            const pick = renderer.pick;
+            if (pick) {
+                pick.pick(this._containerPoint);
+            }
+        }
+        return this;
+    }
+
     getThreeRenderer() {
         const renderer = this._getRenderer();
         if (renderer) {
             return renderer.context;
+        }
+        return null;
+    }
+
+    getPick() {
+        const renderer = this._getRenderer();
+        if (renderer) {
+            return renderer.pick;
         }
         return null;
     }
@@ -523,6 +565,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
             return [];
         }
         const p = this.getMap().coordToContainerPoint(coordinate);
+        this._containerPoint = p;
         const { x, y } = p;
         this._initRaycaster();
         const raycaster = this._raycaster,
@@ -830,6 +873,7 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         camera.matrixAutoUpdate = false;
         this._syncCamera();
         scene.add(camera);
+        this.pick = new GPUPick(this.layer);
     }
 
     onCanvasCreate() {

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>gpu pick test</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.104.0/build/three.min.js"></script>
+    <!-- <script type="text/javascript" src="./../dist/maptalks.three.js"></script> -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks.three/dist/maptalks.three.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.97.0/examples/js/libs/stats.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        .map {
+            width: 100%;
+            height: 100%;
+            /* background-color: #000; */
+            float: left;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="mousetext"
+        style="position: absolute; z-index: 3; top:50px;left:0px; background-color: black; color: white; width: 160px; height: 30px;">
+    </div>
+    <div id="map" class="map"></div>
+
+    <script>
+
+
+        var map = new maptalks.Map("map", {
+            center: [13.416935229170008, 52.529564137540376],
+            zoom: 15,
+            pitch: 70,
+            bearing: 0,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+
+
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true,
+            // animation: true
+        });
+
+
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            // var light = new THREE.DirectionalLight(0xffffff);
+            // light.position.set(0, -10, 10).normalize();
+            // scene.add(light);
+
+            camera.add(new THREE.PointLight(0xffffff, 2))
+            addBox();
+        };
+        threeLayer.addTo(map);
+
+
+        var boxs = [];
+        function addBox() {
+            var lnglats = [
+                [13.429362937522342, 52.518205849377495]
+                , [13.41688993786238, 52.52216099633924]
+                , [13.417991247928398, 52.53296954185342]
+                , [13.438154245439819, 52.533321196953096]
+                , [13.450418871799684, 52.52653968753597]
+                , [13.390340036780685, 52.51953598324846]
+                , [13.399921081391199, 52.50920191922407]
+                , [13.366122901455583, 52.50949703597493]
+                , [13.365784792637783, 52.51964629275582]
+                , [13.371429857108524, 52.528732386936014]
+                , [13.383686384074508, 52.53781463596616]
+                , [13.40395563186371, 52.540223413847315]
+                , [13.361485408920998, 52.53916869831616]
+                , [13.35373758485457, 52.52883597474849]
+                , [13.355233792792774, 52.519259850666316]
+                , [13.369548077301943, 52.506940362998336]
+                , [13.338732610093984, 52.50860998116909]
+                , [13.341879792058194, 52.52318729489704]
+                , [13.348448231846305, 52.537668773653735]
+                , [13.389246594295287, 52.53548698398501]
+                , [13.38850757718967, 52.53863503802975]
+                , [13.37609820107241, 52.53114151693521]
+                , [13.378738663778222, 52.52573619010886]
+                , [13.37831231443704, 52.52080685602138]
+                , [13.375035939673353, 52.51971996135225]
+                , [13.389897299946142, 52.51899162027868]
+                , [13.391256053067082, 52.52202236946218]
+                , [13.392790046648201, 52.52844544479157]
+                , [13.395005819018024, 52.53310464893897]
+                , [13.401718911909938, 52.52425187302205]
+                , [13.402397026911103, 52.51909223851541]
+                , [13.411313379918056, 52.51798115586686]
+                , [13.415911385871823, 52.51888605929159]
+                , [13.41824726883442, 52.52171525554482]
+                , [13.417314242886505, 52.52609578512883]
+                , [13.412330051141907, 52.5293517938629]
+                , [13.40936323330186, 52.532595113983206]
+                , [13.41394381887676, 52.5381488398327]
+                , [13.419539658615577, 52.540914487009076]
+                , [13.436661171707783, 52.5407178069876]
+                , [13.43043712770941, 52.53493464958078]
+                , [13.426802529616793, 52.53273186525789]
+                , [13.427190063411217, 52.52859751715991]
+                , [13.429687741409111, 52.52541511779546]
+                , [13.420674712370555, 52.52132920963592]
+                , [13.422291590946202, 52.51771896093092]
+                , [13.42602853364042, 52.51691591867936]
+                , [13.4407066690992, 52.517628077846695]
+                , [13.445125010359334, 52.518379661504895]
+                , [13.449230960410887, 52.51890206493917]
+                , [13.452697161728338, 52.522833015637474]
+                , [13.452150183293384, 52.527206052817604]
+                , [13.450596418938858, 52.53120611025892]
+                , [13.449321345704561, 52.53478259925626]
+                , [13.44991743982439, 52.53800964581964]
+                , [13.444911438078066, 52.540011719191256]
+                , [13.433846712878221, 52.53776840443655]
+                , [13.446110400946054, 52.53745564016762]
+                , [13.42655484257807, 52.53375521527627]
+                , [13.410074080611025, 52.52474520696168]
+                , [13.39700902166237, 52.5211808556779]
+                , [13.39224970456371, 52.52795947015855]
+                , [13.397787887746631, 52.527687381119534]
+                , [13.404781597398824, 52.531570514480876]
+                , [13.402245452485431, 52.53470324196846]
+                , [13.420458447249871, 52.53324273115388]
+                , [13.421777392290323, 52.52903708527933]
+                , [13.422154850584775, 52.52568580719807]
+                , [13.425979170707365, 52.5225528451015]
+                , [13.43384246418384, 52.52106341825615]
+                , [13.437886395258374, 52.52359528344451]
+                , [13.43602741073164, 52.52734201890169]
+                , [13.433894856093502, 52.52999680902715]
+                , [13.440403956745058, 52.53046767348306]
+                , [13.443630184112749, 52.5345563486467]
+                , [13.446005091212669, 52.52604566053341]
+                , [13.447046979747824, 52.52147908728435]
+                , [13.438474092805109, 52.52016101093679]
+                , [13.433534190029263, 52.51375347746014]
+                , [13.423521933452776, 52.51201966778339]
+                , [13.408093385343363, 52.51256294330912]
+                , [13.394147099129441, 52.513520846913224]
+                , [13.384281207204936, 52.51450177617838]
+                , [13.37856319851221, 52.515164690078194]
+                , [13.375558597164172, 52.514388509308475]
+                , [13.381667785856393, 52.519387857354985]
+                , [13.382148908463023, 52.52353236618089]
+                , [13.38475353387787, 52.52724225103057]
+                , [13.3815086591095, 52.53156487184728]
+                , [13.380623530434377, 52.53505642591742]
+                , [13.381915256011666, 52.53591866294866]
+                , [13.396791162437012, 52.53627471648187]
+                , [13.402099823496656, 52.53279944740652]
+                , [13.40014347575675, 52.52837179268212]
+                , [13.396825898429597, 52.525773455094765]
+                , [13.401478509388994, 52.52207531777353]
+                , [13.407523503610946, 52.52190238141023]
+                , [13.406934142815885, 52.51893565590271]
+                , [13.405154993533188, 52.51460758767698]
+                , [13.418052098553744, 52.511710778919365]
+                , [13.428898211402839, 52.51138966299831]
+                , [13.42546107309363, 52.50816548714951]
+                , [13.41306722447439, 52.50606085199436]
+                , [13.393874072759445, 52.50845654912152]
+                , [13.389070011479362, 52.50536400255859]
+                , [13.398863392767112, 52.502241059261934]
+                , [13.412887755053475, 52.50193480806027]
+                , [13.421268634351577, 52.50208107057048]
+                , [13.428672171403946, 52.50321394606172]
+                , [13.437430700918526, 52.50479018806331]
+                , [13.442563091106194, 52.50680468710058]
+                , [13.440957302067545, 52.5120634858973]
+                , [13.433831621157651, 52.51369527613369]
+            ];
+            var material = new THREE.MeshPhongMaterial({
+                color: '#fff', flatShading: true, shininess: 0
+            });
+            var highlightmaterial = new THREE.MeshPhongMaterial({
+                color: 'red', flatShading: true, shininess: 0
+            });
+            lnglats.forEach(function (lnglat) {
+                for (let j = 0; j < 1; j++) {
+                    var box = new Box(lnglat, {
+                        interactive: true,
+                        altitude: 100 * j
+                    }, material, threeLayer);
+                    boxs.push(box);
+                    //tooltip test
+                    box.setToolTip(box.getId(), {
+                        showTimeout: 0,
+                        eventsPropagation: true,
+                        dx: 10
+                    });
+
+
+                    //infowindow test
+                    box.setInfoWindow({
+                        content: 'hello world,id:' + box.getId(),
+                        title: 'message',
+                        animationDuration: 0,
+                        autoOpenOn: false
+                    });
+                    //event test
+                    ['click', 'mouseout', 'mouseover', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].forEach(function (eventType) {
+                        box.on(eventType, function (e) {
+                            // console.log(e.type, e);
+                            // console.log(this.getId());
+                            if (e.type === 'mouseout') {
+                                this.setSymbol(material);
+                            }
+                            if (e.type === 'mouseover') {
+                                this.setSymbol(highlightmaterial);
+                            }
+                        });
+                    });
+                }
+            });
+            threeLayer.addMesh(boxs);
+            animation();
+        }
+
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer._renderer.clearCanvas();
+                threeLayer.renderScene();
+                threeLayer.renderPickScene();
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+        }
+
+
+        //default values
+        var OPTIONS = {
+            altitude: 0,
+            interactive: true
+        };
+
+        class Box extends maptalks.BaseObject {
+            constructor(coordinate, options, material, layer) {
+                options = maptalks.Util.extend({}, OPTIONS, options, { layer, coordinate });
+                super();
+                //Initialize internal configuration
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L135
+                this._initOptions(options);
+                const { altitude, radius } = options;
+                //generate geometry
+
+                const h = Math.random() * 10;
+                const geometry = new THREE.BoxBufferGeometry(0.4, 0.4, h);
+
+                //Initialize internal object3d
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L140
+                this._createMesh(geometry, material);
+
+                //set object3d position
+                const z = layer.distanceToVector3(altitude, altitude).x + h / 2;
+                const position = layer.coordinateToVector3(coordinate, z);
+                this.getObject3d().position.copy(position);
+                this._setPickObject3d();
+                this._init();
+            }
+
+            _init() {
+                const pick = this.getLayer().getPick();
+                this.on('add', () => {
+                    pick.add(this.pickObject3d);
+                });
+                this.on('remove', () => {
+                    pick.remove(this.pickObject3d);
+                });
+            }
+
+
+            _setPickObject3d(ps, linewidth) {
+                const geometry = this.getObject3d().geometry.clone();
+                const pick = this.getLayer().getPick();
+                const color = pick.getColor();
+                const material = new THREE.MeshBasicMaterial();
+                material.color.set(color.getStyle());
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.copy(this.getObject3d().position);
+
+                const colorIndex = color.getHex();
+                mesh._colorIndex = colorIndex;
+                this.setPickObject3d(mesh);
+            }
+
+            identify(coordinate) {
+                return this.picked;
+            }
+        }
+
+    </script>
+</body>
+
+</html>
