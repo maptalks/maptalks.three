@@ -60,7 +60,7 @@
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
 
-            scene.add(new THREE.AmbientLight(0xffffff));
+            scene.add(new THREE.AmbientLight(0xffffff,0.2));
 
             // camera.add(new THREE.PointLight(0xffffff, 1));
 
@@ -112,7 +112,7 @@
                         coordinate: dataItem.slice(0, 2),
                         height: dataItem[2],
                         radius: 15000,
-                        topColor: '#fff'
+                        // topColor: '#fff'
                     }
                 }).slice(0, Infinity);
                 const colorMap = {};

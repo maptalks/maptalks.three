@@ -19,7 +19,7 @@ const LineSegmentsGeometry = function () {
 
     this.setIndex(index);
     addAttribute(this, 'position', new THREE.Float32BufferAttribute(positions, 3));
-    addAttribute(this, 'uv', new THREE.Float32BufferAttribute(uvs, 3));
+    addAttribute(this, 'uv', new THREE.Float32BufferAttribute(uvs, 2));
     // this.addAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     // this.addAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
 
