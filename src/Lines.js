@@ -154,7 +154,7 @@ class Lines extends MergedMixin(BaseObject) {
         }
         addAttribute(geometry, 'color', new THREE.Float32BufferAttribute(colors, 3, true));
         const material = this.getObject3d().material.clone();
-        // material.color.set('#fff');
+        material.color.set('#fff');
         material.vertexColors = THREE.VertexColors;
         const color = pick.getColor();
         const colorIndex = color.getHex();
