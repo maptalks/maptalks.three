@@ -85,7 +85,7 @@ class GPUPick {
         //read the pixel
         const { x, y } = pixel;
         const devicePixelRatio = window.devicePixelRatio;
-        const offsetX = (x * devicePixelRatio), offsetY = (pickingTexture.height - y) * devicePixelRatio;
+        const offsetX = (x * devicePixelRatio), offsetY = (pickingTexture.height - y * devicePixelRatio);
         renderer.readRenderTargetPixels(pickingTexture, offsetX, offsetY, 1, 1, pixelBuffer);
 
         //interpret the pixel as an ID
