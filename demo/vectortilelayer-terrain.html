@@ -146,7 +146,6 @@
             if ((!map.isMoving()) && (!map.isZooming()) && (!map.isRotating()) && (!params.rotate)) {
                 threeLayer._needsUpdate = !threeLayer._needsUpdate;
                 if (threeLayer._needsUpdate) {
-                    threeLayer._renderer.clearCanvas();
                     threeLayer.renderScene();
                 }
             }

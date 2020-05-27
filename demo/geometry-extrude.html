@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.97.0/build/three.min.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.97.0/examples/js/controls/TrackballControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/geometry-extrude@0.1.2/dist/geometry-extrude.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet-src.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css" />
+    <script src="https://maptalks.org/maptalks.three/demo/buildings.js"></script>
+    <title>Geometry Extrude Example - Use with regl</title>
+</head>
+
+<body>
+    <style>
+        body {
+            overflow: hidden;
+        }
+
+        #viewport,
+        #map {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+        }
+
+        #map {
+            z-index: -1;
+        }
+    </style>
+    <div id="map"></div>
+    <div id="viewport"></div>
+
+    <script>
+
+        const geojson = { "type": "FeatureCollection", "features": [] };
+        buildings.forEach(g => {
+            g.features.forEach(f => {
+                geojson.features.push(f);
+            });
+        });
+
+        var map = L.map('map', {
+            center: [13.416935229170008, 52.529564137540376].reverse(),
+            zoom: 15,
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        L.geoJSON(geojson, {
+            // style: function (feature) {
+            //     return { color: feature.properties.color };
+            // }
+        }).addTo(map);
+
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.querySelector('#viewport').appendChild(renderer.domElement);
+
+
+        const material = getBuildingsMaterial();
+
+        function generateMesh(feature) {
+            var heightPerLevel = 10;
+            var levels = feature.properties.levels || 1;
+            feature.geometry.coordinates = coordinatesToPixel(feature);
+            const polygon = geometryExtrude.extrudePolygon([feature.geometry.coordinates], {
+                depth: levels * heightPerLevel,
+                // lineWidth: 0.5,
+                // bevelSize: 0.05,
+                // fitRect: {
+                //     x: 0,
+                //     y: 0,
+                //     width: 100
+                // }
+            });
+            const { position, normal, uv, indices, boundingRect } = polygon;
+            const geometry = new THREE.BufferGeometry();
+            geometry.addAttribute('position', new THREE.Float32BufferAttribute(position, 3));
+            geometry.addAttribute('normal', new THREE.Float32BufferAttribute(normal, 3));
+            geometry.addAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+            geometry.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
+            const mesh = new THREE.Mesh(geometry, material);
+            return mesh;
+        }
+
+        function init(json) {
+            const scene = new THREE.Scene();
+
+            const camera = window.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.01, 5000);
+            const v = new THREE.Vector3(-0, 0, 968.3938359532995);
+            camera.position.copy(v);
+            // camera.lookAt(new THREE.Vector3(boundingRect.width / 2, boundingRect.height / 2, 0));
+            json.features.forEach(feature => {
+                const mesh = generateMesh(feature);
+                scene.add(mesh);
+            });
+
+            const light = new THREE.DirectionalLight('#fff', 1);
+            light.position.set(100, 100, 200);
+            scene.add(light);
+
+            scene.add(new THREE.HemisphereLight());
+
+
+            camera.add(new THREE.PointLight('#fff'));
+
+            scene.add(new THREE.AxesHelper(2000));
+
+            scene.position.set(-400, -400, 0);
+
+            const controls = new THREE.TrackballControls(camera, renderer.domElement);
+            controls.rotateSpeed = 2.0;
+            controls.zoomSpeed = 2.2;
+            controls.panSpeed = 1.8;
+            controls.noZoom = false;
+            controls.noPan = false;
+            controls.staticMoving = true;
+            controls.dynamicDampingFactor = 0.3;
+            // controls.target.set(boundingRect.width / 2, boundingRect.height / 2, 0);
+
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+        function getBuildingsMaterial(color = 'gray') {
+            const width = 256,
+                height = 512;
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#070707';
+
+            ctx.fillRect(0, 0, width, 220);
+            ctx.fillRect(0, 256, width, 220);
+
+            // var gradient = ctx.createLinearGradient(0, 0, width, 0);
+            // gradient.addColorStop("0.0", color);
+            // gradient.addColorStop("1.0", 'gray');
+
+
+            ctx.fillStyle = color;
+            // ctx.lineWidth = 40;
+            // ctx.shadowColor = shadowColor;
+            // ctx.shadowBlur = 70;
+            ctx.fillRect(0, 220, width, 36);
+            ctx.fillRect(0, 476, width, 36);
+            // console.log(canvas.toDataURL());
+            const texture = new THREE.Texture(canvas);
+            texture.needsUpdate = true;
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+            // texture.repeat.set(0.002, 0.002);
+            texture.repeat.set(1, 4);
+            const material = new THREE.MeshLambertMaterial({
+                map: texture,
+                transparent: true
+            });
+            return material;
+        }
+
+        function getGeoJSONType(feature = {}) {
+            const geometry = feature.geometry || {};
+            return geometry.type;
+        }
+
+
+        function latLngToContainerPoint(coordinate) {
+            const latlng = L.latLng(coordinate[1], coordinate[0])
+            const point = map.latLngToContainerPoint(latlng);
+            return [point.x, point.y];
+        }
+
+
+        function coordinatesToPixel(feature = {}) {
+            const type = getGeoJSONType(feature);
+            if (!type) {
+                return null;
+            }
+            const geometry = feature.geometry || {};
+            const coordinates = geometry.coordinates;
+            if (!coordinates) {
+                return null;
+            }
+            const coords = [];
+            switch (type) {
+                case 'Polygon': {
+                    for (let i = 0, len = coordinates.length; i < len; i++) {
+                        const cs = [];
+                        for (let j = 0, len1 = coordinates[i].length; j < len1; j++) {
+                            if (coordinates[i - 1] && coordinates[i - 1].toString() === coordinates[i].toString()) {
+                                continue;
+                            }
+                            cs.push(latLngToContainerPoint(coordinates[i][j]));
+                        }
+                        coords.push(cs);
+                    }
+                    break;
+                }
+                case 'MultiPolygon': {
+                    // for (let i = 0, len = coordinates.length; i < len; i++) {
+                    //     for (let j = 0, len1 = coordinates[i].length; j < len1; j++) {
+                    //         for (let m = 0, len2 = coordinates[i][j].length; m < len2; m++) {
+                    //             coords.push(latLngToContainerPoint(coordinates[i][j][m]));
+                    //         }
+                    //     }
+                    // }
+                    break;
+                }
+            }
+            return coords;
+        }
+
+        init(geojson);
+    </script>
+</body>
+
+</html>
