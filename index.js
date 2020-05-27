@@ -445,7 +445,9 @@ class ThreeLayer extends maptalks.CanvasLayer {
     renderScene() {
         const renderer = this._getRenderer();
         if (renderer) {
-            return renderer.renderScene();
+            renderer.clearCanvas();
+            renderer.renderScene();
+            this.renderPickScene();
         }
         return this;
     }

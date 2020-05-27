@@ -44,8 +44,27 @@ class GPUPick {
         return this;
     }
 
+    isEmpty() {
+        if (this.pickingScene.children.length === 0) {
+            return true;
+        }
+        for (let i = 0, len = this.pickingScene.children.length; i < len; i++) {
+            const mesh = this.pickingScene.children[i];
+            if (mesh) {
+                const object3d = mesh.__parent;
+                if (object3d && object3d.getOptions().interactive === true) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     pick(pixel) {
         if (!pixel) {
+            return;
+        }
+        if (this.isEmpty()) {
             return;
         }
         const { camera, renderer, pickingTexture, pickingScene, object3ds, layer } = this;
