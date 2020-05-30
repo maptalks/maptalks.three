@@ -105,12 +105,26 @@ class GPUPick {
         const { x, y } = pixel;
         const devicePixelRatio = window.devicePixelRatio;
         const offsetX = (x * devicePixelRatio), offsetY = (pickingTexture.height - y * devicePixelRatio);
-        renderer.readRenderTargetPixels(pickingTexture, offsetX, offsetY, 1, 1, pixelBuffer);
+
+        let id = 0, picked = false;
+        //3x3 grid buffer
+        for (let i = -1; i <= 1; i++) {
+            for (let j = -1; j <= 1; j++) {
+                if (id === 0) {
+                    renderer.readRenderTargetPixels(pickingTexture, offsetX + i, offsetY + j, 1, 1, pixelBuffer);
+                    id = (pixelBuffer[0] << 16) | (pixelBuffer[1] << 8) | (pixelBuffer[2]);
+                } else {
+                    picked = true;
+                    break;
+                }
+            }
+            if (picked) {
+                break;
+            }
+        }
 
         //interpret the pixel as an ID
 
-
-        const id = (pixelBuffer[0] << 16) | (pixelBuffer[1] << 8) | (pixelBuffer[2]);
         const object3d = object3ds[id];
         if (object3d) {
             if (object3d.__parent) {
