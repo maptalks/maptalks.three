@@ -602,7 +602,6 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 children.push(mesh);
             }
         });
-        this.renderPickScene();
         let baseObjects = [];
         const intersects = raycaster.intersectObjects(children, true);
         if (intersects && Array.isArray(intersects) && intersects.length) {
@@ -662,6 +661,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         // }
         map.resetCursor('default');
         const { type, coordinate } = e;
+        this.renderPickScene();
         const baseObjects = this.identify(coordinate);
         const scene = this.getScene();
         if (baseObjects.length === 0 && scene) {

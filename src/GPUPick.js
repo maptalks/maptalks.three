@@ -68,9 +68,10 @@ class GPUPick {
             return;
         }
         const { camera, renderer, pickingTexture, pickingScene, object3ds, layer } = this;
+        const len = this.pickingScene.children.length;
         // reset all object3d picked
-        for (let i = 0, len = object3ds.length; i < len; i++) {
-            const object3d = object3ds[i];
+        for (let i = 0; i < len; i++) {
+            const object3d = this.pickingScene.children[i];
             if (object3d && object3d.__parent) {
                 object3d.__parent.picked = false;
             }
@@ -106,25 +107,9 @@ class GPUPick {
         const devicePixelRatio = window.devicePixelRatio;
         const offsetX = (x * devicePixelRatio), offsetY = (pickingTexture.height - y * devicePixelRatio);
 
-        let id = 0, picked = false;
-        //3x3 grid buffer
-        for (let i = -1; i <= 1; i++) {
-            for (let j = -1; j <= 1; j++) {
-                if (id === 0) {
-                    renderer.readRenderTargetPixels(pickingTexture, offsetX + i, offsetY + j, 1, 1, pixelBuffer);
-                    id = (pixelBuffer[0] << 16) | (pixelBuffer[1] << 8) | (pixelBuffer[2]);
-                } else {
-                    picked = true;
-                    break;
-                }
-            }
-            if (picked) {
-                break;
-            }
-        }
-
         //interpret the pixel as an ID
-
+        renderer.readRenderTargetPixels(pickingTexture, Math.round(offsetX), Math.round(offsetY), 1, 1, pixelBuffer);
+        const id = (pixelBuffer[0] << 16) | (pixelBuffer[1] << 8) | (pixelBuffer[2]);
         const object3d = object3ds[id];
         if (object3d) {
             if (object3d.__parent) {
@@ -132,8 +117,8 @@ class GPUPick {
             }
         } else {
             //for merged mesh
-            for (let i = 0, len = object3ds.length; i < len; i++) {
-                const object3d = object3ds[i];
+            for (let i = 0; i < len; i++) {
+                const object3d = this.pickingScene.children[i];
                 if (object3d && object3d.__parent) {
                     const parent = object3d.__parent;
                     if (parent._colorMap && parent._colorMap[id] != null) {
