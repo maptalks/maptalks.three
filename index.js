@@ -660,8 +660,15 @@ class ThreeLayer extends maptalks.CanvasLayer {
         // if (map.isInteracting() && e.type === 'mousemove') {
         //     return this;
         // }
-        map.resetCursor('default');
         const { type, coordinate } = e;
+        const now = maptalks.Util.now();
+        if (this._mousemoveTimeOut && type === 'mousemove') {
+            if (now - this._mousemoveTimeOut < 16) {
+                return;
+            }
+        }
+        this._mousemoveTimeOut = now;
+        map.resetCursor('default');
         const baseObjects = this.identify(coordinate);
         const scene = this.getScene();
         if (baseObjects.length === 0 && scene) {
