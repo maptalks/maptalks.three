@@ -664,7 +664,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         const now = maptalks.Util.now();
         if (this._mousemoveTimeOut && type === 'mousemove') {
             if (now - this._mousemoveTimeOut < 16) {
-                return;
+                return this;
             }
         }
         this._mousemoveTimeOut = now;
