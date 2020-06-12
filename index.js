@@ -26,7 +26,8 @@ import FatLines from './src/FatLines';
 const options = {
     'renderer': 'gl',
     'doubleBuffer': false,
-    'glOptions': null
+    'glOptions': null,
+    'geometryEvents': true
 };
 
 const RADIAN = Math.PI / 180;
@@ -655,6 +656,9 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * @param {*} e
      */
     _identifyBaseObjectEvents(e) {
+        if (!this.options.geometryEvents) {
+            return this;
+        }
         const map = this.map || this.getMap();
         //When map interaction, do not carry out mouse movement detection, which can have better performance
         // if (map.isInteracting() && e.type === 'mousemove') {
