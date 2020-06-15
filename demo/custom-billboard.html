@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Customize your own components </title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.104.0/build/three.min.js"></script>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks.three/dist/maptalks.three.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.104.0/examples/js/libs/stats.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/zrender@4.3.1/dist/zrender.min.js"></script>
+    <script type="text/javascript" src="buildings.js"></script>
+
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map,
+        #zr {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <div id="zr" style="position: absolute;top:0; display: none;"></div>
+    <script>
+        // for draw text
+        const zr = zrender.init(document.getElementById('zr'), {});
+        const width = zr.getWidth(), height = zr.getHeight();
+
+        let idx = -1;
+        const data = [
+            {
+                text: '文字包围盒阴影颜色',
+                color: '#52D7EA',
+                coordinate: [13.422774171112565, 52.52888076224613]
+            },
+            {
+                text: '文字包围盒阴影颜色',
+                color: '#FF0400',
+                coordinate: [13.416897947618736, 52.52743782174562]
+            },
+            {
+                text: '文字包围盒阴影颜色',
+                color: '#0BB77B',
+                coordinate: [13.412811392491903, 52.53224306381]
+            },
+            {
+                text: '文字包围盒阴影颜色',
+                color: '#52D7EA',
+                coordinate: [13.402668494108525, 52.52924865475583]
+            },
+            {
+                text: '文字包围盒阴影颜色',
+                color: '#FF0400',
+                coordinate: [13.407842742744378, 52.5245372562911]
+            },
+            {
+                text: '文字包围盒阴影颜色',
+                color: '#0BB77B',
+                coordinate: [13.422923900758633, 52.52391982212063]
+            },
+            {
+                text: '文字包围盒阴影颜色',
+                color: '#fff',
+                coordinate: [13.421345604796329, 52.53421699462686]
+            }
+        ];
+        data.forEach(element => {
+            const style = {
+                x: width * Math.random(),
+                y: height * Math.random(),
+                text: element.text,
+                // width: 50,
+                height: 50,
+                textFill: element.color,
+                // scale fontSize 18*2
+                textFont: '36px Microsoft Yahei',
+                textBackgroundColor: '#2A2523',
+                textPadding: [10, 15],
+                textShadowColor: '#fff',
+                textShadowBlur: 2
+            };
+            const text = new zrender.Text({
+                style
+            });
+            zr.add(text);
+            const rect = getRect(text.getBoundingRect());
+            createZr(rect, style, function (image, rect) {
+                data[idx].image = image;
+                data[idx].rect = rect;
+                if (idx === data.length - 1) {
+                    addSprites();
+                }
+            });
+        });
+
+
+
+
+        function getRect(bound) {
+            const { width, height, x, y } = bound;
+            const w = Math.max(2, THREE.Math.ceilPowerOfTwo(width));
+            const h = Math.max(2, THREE.Math.ceilPowerOfTwo(height));
+            return {
+                width, height, w, h
+            };
+        }
+
+        function createZr(rect, style, callback) {
+            const { w, h, width, height } = rect;
+            let canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+
+            const zr = zrender.init(canvas, {
+                width: w,
+                height: h
+            });
+            const options = Object.assign({}, style);
+            options.x = (w / 2 - width / 2);
+            options.y = (h / 2 - height / 2);
+            const text = new zrender.Text({
+                style: options
+            });
+            zr.add(text);
+            setTimeout(() => {
+                idx++;
+                callback(canvas.toDataURL(), rect);
+                zr.dispose();
+                canvas = null;
+            }, 100);
+
+        }
+
+
+
+
+        var map = new maptalks.Map("map", {
+            center: [13.416935229170008, 52.529564137540376],
+            zoom: 15,
+            pitch: 70,
+            bearing: 180,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+
+        map.on('click', e => {
+            console.log(e.coordinate.toArray());
+        });
+
+
+
+
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true,
+            // animation: true
+        });
+
+
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+
+            // features to draw
+            var features = [];
+
+            buildings.forEach(function (b) {
+                features = features.concat(b.features);
+            });
+
+            var material = new THREE.MeshBasicMaterial({ color: '#3e35cf' });
+            var heightPerLevel = 10;
+            var polygons = features.map(f => {
+                const polygon = maptalks.GeoJSON.toGeometry(f);
+                var levels = f.properties.levels || 1;
+                polygon.setProperties({
+                    height: heightPerLevel * levels,
+                });
+                return polygon;
+            });
+            const extrudePolygons = threeLayer.toExtrudePolygons(polygons, { topColor: '#fff', interactive: false }, material);
+            threeLayer.addMesh(extrudePolygons);
+        };
+        threeLayer.addTo(map);
+
+
+        var textSprites = [];
+        const textureLoader = new THREE.TextureLoader();
+        function addSprites() {
+            data.forEach(d => {
+                const { coordinate, image, color, rect } = d;
+
+                const material = new THREE.SpriteMaterial({ map: textureLoader.load(image) });
+                material.needsUpdate = true;
+                const text = new TextSprite(coordinate, { altitude: 100, rect }, material, threeLayer);
+                const line = new Line(coordinate, { height: 100, interactive: false }, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.3 }), threeLayer);
+                textSprites.push(line, text);
+            });
+            threeLayer.addMesh(textSprites);
+            animation();
+        }
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer._renderer.clearCanvas();
+                threeLayer.renderScene();
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+        }
+
+
+        //default values
+        var OPTIONS = {
+            fontSize: 20,
+            altitude: 0,
+            color: '#fff',
+            text: 'hello',
+            weight: 0,
+            zoomFilter: false
+        };
+
+        /**
+         * custom component
+         * We can think of it as a point.
+         * */
+
+        class TextSprite extends maptalks.BaseObject {
+            constructor(coordinate, options, material, layer) {
+                options = maptalks.Util.extend({}, OPTIONS, options, { layer, coordinate });
+                super();
+                //Initialize internal configuration
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L135
+                this._initOptions(options);
+                const { altitude, rect } = options;
+                const { w, h } = rect;
+
+
+                //Initialize internal object3d
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L140
+                this._createGroup();
+                const textsprite = new THREE.Sprite(material);
+                textsprite.material.sizeAttenuation = false;
+                const scale = 0.01 / 10 / 3;
+                textsprite.scale.set(scale * w, scale * h, 1);
+                this.getObject3d().add(textsprite);
+
+                //set object3d position
+                const z = layer.distanceToVector3(altitude, altitude).x;
+                const position = layer.coordinateToVector3(coordinate, z);
+                this.getObject3d().position.copy(position);
+
+                this._vector = new THREE.Vector3();
+                this._rect = rect;
+            }
+
+            getTextRect() {
+                this.getPixel();
+                const { x, y } = this._pixel;
+                const { width, height } = this._rect;
+                return {
+                    minX: x - width / 4,
+                    minY: y - height / 4,
+                    maxX: x + width / 4,
+                    maxY: y + height / 4
+                }
+            }
+
+
+            getPixel() {
+                const size = this.getMap().getSize();
+                const camera = this.getLayer().getCamera();
+                const position = this.getObject3d().position;
+                this._vector.x = position.x;
+                this._vector.y = position.y;
+                this._vector.z = position.z;
+                this._pixel = simplepath.vector2Pixel(this._vector, size, camera);
+            }
+
+            identify(coordinate) {
+                const { minX, minY, maxX, maxY } = this.getTextRect();
+                const pixel = this.getMap().coordToContainerPoint(coordinate);
+                if (pixel.x >= minX && pixel.x <= maxX && pixel.y >= minY && pixel.y <= maxY) {
+                    return true;
+                }
+                return false;
+            }
+
+        }
+
+
+        var OPTIONS1 = {
+            altitude: 0,
+            height: 10
+        }
+
+
+        class Line extends maptalks.BaseObject {
+            constructor(coordinate, options, material, layer) {
+                options = maptalks.Util.extend({}, OPTIONS1, options, { layer, coordinate });
+                super();
+                //Initialize internal configuration
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L135
+                this._initOptions(options);
+                const { altitude, height } = options;
+                const h = layer.distanceToVector3(height, height).x;
+                const geometry = new THREE.BufferGeometry();
+                const positions = [0, 0, 0, 0, 0, h];
+
+                geometry.addAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+                //Initialize internal object3d
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L140
+                this._createLine(geometry, material);
+
+                //Initialize internal object3d
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L140
+
+
+                //set object3d position
+                const z = layer.distanceToVector3(altitude, altitude).x;
+                const position = layer.coordinateToVector3(coordinate, z);
+                this.getObject3d().position.copy(position);
+            }
+        }
+
+
+        var simplepath = {
+
+            positionsConvert: function (worldPoints, altitude = 0, layer) {
+                const vectors = [];
+                for (let i = 0, len = worldPoints.length; i < len; i += 3) {
+                    let x = worldPoints[i], y = worldPoints[i + 1], z = worldPoints[i + 2];
+                    if (altitude > 0) {
+                        z += layer.distanceToVector3(altitude, altitude).x;
+                    }
+                    vectors.push(new THREE.Vector3(x, y, z));
+                }
+                return vectors;
+            },
+
+            vectors2Pixel: function (worldPoints, size, camera, altitude = 0, layer) {
+                if (!(worldPoints[0] instanceof THREE.Vector3)) {
+                    worldPoints = simplepath.positionsConvert(worldPoints, altitude, layer);
+                }
+                const pixels = worldPoints.map(worldPoint => {
+                    return simplepath.vector2Pixel(worldPoint, size, camera);
+                })
+                return pixels;
+
+            },
+
+            vector2Pixel: function (world_vector, size, camera) {
+                const vector = world_vector.project(camera);
+                const halfWidth = size.width / 2;
+                const halfHeight = size.height / 2;
+                const result = {
+                    x: Math.round(vector.x * halfWidth + halfWidth),
+                    y: Math.round(-vector.y * halfHeight + halfHeight)
+                };
+                return result;
+            },
+
+        };
+
+
+
+
+
+
+    </script>
+</body>
+
+</html>
