@@ -76,6 +76,21 @@
                 text: '文字包围盒阴影颜色',
                 color: '#fff',
                 coordinate: [13.421345604796329, 52.53421699462686]
+            },
+            {
+                text: '文字包围盒阴影颜色',
+                color: 'yellow',
+                coordinate: [13.405719908601782, 52.53462849121476]
+            },
+            {
+                text: 'hello maptalks.three',
+                color: 'yellow',
+                coordinate: [13.417148141150506, 52.535554546061206]
+            },
+            {
+                text: ' hello\n maptalks',
+                color: '#fff',
+                coordinate: [13.409482609364204, 52.52883718186931]
             }
         ];
         data.forEach(element => {
@@ -217,8 +232,9 @@
 
                 const material = new THREE.SpriteMaterial({ map: textureLoader.load(image) });
                 material.needsUpdate = true;
-                const text = new TextSprite(coordinate, { altitude: 100, rect }, material, threeLayer);
-                const line = new Line(coordinate, { height: 100, interactive: false }, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.3 }), threeLayer);
+                const alt = Math.random() * 50 + 50;
+                const text = new TextSprite(coordinate, { altitude: alt, rect }, material, threeLayer);
+                const line = new Line(coordinate, { height: alt, interactive: false }, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.3 }), threeLayer);
                 textSprites.push(line, text);
             });
             threeLayer.addMesh(textSprites);
