@@ -4,6 +4,7 @@ import BaseObject from './BaseObject';
 import { getGeometry, initVertexColors, mergeBarGeometry } from './util/BarUtil';
 import Bar from './Bar';
 import MergedMixin from './MergedMixin';
+import { addAttribute } from './util/ThreeAdaptUtil';
 
 
 const OPTIONS = {
@@ -51,12 +52,9 @@ class Bars extends MergedMixin(BaseObject) {
             const bar = new Bar(coordinate, opts, material, layer);
             bars.push(bar);
 
-            const geometry = new THREE.Geometry();
-            geometry.fromBufferGeometry(buffGeom);
-            const faceLen = geometry.faces.length;
+            const faceLen = buffGeom.index.count / 3;
             faceMap[i] = [faceIndex + 1, faceIndex + faceLen];
             faceIndex += faceLen;
-            geometry.dispose();
 
             const psCount = buffGeom.attributes.position.count,
                 //  colorCount = buffGeom.attributes.color.count,
@@ -102,8 +100,10 @@ class Bars extends MergedMixin(BaseObject) {
         this.faceIndex = null;
         this._geometryCache = geometry.clone();
         this.isHide = false;
-
+        this._colorMap = {};
         this._initBaseObjectsEvent(bars);
+        this._setPickObject3d();
+        this._init();
     }
 
 
@@ -121,16 +121,50 @@ class Bars extends MergedMixin(BaseObject) {
     // eslint-disable-next-line consistent-return
     _getIndex(faceIndex) {
         if (faceIndex == null) {
-            faceIndex = this.faceIndex;
+            faceIndex = this.faceIndex || this.index;
         }
-        if (faceIndex != null) {
-            for (let i = 0, len = this._faceMap.length; i < len; i++) {
-                const [start, end] = this._faceMap[i];
-                if (start <= faceIndex && faceIndex < end) {
-                    return i;
-                }
+        return faceIndex;
+    }
+
+    _init() {
+        const pick = this.getLayer().getPick();
+        this.on('add', () => {
+            pick.add(this.pickObject3d);
+        });
+        this.on('remove', () => {
+            pick.remove(this.pickObject3d);
+        });
+    }
+
+    _setPickObject3d() {
+        const geometry = this.getObject3d().geometry.clone();
+        const pick = this.getLayer().getPick();
+        const { _geometriesAttributes } = this;
+        const colors = [];
+        for (let i = 0, len = _geometriesAttributes.length; i < len; i++) {
+            const color = pick.getColor();
+            const colorIndex = color.getHex();
+            this._colorMap[colorIndex] = i;
+            const { count } = _geometriesAttributes[i].position;
+            this._datas[i].colorIndex = colorIndex;
+            for (let j = 0; j < count; j++) {
+                colors.push(color.r, color.g, color.b);
             }
         }
+        addAttribute(geometry, 'color', new THREE.Float32BufferAttribute(colors, 3, true));
+        const material = new THREE.MeshBasicMaterial();
+        material.vertexColors = THREE.VertexColors;
+        const color = pick.getColor();
+        const colorIndex = color.getHex();
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.copy(this.getObject3d().position);
+        mesh._colorIndex = colorIndex;
+        this.setPickObject3d(mesh);
+    }
+
+    // eslint-disable-next-line no-unused-vars
+    identify(coordinate) {
+        return this.picked;
     }
 }
 
