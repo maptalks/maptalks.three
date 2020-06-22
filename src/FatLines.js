@@ -8,6 +8,7 @@ import FatLine from './FatLine';
 import { getGeoJSONCenter, isGeoJSONLine } from './util/GeoJSONUtil';
 import LineGeometry from './util/fatline/LineGeometry';
 import Line2 from './util/fatline/Line2';
+import LineMaterial from './util/fatline/LineMaterial';
 
 const OPTIONS = {
     altitude: 0,
@@ -136,7 +137,7 @@ class FatLines extends MergedMixin(BaseObject) {
             }
         }
         geometry.setColors(colors);
-        const material = new THREE.LineMaterial({
+        const material = new LineMaterial({
             // color: color.getStyle(),
             // side: THREE.BackSide,
             color: '#fff',

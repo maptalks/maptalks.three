@@ -26,7 +26,8 @@ import FatLines from './src/FatLines';
 const options = {
     'renderer': 'gl',
     'doubleBuffer': false,
-    'glOptions': null
+    'glOptions': null,
+    'geometryEvents': true
 };
 
 const RADIAN = Math.PI / 180;
@@ -445,7 +446,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
     renderScene() {
         const renderer = this._getRenderer();
         if (renderer) {
-            return renderer.renderScene();
+            renderer.clearCanvas();
+            renderer.renderScene();
         }
         return this;
     }
@@ -613,6 +615,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 return baseObject;
             });
         }
+        this.renderPickScene();
         if (hasidentifyChildren.length) {
             hasidentifyChildren.forEach(baseObject => {
                 // baseObject identify
@@ -653,13 +656,23 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * @param {*} e
      */
     _identifyBaseObjectEvents(e) {
+        if (!this.options.geometryEvents) {
+            return this;
+        }
         const map = this.map || this.getMap();
         //When map interaction, do not carry out mouse movement detection, which can have better performance
         // if (map.isInteracting() && e.type === 'mousemove') {
         //     return this;
         // }
-        map.resetCursor('default');
         const { type, coordinate } = e;
+        const now = maptalks.Util.now();
+        if (this._mousemoveTimeOut && type === 'mousemove') {
+            if (now - this._mousemoveTimeOut < 16) {
+                return this;
+            }
+        }
+        this._mousemoveTimeOut = now;
+        map.resetCursor('default');
         const baseObjects = this.identify(coordinate);
         const scene = this.getScene();
         if (baseObjects.length === 0 && scene) {

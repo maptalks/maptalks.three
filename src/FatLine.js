@@ -5,6 +5,7 @@ import { getLinePosition } from './util/LineUtil';
 import { isGeoJSON, getGeoJSONCenter } from './util/GeoJSONUtil';
 import LineGeometry from './util/fatline/LineGeometry';
 import Line2 from './util/fatline/Line2';
+import LineMaterial from './util/fatline/LineMaterial';
 
 const OPTIONS = {
     altitude: 0
@@ -65,7 +66,7 @@ class FatLine extends BaseObject {
             colors.push(color.r, color.g, color.b);
         }
         geometry.setColors(colors);
-        const material = new THREE.LineMaterial({
+        const material = new LineMaterial({
             color: '#fff',
             // side: THREE.BackSide,
             linewidth,
