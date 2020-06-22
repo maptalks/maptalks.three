@@ -9,7 +9,7 @@
     <script type="text/javascript" src="./js/maptalks.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.109.0/build/three.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks.three/dist/maptalks.three.js"></script>
-    <!-- <script type="text/javascript" src="./../dist/maptalks.three.js"></script> -->
+    <!-- <script type="text/javascript" src="./https://cdn.jsdelivr.net/npm/maptalks.three/dist/maptalks.three.js"></script> -->
     <script type="text/javascript"
         src="https://cdn.jsdelivr.net/npm/three@0.109.0/examples/js/libs/stats.min.js"></script>
     <style>
@@ -146,7 +146,6 @@
             if ((!map.isMoving()) && (!map.isZooming()) && (!map.isRotating()) && (!params.rotate)) {
                 threeLayer._needsUpdate = !threeLayer._needsUpdate;
                 if (threeLayer._needsUpdate) {
-                    threeLayer._renderer.clearCanvas();
                     threeLayer.renderScene();
                 }
             }

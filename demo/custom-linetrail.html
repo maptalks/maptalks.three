@@ -136,11 +136,9 @@
             if (!map.isInteracting()) {
                 threeLayer._needsUpdate = !threeLayer._needsUpdate;
                 if (threeLayer._needsUpdate) {
-                    threeLayer._renderer.clearCanvas();
                     threeLayer.renderScene();
                 }
             } else {
-                threeLayer._renderer.clearCanvas();
                 threeLayer.renderScene();
             }
             stats.update();
