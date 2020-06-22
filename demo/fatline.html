@@ -13,7 +13,7 @@
         src="https://cdn.jsdelivr.net/npm/three@0.104.0/examples/js/lines/LineMaterial.js"></script>
     <!---->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lz-string@1.4.4/libs/lz-string.min.js"></script>
-    <!-- <script type="text/javascript" src="./../dist/maptalks.three.js"></script> -->
+    <!-- <script type="text/javascript" src="./https://cdn.jsdelivr.net/npm/maptalks.three/dist/maptalks.three.js"></script> -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks.three/dist/maptalks.three.js"></script>
     <script type="text/javascript" src="./js/geoutil.js"></script>
     <script type="text/javascript"
@@ -169,9 +169,7 @@
             // layer animation support Skipping frames
             threeLayer._needsUpdate = !threeLayer._needsUpdate;
             if (threeLayer._needsUpdate) {
-                threeLayer._renderer.clearCanvas();
                 threeLayer.renderScene();
-                threeLayer.renderPickScene();
             }
             stats.update();
             requestAnimationFrame(animation);
