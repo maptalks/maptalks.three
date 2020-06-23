@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Customize your own components</title>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.97.0/build/three.min.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.97.0/examples/js/libs/stats.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks.three/dist/maptalks.three.js"></script>
+    <script type="text/javascript" src="js/geoutil.js"></script>
+    <script type="text/javascript" src="./js/THREE.MeshLine.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            center: [113.93258, 22.51829],
+            zoom: 15,
+            pitch: 70,
+            bearing: 180,
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'http://mt0.google.cn/vt/lyrs=m&x={x}&y={y}&z={z}',
+                cssFilter: 'sepia(100%) invert(90%)'
+            })
+        });
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true,
+            // animation: true
+        });
+        var stats;
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+            camera.add(new THREE.SpotLight(0xffffff, 0.6, 0, Math.PI));
+
+            loadBuilding();
+            loadRoad('./data/nanshan-road1.geojson', './data/nanshan-road1.png');
+            loadRoad('./data/nanshan-road2.geojson', './data/nanshan-road2.png');
+            loadRoad('./data/nanshan-road3.geojson', './data/nanshan-road3.png');
+            animation();
+        };
+        threeLayer.addTo(map);
+
+        function loadRoad(geojsonURL, textureURL) {
+            fetch(geojsonURL).then(function (res) {
+                return res.text();
+            }).then(function (text) {
+                return JSON.parse(text);
+            }).then(function (geojson) {
+                let texture = new THREE.TextureLoader().load(textureURL);
+                texture.anisotropy = 16;
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.wrapT = THREE.RepeatWrapping;
+                let camera = threeLayer.getCamera();
+                let material = new MeshLineMaterial({
+                    map: texture,
+                    useMap: true,
+                    lineWidth: 13,
+                    sizeAttenuation: false,
+                    transparent: true,
+                    near: camera.near,
+                    far: camera.far
+                });
+                let multiLineStrings = maptalks.GeoJSON.toGeometry(geojson);
+                for (let multiLineString of multiLineStrings) {
+                    let lines = multiLineString._geometries.map(lineString => {
+                        return new SpriteLine(lineString, { altitude: 0 }, material, threeLayer);
+                    });
+                    threeLayer.addMesh(lines);
+                }
+            });
+        }
+
+        function loadBuilding() {
+            fetch('./data/nanshan-building.geojson').then(function (res) {
+                return res.text();
+            }).then(function (text) {
+                return JSON.parse(text).features;
+            }).then(function (features) {
+                let extrudeFactor = 1;
+                for (let feature of features) {
+                    let height = feature.properties.height || 1;
+                    let material = new THREE.MeshPhongMaterial({
+                        color: getColor(height)
+                    });
+                    let extrudePolygon = threeLayer.toExtrudePolygon(maptalks.GeoJSON.toGeometry(feature), {
+                        interactive: false,
+                        height: extrudeFactor * height,
+                        topColor: '#bbb'
+                    }, material);
+                    threeLayer.addMesh(extrudePolygon);
+                }
+            });
+        }
+
+        function getColor(height) {
+            let rgb;
+            if (height < 61.4) {
+                rgb = '112,112,123';
+            }
+            else if (height >= 61.4 && height < 104.8) {
+                rgb = '135,139,155';
+            }
+            else if (height >= 104.8 && height < 148.2) {
+                rgb = '231,241,245';
+            }
+            else if (height >= 148.2 && height < 236) {
+                rgb = '162,169,183';
+            }
+            else {
+                rgb = '1,0,0';
+            }
+            return `rgb(${rgb})`;
+        }
+
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer.renderScene();
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+        }
+
+
+
+
+
+        var OPTIONS = {
+            altitude: 0,
+            speed: 0.04
+        };
+
+        class SpriteLine extends maptalks.BaseObject {
+            constructor(lineString, options, material, layer) {
+                super();
+                options.offset = material.uniforms.offset.value;
+                options.clock = new THREE.Clock();
+                //geoutil.js getLinePosition
+                const { positions } = getLinePosition(lineString, layer);
+                const positions1 = _getLinePosition(lineString, layer).positions;
+
+                options = maptalks.Util.extend({}, OPTIONS, options, { layer, lineString, positions: positions1 });
+                this._initOptions(options);
+
+                const geometry = new THREE.Geometry();
+                for (let i = 0; i < positions.length; i += 3) {
+                    geometry.vertices.push(new THREE.Vector3(positions[i], positions[i + 1], positions[i + 2]));
+                }
+                const meshLine = new MeshLine();
+                meshLine.setGeometry(geometry);
+
+                const map = layer.getMap();
+                const size = map.getSize();
+                const width = size.width;
+                const height = size.height;
+                material.uniforms.resolution.value.set(width, height);
+
+                const line = new THREE.Mesh(meshLine.geometry, material);
+                this._createGroup();
+                this.getObject3d().add(line);
+                const { altitude } = options;
+                const z = layer.distanceToVector3(altitude, altitude).x;
+                const center = lineString.getCenter();
+                const v = layer.coordinateToVector3(center, z);
+                this.getObject3d().position.copy(v);
+            }
+            _animation() {
+                this.options.offset.x -= this.options.speed * this.options.clock.getDelta();
+            }
+        }
+    </script>
+</body>
+
+</html>
