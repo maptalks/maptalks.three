@@ -3,6 +3,7 @@
 
 <head>
     <title>Customize your own components</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
     <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
     <script type="text/javascript" src="./js/maptalks.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.97.0/build/three.min.js"></script>
@@ -64,9 +65,11 @@
             loadRoad('./data/nanshan-road2.geojson', './data/nanshan-road2.png');
             loadRoad('./data/nanshan-road3.geojson', './data/nanshan-road3.png');
             animation();
+            initGui();
         };
         threeLayer.addTo(map);
 
+        var meshes = [];
         function loadRoad(geojsonURL, textureURL) {
             fetch(geojsonURL).then(function (res) {
                 return res.text();
@@ -93,6 +96,7 @@
                         return new SpriteLine(lineString, { altitude: 0 }, material, threeLayer);
                     });
                     threeLayer.addMesh(lines);
+                    meshes = meshes.concat(lines);
                 }
             });
         }
@@ -150,13 +154,41 @@
             requestAnimationFrame(animation);
         }
 
+        function initGui() {
+            var params = {
+                add: true,
+                altitude: 0,
+                speed: OPTIONS.speed
+            };
+
+            var gui = new dat.GUI();
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    threeLayer.addMesh(meshes);
+                } else {
+                    threeLayer.removeMesh(meshes);
+                }
+            });
+            gui.add(params, 'speed', 0.001, 0.1, 0.001).onChange(function () {
+                meshes.forEach(function (mesh) {
+                    mesh.options.speed = params.speed;
+                });
+            });
+
+            gui.add(params, 'altitude', 0, 200).onChange(function () {
+                meshes.forEach(function (mesh) {
+                    mesh.setAltitude(params.altitude);
+                });
+            });
+        }
+
 
 
 
 
         var OPTIONS = {
             altitude: 0,
-            speed: 0.04
+            speed: 0.01
         };
 
         class SpriteLine extends maptalks.BaseObject {
