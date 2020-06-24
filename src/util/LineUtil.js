@@ -69,7 +69,8 @@ export function getExtrudeLineGeometry(lineString, lineWidth = 1, depth = 1, lay
     const {
         indices,
         position,
-        normal
+        normal,
+        uv
     } = extrudePolyline([ps], {
         lineWidth,
         depth
@@ -77,6 +78,7 @@ export function getExtrudeLineGeometry(lineString, lineWidth = 1, depth = 1, lay
     const geometry = new THREE.BufferGeometry();
     addAttribute(geometry, 'position', new THREE.Float32BufferAttribute(position, 3));
     addAttribute(geometry, 'normal', new THREE.Float32BufferAttribute(normal, 3));
+    addAttribute(geometry, 'uv', new THREE.Float32BufferAttribute(uv, 2));
     geometry.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
     return geometry;
 }
@@ -142,7 +144,8 @@ export function getExtrudeLineParams(lineString, lineWidth = 1, depth = 1, layer
     const {
         indices,
         position,
-        normal
+        normal,
+        uv
     } = extrudePolyline([ps], {
         lineWidth: lineWidth,
         depth: depth
@@ -150,6 +153,7 @@ export function getExtrudeLineParams(lineString, lineWidth = 1, depth = 1, layer
     return {
         position: position,
         normal: normal,
-        indices: indices
+        indices: indices,
+        uv
     };
 }
