@@ -62,6 +62,8 @@ class BaseObject extends maptalks.Eventable(Base) {
         this.infoWindow = null;
         this._mouseover = false;
         this._showPlayer = null;
+        this._visible = true;
+        this._zoomVisible = true;
         this._vt = null;
         this.picked = false;
         this.pickObject3d = null;
@@ -189,8 +191,12 @@ class BaseObject extends maptalks.Eventable(Base) {
 
 
     show() {
-        this.getObject3d().visible = true;
-        this._fire('show');
+        //  in zoom range
+        if (this._zoomVisible) {
+            this.getObject3d().visible = true;
+            this._fire('show');
+        }
+        this._visible = true;
         return this;
     }
 
@@ -198,6 +204,7 @@ class BaseObject extends maptalks.Eventable(Base) {
     hide() {
         this.getObject3d().visible = false;
         this._fire('hide');
+        this._visible = false;
         return this;
     }
 
