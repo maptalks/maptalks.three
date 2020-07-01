@@ -766,10 +766,16 @@ class ThreeLayer extends maptalks.CanvasLayer {
             const parent = mesh.__parent;
             if (parent && parent.getOptions) {
                 const minZoom = parent.getMinZoom(), maxZoom = parent.getMaxZoom();
-                if ((zoom < minZoom || zoom > maxZoom) && parent.isVisible()) {
-                    parent.hide();
-                } else if (minZoom <= zoom && zoom <= maxZoom && (!parent.isVisible())) {
-                    parent.show();
+                if (zoom < minZoom || zoom > maxZoom) {
+                    if (parent.isVisible()) {
+                        parent.getObject3d().visible = false;
+                    }
+                    parent._zoomVisible = false;
+                } else if (minZoom <= zoom && zoom <= maxZoom) {
+                    if (parent._visible) {
+                        parent.getObject3d().visible = true;
+                    }
+                    parent._zoomVisible = true;
                 }
             }
         });
