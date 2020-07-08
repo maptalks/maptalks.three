@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>extrudepolygon-countries</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.97.0/build/three.min.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.97.0/examples/js/libs/stats.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks.three/dist/maptalks.three.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            center: [0, 0],
+            zoom: 2.478337137999542,
+            pitch: 42.79999999999998,
+            bearing: 0.9000000000005457,
+            // bearing: 180,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer("tile", {
+                urlTemplate:
+                    "https://{s}.tiles.mapbox.com/v3/diccfish.map-fwz7rlzv/{z}/{x}/{y}.png",
+                subdomains: ["a", "b", "c", "d"],
+                attribution:
+                    '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer("t", {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+            // animation: true
+        });
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById("map").appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+
+            // camera.add(new THREE.PointLight(0xffffff, 1));
+            fetch(
+                "https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_110m_admin_0_countries_lakes.geojson"
+            ).then((res) => res.json())
+                .then((geojson) => {
+                    addExtrudePolygon(geojson);
+                });
+        };
+        threeLayer.addTo(map);
+
+        var extrudepolygons = [];
+        const material = new THREE.MeshPhongMaterial({});
+        const lineMaterial = new THREE.LineBasicMaterial({ color: "#000" });
+
+        function addExtrudePolygon(geojson) {
+            let idx = 0;
+            geojson.features.slice(0, Infinity).forEach((f) => {
+                const lineStrings = [];
+                const geometry = f.geometry;
+                if (geometry.type === "MultiPolygon") {
+                    geometry.coordinates.forEach((coordinates) => {
+                        lineStrings.push(new maptalks.LineString(coordinates[0]));
+                    });
+                } else {
+                    lineStrings.push(new maptalks.LineString(geometry.coordinates[0]));
+                }
+                const polygon = threeLayer.toExtrudePolygon(
+                    f,
+                    { height: 1000000, interactive: false, topColor: "#fff" },
+                    material
+                );
+                extrudepolygons.push(polygon);
+                lineStrings.forEach((lineString) => {
+                    const line = threeLayer.toLine(
+                        lineString,
+                        { altitude: 1000000, interactive: false },
+                        lineMaterial
+                    );
+                    extrudepolygons.push(line);
+                });
+                idx++;
+            });
+
+            threeLayer.addMesh(extrudepolygons);
+
+            animation();
+        }
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer.renderScene();
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+        }
+
+
+
+    </script>
+</body>
+
+</html>
