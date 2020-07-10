@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import LineSegmentsGeometry from './LineSegmentsGeometry';
 import { addAttribute } from '../ThreeAdaptUtil';
+import LineMaterial from './LineMaterial';
 
 const LineSegments2 = function (geometry, material) {
 
@@ -13,7 +14,7 @@ const LineSegments2 = function (geometry, material) {
     this.type = 'LineSegments2';
 
     this.geometry = geometry !== undefined ? geometry : new LineSegmentsGeometry();
-    this.material = material !== undefined ? material : new THREE.LineMaterial({ color: Math.random() * 0xffffff });
+    this.material = material !== undefined ? material : new LineMaterial({ color: Math.random() * 0xffffff });
 
 };
 
