@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>bar-animation</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.97.0/build/three.min.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.97.0/examples/js/libs/stats.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks.three/dist/maptalks.three.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/animejs@3.0.0/lib/anime.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            center: [120.74088044043242, 30.48913000018203],
+            zoom: 9.478337137999542,
+            pitch: 58.800000000000026,
+            bearing: -36.29999999999973,
+            // bearing: 180,
+
+            centerCross: true,
+            doubleClickZoom: false
+            // baseLayer: new maptalks.TileLayer('tile', {
+            //     urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+            //     subdomains: ['a', 'b', 'c', 'd'],
+            //     attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            // })
+        });
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer("t", {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+            // animation: true
+        });
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById("map").appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+
+            // camera.add(new THREE.PointLight(0xffffff, 1));
+
+            addBars(scene);
+        };
+        threeLayer.addTo(map);
+
+        var bars = [];
+        const vertexShader = `
+            varying vec2 vUv;
+            void main()	{
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+            }
+            `;
+
+        const fragmentShader = `
+            #extension GL_OES_standard_derivatives : enable
+
+            varying vec2 vUv;
+            uniform float thickness;
+
+            float edgeFactor(vec2 p){
+                vec2 grid = abs(fract(p - 0.5) - 0.5) / fwidth(p) / thickness;
+                return min(grid.x, grid.y);
+            }
+
+            void main() {
+
+                float a = edgeFactor(vUv);
+
+                vec3 c = mix(vec3(1), vec3(0), a);
+
+                gl_FragColor = vec4(c, 1.0);
+            }
+            `;
+
+        const material = new THREE.ShaderMaterial({
+            uniforms: {
+                thickness: {
+                    value: 1.5
+                }
+            },
+            vertexShader,
+            fragmentShader
+        });
+
+        function addBars(scene) {
+            const minLng = 120,
+                maxLng = 121,
+                minLat = 30,
+                maxLat = 30.9;
+            const lnglats = [];
+            const NUM = 25;
+            const rows = 24,
+                cols = 24;
+            const app = (window.app = new App(NUM, NUM));
+            for (let i = 0; i <= cols; i++) {
+                const lng = ((maxLng - minLng) / cols) * i + minLng;
+                for (let j = 0; j <= rows; j++) {
+                    const lat = ((maxLat - minLat) / rows) * j + minLat;
+                    const bar = threeLayer.toBar([lng, lat], { height: 40000, radius: 2000, radialSegments: 4, interactive: false }, material);
+                    bar.getObject3d().rotation.z = Math.PI / 4;
+                    bars.push(bar);
+                    app.staggerArray.push({
+                        altitude: 0
+                    });
+                }
+            }
+            threeLayer.addMesh(bars);
+            app.init();
+            animation();
+        }
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer.renderScene();
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+        }
+
+        class App {
+            constructor(rows, cols) {
+                this.rows = rows;
+                this.cols = cols;
+
+                this.randFrom = ["first", "last", "center"];
+
+                this.easing = [
+                    "linear",
+                    "easeInOutQuad",
+                    "easeInOutCubic",
+                    "easeInOutQuart",
+                    "easeInOutQuint",
+                    "easeInOutSine",
+                    "easeInOutExpo",
+                    "easeInOutCirc",
+                    "easeInOutBack",
+                    "cubicBezier(.5, .05, .1, .3)",
+                    "spring(1, 80, 10, 0)",
+                    "steps(10)"
+                ];
+                this.staggerArray = [];
+            }
+
+            init() {
+                this.beginAnimationLoop();
+            }
+            beginAnimationLoop() {
+                // random from array
+                let randFrom = this.randFrom[
+                    Math.floor(Math.random() * this.randFrom.length)
+                ];
+                let easingString = this.easing[
+                    Math.floor(Math.random() * this.easing.length)
+                ];
+
+                anime({
+                    targets: this.staggerArray,
+                    altitude: [
+                        { value: 100000 * 0.25, duration: 500 },
+                        { value: -(0 * 0.25), duration: 2000 }
+                    ],
+                    delay: anime.stagger(200, {
+                        grid: [this.rows, this.cols],
+                        from: randFrom
+                    }),
+                    easing: easingString,
+                    complete: (anim) => {
+                        this.beginAnimationLoop();
+                    },
+                    update: () => {
+                        for (let i = 0, len = bars.length; i < len; i++) {
+                            bars[i].setAltitude(this.staggerArray[i].altitude);
+                        }
+                    }
+                });
+            }
+        }
+
+
+    </script>
+</body>
+
+</html>

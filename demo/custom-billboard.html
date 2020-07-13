@@ -40,7 +40,6 @@
         const zr = zrender.init(document.getElementById('zr'), {});
         const width = zr.getWidth(), height = zr.getHeight();
 
-        let idx = -1;
         const data = [
             {
                 text: '文字包围盒阴影颜色',
@@ -93,34 +92,35 @@
                 coordinate: [13.409482609364204, 52.52883718186931]
             }
         ];
-        data.forEach(element => {
-            const style = {
-                x: width * Math.random(),
-                y: height * Math.random(),
-                text: element.text,
-                // width: 50,
-                height: 50,
-                textFill: element.color,
-                // scale fontSize 18*2
-                textFont: '36px Microsoft Yahei',
-                textBackgroundColor: '#2A2523',
-                textPadding: [10, 15],
-                textShadowColor: '#fff',
-                textShadowBlur: 2
-            };
-            const text = new zrender.Text({
-                style
+        const list = [];
+        function initData() {
+            data.forEach(element => {
+                const style = {
+                    x: width * Math.random(),
+                    y: height * Math.random(),
+                    text: element.text,
+                    // width: 50,
+                    height: 50,
+                    textFill: element.color,
+                    // scale fontSize 18*2
+                    textFont: '36px Microsoft Yahei',
+                    textBackgroundColor: '#2A2523',
+                    textPadding: [10, 15],
+                    textShadowColor: '#fff',
+                    textShadowBlur: 2
+                };
+                const text = new zrender.Text({
+                    style
+                });
+                zr.add(text);
+                const rect = getRect(text.getBoundingRect());
+                createZr(element, rect, style, function () {
+                    if (list.length === data.length) {
+                        addSprites();
+                    }
+                });
             });
-            zr.add(text);
-            const rect = getRect(text.getBoundingRect());
-            createZr(rect, style, function (image, rect) {
-                data[idx].image = image;
-                data[idx].rect = rect;
-                if (idx === data.length - 1) {
-                    addSprites();
-                }
-            });
-        });
+        }
 
 
 
@@ -134,7 +134,7 @@
             };
         }
 
-        function createZr(rect, style, callback) {
+        function createZr(d, rect, style, callback) {
             const { w, h, width, height } = rect;
             let canvas = document.createElement('canvas');
             canvas.width = w;
@@ -151,12 +151,14 @@
                 style: options
             });
             zr.add(text);
-            setTimeout(() => {
-                idx++;
-                callback(canvas.toDataURL(), rect);
+            zr.on('rendered', () => {
+                d.image = canvas.toDataURL();
+                d.rect = rect;
+                list.push(d);
+                callback();
                 zr.dispose();
                 canvas = null;
-            }, 100);
+            })
 
         }
 
@@ -220,6 +222,7 @@
             });
             const extrudePolygons = threeLayer.toExtrudePolygons(polygons, { topColor: '#fff', interactive: false }, material);
             threeLayer.addMesh(extrudePolygons);
+            initData();
         };
         threeLayer.addTo(map);
 
@@ -227,7 +230,7 @@
         var textSprites = [];
         const textureLoader = new THREE.TextureLoader();
         function addSprites() {
-            data.forEach(d => {
+            list.forEach(d => {
                 const { coordinate, image, color, rect } = d;
 
                 const material = new THREE.SpriteMaterial({ map: textureLoader.load(image) });

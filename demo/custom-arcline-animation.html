@@ -60,7 +60,6 @@
             scene.add(new THREE.AmbientLight(0xffffff, 0.6));
             camera.add(new THREE.SpotLight(0xffffff, 0.6, 0, Math.PI));
 
-            loadBuilding();
             loadRoad('./data/nanshan-road1.geojson', './data/nanshan-road1.png');
             loadRoad('./data/nanshan-road2.geojson', './data/nanshan-road2.png');
             loadRoad('./data/nanshan-road3.geojson', './data/nanshan-road3.png');
@@ -76,12 +75,12 @@
             }).then(function (text) {
                 return JSON.parse(text);
             }).then(function (geojson) {
-                let texture = new THREE.TextureLoader().load(textureURL);
+                const texture = new THREE.TextureLoader().load(textureURL);
                 texture.anisotropy = 16;
                 texture.wrapS = THREE.RepeatWrapping;
                 texture.wrapT = THREE.RepeatWrapping;
-                let camera = threeLayer.getCamera();
-                let material = new MeshLineMaterial({
+                const camera = threeLayer.getCamera();
+                const material = new MeshLineMaterial({
                     map: texture,
                     useMap: true,
                     lineWidth: 13,
@@ -90,59 +89,20 @@
                     near: camera.near,
                     far: camera.far
                 });
-                let multiLineStrings = maptalks.GeoJSON.toGeometry(geojson);
-                for (let multiLineString of multiLineStrings) {
-                    let lines = multiLineString._geometries.map(lineString => {
-                        return new SpriteLine(lineString, { altitude: 0 }, material, threeLayer);
+                const multiLineStrings = maptalks.GeoJSON.toGeometry(geojson);
+                for (const multiLineString of multiLineStrings) {
+                    const lines = multiLineString._geometries.filter(lineString => {
+                        const len = lineLength(lineString);
+                        return len > 800;
+                    }).map(lineString => {
+                        const len = lineLength(lineString)
+                        return new ArcLine(lineString, { altitude: 0, height: len / 3, speed: len / 100000 }, material, threeLayer);
                     });
                     threeLayer.addMesh(lines);
                     meshes = meshes.concat(lines);
                 }
             });
         }
-
-        function loadBuilding() {
-            fetch('./data/nanshan-building.geojson').then(function (res) {
-                return res.text();
-            }).then(function (text) {
-                return JSON.parse(text).features;
-            }).then(function (features) {
-                let extrudeFactor = 1;
-                for (let feature of features) {
-                    let height = feature.properties.height || 1;
-                    let material = new THREE.MeshPhongMaterial({
-                        color: getColor(height)
-                    });
-                    let extrudePolygon = threeLayer.toExtrudePolygon(maptalks.GeoJSON.toGeometry(feature), {
-                        interactive: false,
-                        height: extrudeFactor * height,
-                        topColor: '#bbb'
-                    }, material);
-                    threeLayer.addMesh(extrudePolygon);
-                }
-            });
-        }
-
-        function getColor(height) {
-            let rgb;
-            if (height < 61.4) {
-                rgb = '112,112,123';
-            }
-            else if (height >= 61.4 && height < 104.8) {
-                rgb = '135,139,155';
-            }
-            else if (height >= 104.8 && height < 148.2) {
-                rgb = '231,241,245';
-            }
-            else if (height >= 148.2 && height < 236) {
-                rgb = '162,169,183';
-            }
-            else {
-                rgb = '1,0,0';
-            }
-            return `rgb(${rgb})`;
-        }
-
 
         function animation() {
             // layer animation support Skipping frames
@@ -169,11 +129,11 @@
                     threeLayer.removeMesh(meshes);
                 }
             });
-            gui.add(params, 'speed', 0.001, 0.1, 0.001).onChange(function () {
-                meshes.forEach(function (mesh) {
-                    mesh.options.speed = params.speed;
-                });
-            });
+            // gui.add(params, 'speed', 0.001, 0.1, 0.001).onChange(function () {
+            //     meshes.forEach(function (mesh) {
+            //         mesh.options.speed = params.speed;
+            //     });
+            // });
 
             gui.add(params, 'altitude', 0, 200).onChange(function () {
                 meshes.forEach(function (mesh) {
@@ -188,38 +148,35 @@
 
         var OPTIONS = {
             altitude: 0,
-            speed: 0.01
+            speed: 0.01,
+            height: 100
         };
 
-        class SpriteLine extends maptalks.BaseObject {
+        class ArcLine extends maptalks.BaseObject {
             constructor(lineString, options, material, layer) {
                 super();
                 options.offset = material.uniforms.offset.value;
                 options.clock = new THREE.Clock();
                 //geoutil.js getLinePosition
-                const { positions } = getLinePosition(lineString, layer);
-                const positions1 = _getLinePosition(lineString, layer).positions;
-
-                options = maptalks.Util.extend({}, OPTIONS, options, { layer, lineString, positions: positions1 });
+                options = maptalks.Util.extend({}, OPTIONS, options, { layer, lineString });
                 this._initOptions(options);
 
+                const { altitude, height } = options;
+                const points = getArcPoints(lineString, layer.distanceToVector3(height, height).x, layer);
                 const geometry = new THREE.Geometry();
-                for (let i = 0; i < positions.length; i += 3) {
-                    geometry.vertices.push(new THREE.Vector3(positions[i], positions[i + 1], positions[i + 2]));
-                }
+                geometry.vertices = points;
                 const meshLine = new MeshLine();
                 meshLine.setGeometry(geometry);
 
                 const map = layer.getMap();
                 const size = map.getSize();
-                const width = size.width;
-                const height = size.height;
-                material.uniforms.resolution.value.set(width, height);
+
+                material.uniforms.resolution.value.set(size.width, size.height);
 
                 const line = new THREE.Mesh(meshLine.geometry, material);
                 this._createGroup();
                 this.getObject3d().add(line);
-                const { altitude } = options;
+
                 const z = layer.distanceToVector3(altitude, altitude).x;
                 const center = lineString.getCenter();
                 const v = layer.coordinateToVector3(center, z);
@@ -228,6 +185,30 @@
             _animation() {
                 this.options.offset.x -= this.options.speed * this.options.clock.getDelta();
             }
+        }
+
+        function getArcPoints(lineString, height, layer) {
+            const lnglats = [];
+            if (Array.isArray(lineString)) {
+                lnglats.push(lineString[0], lineString[lineString.length - 1]);
+            } else if (lineString instanceof maptalks.LineString) {
+                const coordinates = lineString.getCoordinates();
+                lnglats.push(coordinates[0], coordinates[coordinates.length - 1]);
+            }
+            const [first, last] = lnglats;
+            let center;
+            if (Array.isArray(first)) {
+                center = [first[0] / 2 + last[0] / 2, first[1] / 2 + last[1] / 2];
+            } else if (first instanceof maptalks.Coordinate) {
+                center = [first.x / 2 + last.x / 2, first.y / 2 + last.y / 2];
+            }
+            const centerPt = layer.coordinateToVector3(lineString.getCenter());
+            const v = layer.coordinateToVector3(first).sub(centerPt);
+            const v1 = layer.coordinateToVector3(last).sub(centerPt);
+            const vh = layer.coordinateToVector3(center, height).sub(centerPt);
+            const ellipse = new THREE.CatmullRomCurve3([v, vh, v1], false, 'catmullrom');
+            const points = ellipse.getPoints(40);
+            return points;
         }
     </script>
 </body>
