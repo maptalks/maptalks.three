@@ -70,9 +70,9 @@ class HeatMap extends BaseObject {
                 count: data[i].count
             });
         }
-        const shadowCanvas = new Canvas(canvasWidth, canvasHeight);
-        const shadowContext = shadowCanvas.getContext('2d');
-        shadowContext.scale(devicePixelRatio, devicePixelRatio);
+        let shadowCanvas = new Canvas(canvasWidth, canvasHeight);
+        let shadowContext = shadowCanvas.getContext('2d');
+        // shadowContext.scale(devicePixelRatio, devicePixelRatio);
         HeatMapUitl.drawGray(shadowContext, pixels, options);
         const colored = shadowContext.getImageData(0, 0, shadowContext.canvas.width, shadowContext.canvas.height);
 
@@ -92,6 +92,8 @@ class HeatMap extends BaseObject {
             gradient: options.gradient
         });
         HeatMapUitl.colorize(colored.data, intensity.getImageData(), options);
+        shadowCanvas = null;
+        shadowContext = null;
 
         const geometry = new THREE.PlaneBufferGeometry(offsetX, offsetY, canvasWidth - 1, canvasHeight - 1);
         const index = geometry.getIndex().array;
