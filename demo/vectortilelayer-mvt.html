@@ -7,6 +7,7 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
     <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
     <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="./accesstoken.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.109.0/build/three.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks.three/dist/maptalks.three.js"></script>
     <script type="text/javascript" src="./js/mvttogeojson.bundle.js"></script>
@@ -79,7 +80,7 @@
             // threeLayer.initWorkers(workers);
 
 
-            const url = `https://{s}.tiles.mapbox.com/v4/mapbox.mapbox-terrain-v2,mapbox.mapbox-streets-v7/{z}/{x}/{y}.vector.pbf?access_token=pk.eyJ1IjoiemhlbmZ1IiwiYSI6ImNpb284bzNoYzAwM3h1Ym02aHlrand6OTAifQ.sKX-XKJMmgtk_oI5oIUV_g`;
+            const url = `https://{s}.tiles.mapbox.com/v4/mapbox.mapbox-terrain-v2,mapbox.mapbox-streets-v7/{z}/{x}/{y}.vector.pbf?access_token=`+accesstoken;
             vectortilelayer = threeLayer.toThreeVectorTileLayer(url,
                 {
                     // minZoom: 6,
