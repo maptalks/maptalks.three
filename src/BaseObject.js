@@ -240,7 +240,9 @@ class BaseObject extends maptalks.Eventable(Base) {
     }
 
     setInfoWindow(options) {
+        this.removeInfoWindow();
         this.infoWindow = new maptalks.ui.InfoWindow(options);
+        this.infoWindow.addTo(this);
         return this;
     }
 
@@ -249,6 +251,10 @@ class BaseObject extends maptalks.Eventable(Base) {
     }
 
     openInfoWindow(coordinate) {
+        coordinate = coordinate || this.getCenter();
+        if (!(coordinate instanceof maptalks.Coordinate)) {
+            coordinate = new maptalks.Coordinate(coordinate);
+        }
         // eslint-disable-next-line no-unused-expressions
         (coordinate && this.infoWindow && this.infoWindow.show(coordinate));
         return this;
@@ -268,7 +274,9 @@ class BaseObject extends maptalks.Eventable(Base) {
     }
 
     setToolTip(content, options) {
+        this.removeToolTip();
         this.toolTip = new ToolTip(content, options);
+        this.toolTip.addTo(this);
         return this;
     }
 
@@ -277,6 +285,10 @@ class BaseObject extends maptalks.Eventable(Base) {
     }
 
     openToolTip(coordinate) {
+        coordinate = coordinate || this.getCenter();
+        if (!(coordinate instanceof maptalks.Coordinate)) {
+            coordinate = new maptalks.Coordinate(coordinate);
+        }
         // eslint-disable-next-line no-unused-expressions
         (coordinate && this.toolTip && this.toolTip.show(coordinate));
         return this;
