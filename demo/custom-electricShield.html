@@ -66,7 +66,7 @@
         var ballElectric, material;
         function addElectricShield() {
             material = getMaterial();
-            ballElectric = new electricShield(map.getCenter(), { radius: 2 }, material, threeLayer)
+            ballElectric = new ElectricShield(map.getCenter(), { radius: 500 }, material, threeLayer)
             threeLayer.addMesh(ballElectric);
             initGui();
             animation();
@@ -231,7 +231,7 @@
          * you can customize your own components
          * */
 
-        class electricShield extends maptalks.BaseObject {
+        class ElectricShield extends maptalks.BaseObject {
             constructor(coordinate, options, material, layer) {
                 options = maptalks.Util.extend({}, OPTIONS, options, { layer, coordinate });
                 super();
@@ -240,8 +240,8 @@
                 this._initOptions(options);
                 const { altitude, radius } = options;
                 //generate geometry
-                // const r = layer.distanceToVector3(radius, radius).x;
-                const geometry = new THREE.SphereBufferGeometry(radius, 50, 50, 0, Math.PI * 2);
+                const r = layer.distanceToVector3(radius, radius).x;
+                const geometry = new THREE.SphereBufferGeometry(r, 50, 50, 0, Math.PI * 2);
 
                 //Initialize internal object3d
                 // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L140
