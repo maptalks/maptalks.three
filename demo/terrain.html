@@ -6,6 +6,7 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
     <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
     <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="./accesstoken.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.97.0/build/three.min.js"></script>
     <!-- <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lz-string@1.4.4/libs/lz-string.min.js"></script> -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks.three/dist/maptalks.three.js"></script>
@@ -34,7 +35,7 @@
 
         var baseLayer = new maptalks.TileLayer('tile', {
             // urlTemplate: 'https://mt2.google.cn/maps/vt?lyrs=s&hl=zh-CN&gl=CN&x={x}&y={y}&z={z}',
-            urlTemplate: 'https://api.mapbox.com/v4/mapbox.streets-satellite/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoiamRldmVsIiwiYSI6ImNqaTV1Nm9nNjA5MjkzcW1od2Y2Y3o0dHgifQ.tf4lJU5fzGJVJ4TyLbnfXA',
+            urlTemplate: 'https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}.png?access_token='+accesstoken,
             subdomains: ['a', 'b', 'c', 'd'],
             debug: true,
             debugOutline: 'red'
