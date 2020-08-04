@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Customize your own components </title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.117.0/build/three.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks.three/dist/maptalks.three.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.117.0/examples/js/libs/stats.min.js">
+    </script>
+    <script type="text/javascript" src="buildings.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+        var map = new maptalks.Map("map", {
+            center: [13.416935229170008, 52.529564137540376],
+            zoom: 16,
+            pitch: 70,
+            bearing: 180,
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+
+        var features = [];
+
+        buildings.forEach(function (b) {
+            features = features.concat(b.features);
+        });
+
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true,
+            // animation: true
+        });
+
+
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            features.forEach(function (g) {
+                var heightPerLevel = 10;
+                var levels = g.properties.levels || 1;
+                var color = getColor(levels);
+
+                var m = new THREE.MeshPhongMaterial({
+                    color: color,
+                    opacity: 0.7
+                });
+                var mesh = threeLayer.toExtrudeMesh(maptalks.GeoJSON.toGeometry(g), levels * heightPerLevel,
+                    m, levels *
+                    heightPerLevel);
+                if (Array.isArray(mesh)) {
+                    scene.add.apply(scene, mesh);
+                } else {
+                    scene.add(mesh);
+                }
+            });
+            addSpreadCylinder();
+        };
+        threeLayer.addTo(map);
+
+        var spreadCylinderObj, material;
+        function addSpreadCylinder() {
+            material = getMaterial({
+                image: "./data/linear.png",
+                opacity: 0.5,
+                color: "#f00"
+            });
+            spreadCylinderObj = new SpreadCylinder(this.map.getCenter(), {
+                radius: 100,
+                height: 300,
+                endScale: 4
+            }, material, threeLayer)
+            threeLayer.addMesh(spreadCylinderObj);
+            initGui();
+            animation();
+        }
+
+        function animation() {
+            if (threeLayer._needsUpdate) {
+                threeLayer.renderScene();
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+        }
+
+        function getMaterial(opts = {}) {
+            let uniforms = {
+                map: {
+                    type: "t",
+                    value: new THREE.TextureLoader().load(opts.image)
+                },
+                color: {
+                    type: "c",
+                    value: new THREE.Color(opts.color || "#9999FF")
+                },
+                opacity: {
+                    type: "f",
+                    value: opts.opacity || 0.7
+                }
+            };
+            var vertexShaderSource = "precision lowp float;\n  precision lowp int;\n  "
+                .concat(
+                    THREE.ShaderChunk.fog_pars_vertex,
+                    "\n  varying vec2 vUv;\n  void main() {\n    vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );\n    vUv = uv;\n    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);\n    "
+                )
+                .concat(THREE.ShaderChunk.fog_vertex, "\n  }\n");
+            var fragmentShaderSource = `
+                precision lowp float;
+                precision lowp int;
+                uniform vec3 color;
+                uniform sampler2D map;
+                uniform float opacity;
+                varying vec2 vUv;
+                void main()
+                {
+                vec4 tex = texture2D(map, vUv);
+                gl_FragColor = vec4(tex.rgb * color, tex.a * opacity);
+            }`;
+            let material = new THREE.ShaderMaterial({
+                uniforms: uniforms,
+                defaultAttributeValues: {},
+                vertexShader: vertexShaderSource,
+                fragmentShader: fragmentShaderSource,
+                blending: THREE.AdditiveBlending,
+                transparent: !0,
+                depthWrite: !1,
+                depthTest: !0,
+                side: THREE.DoubleSide
+            });
+            return material;
+        }
+
+
+
+        function initGui() {
+            var params = {
+                add: true,
+                color: material.uniforms.color.value.getStyle(),
+                show: true,
+                opacity: material.uniforms.opacity.value,
+                altitude: 0
+            };
+
+            var gui = new dat.GUI();
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    threeLayer.addMesh(spreadCylinderObj);
+                } else {
+                    threeLayer.removeMesh(spreadCylinderObj);
+                }
+            });
+            gui.addColor(params, 'color').name('circle color').onChange(function () {
+                material.uniforms.color.value.setStyle(params.color);
+            });
+            gui.add(params, 'opacity', 0, 1).onChange(function () {
+                material.uniforms.opacity.value = params.opacity;
+            });
+            gui.add(params, 'altitude', 0, 3000).onChange(function () {
+                spreadCylinderObj.setAltitude(params.altitude);
+            });
+        }
+
+        function getColor(level) {
+            if (level < 2) {
+                return 0x2685a7;
+            } else if (level >= 2 && level <= 5) {
+                return 0xff5733;
+            } else {
+                return
+                0xff2e00;
+            }
+        }
+
+        //default values
+        var OPTIONS = {
+            radius: 1000,
+            altitude: 0,
+            endScale: 4,
+            height: 10
+        };
+
+        /**
+         * custom  component
+         * you can customize your own components
+         * */
+        class SpreadCylinder extends maptalks.BaseObject {
+            constructor(coordinate, options, material, layer) {
+                var polygon = new maptalks.Circle(coordinate, options.radius);
+                options = maptalks.Util.extend({}, OPTIONS, options, {
+                    layer,
+                    polygon
+                });
+                super();
+                //Initialize internal configuration
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L135
+                this._initOptions(options);
+                const {
+                    altitude,
+                    height
+                } = options;
+                //generate geometry
+                //Initialize internal object3d
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L140
+                const geometry = this.createGeometry(polygon, layer, height)
+                this._createMesh(geometry, material);
+
+                //set object3d position
+                const z = layer.distanceToVector3(altitude, altitude).x;
+                const position = layer.coordinateToVector3(polygon.getCenter(), z);
+                this.getObject3d().position.copy(position);
+            }
+
+
+            createGeometry(polygon, layer, height) {
+                height = layer.distanceToVector3(height, height).x;
+                const centerPt = layer.coordinateToVector3(polygon.getCenter());
+                const wall = polygon.getShell();
+                const positionsV = [];
+                let joinLonLat = [];
+                wall.forEach(lnglat => {
+                    const polyPice = layer.coordinateToVector3(lnglat).sub(centerPt);
+                    positionsV.push(polyPice);
+                    joinLonLat.push(polyPice.x);
+                    joinLonLat.push(polyPice.y);
+                });
+                for (var a = joinLonLat, polySub = [], o = 0, s = 0; o < a.length - 2; o += 2, s++)
+                    0 === o ?
+                    polySub[0] = Math.sqrt((a[2] - a[0]) * (a[2] - a[0]) + (a[3] - a[1]) * (a[3] - a[1])) :
+                    polySub[s] = polySub[s - 1] + Math.sqrt((a[o + 2] - a[o]) * (a[o + 2] - a[o]) + (a[o + 3] -
+                        a[o + 1]) * (a[o + 3] - a[o + 1]));
+                let pos = [],
+                    uvs = [];
+                let polylenth = polySub[polySub.length - 1];
+                for (let d = 0, u = pos.length, p = uvs.length; d < positionsV.length - 1; d++) {
+                    let pv1 = positionsV[d],
+                        pv2 = positionsV[d + 1],
+                        polyPice = polySub[d];
+                    pos[u++] = pv1.x,
+                        pos[u++] = pv1.y,
+                        pos[u++] = 0,
+                        uvs[p++] = 0 === d ? 0 : polySub[d - 1] / polylenth,
+                        uvs[p++] = 0,
+                        pos[u++] = pv2.x,
+                        pos[u++] = pv2.y,
+                        pos[u++] = 0,
+                        uvs[p++] = polyPice / polylenth,
+                        uvs[p++] = 0,
+                        pos[u++] = pv1.x,
+                        pos[u++] = pv1.y,
+                        pos[u++] = height,
+                        uvs[p++] = 0 === d ? 0 : polySub[d - 1] / polylenth,
+                        uvs[p++] = 1,
+                        pos[u++] = pv1.x,
+                        pos[u++] = pv1.y,
+                        pos[u++] = height,
+                        uvs[p++] = 0 === d ? 0 : polySub[d - 1] / polylenth,
+                        uvs[p++] = 1,
+                        pos[u++] = pv2.x,
+                        pos[u++] = pv2.y,
+                        pos[u++] = 0,
+                        uvs[p++] = polyPice / polylenth,
+                        uvs[p++] = 0,
+                        pos[u++] = pv2.x,
+                        pos[u++] = pv2.y,
+                        pos[u++] = height,
+                        uvs[p++] = polyPice / polylenth,
+                        uvs[p++] = 1
+                }
+                var geometry = new THREE.BufferGeometry;
+                var geometry = new THREE.BufferGeometry();
+                geometry.attributes["position"] = new THREE.BufferAttribute(
+                    new Float32Array(pos),
+                    3
+                );
+                geometry.attributes["uv"] = new THREE.BufferAttribute(
+                    new Float32Array(uvs),
+                    2
+                );
+                return geometry;
+            }
+
+            _animation() {
+                const wall = this.getObject3d();
+                var scale = wall.scale.x;
+                scale += 0.01;
+                if (scale > this.getOptions().endScale) scale = 0;
+                wall.scale.set(scale, scale, 1);
+            }
+        }
+
+    </script>
+</body>
+
+</html>
