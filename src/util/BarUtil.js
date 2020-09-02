@@ -69,9 +69,9 @@ export function initVertexColors(geometry, color, _topColor, key = 'y', v = 0) {
     for (let i = 0; i < len; i += 3) {
         const y = position[i + offset];
         if (y > v) {
-            colors.push(topColor.r, topColor.r, topColor.b);
+            colors.push(topColor.r, topColor.g, topColor.b);
         } else {
-            colors.push(bottomColor.r, bottomColor.r, bottomColor.b);
+            colors.push(bottomColor.r, bottomColor.g, bottomColor.b);
         }
     }
     addAttribute(geometry, 'color', new THREE.Float32BufferAttribute(colors, 3, true));
