@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>extrudepolygon-countries</title>
+    <title>extrudepolygon-provinces</title>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
     <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
     <script type="text/javascript" src="./js/maptalks.js"></script>
@@ -31,8 +31,8 @@
     <script>
 
         var map = new maptalks.Map("map", {
-            center: [0, 0],
-            zoom: 2.478337137999542,
+            center: [-108.5775989012804, 41.46405744551359],
+            zoom: 3.478337137999542,
             pitch: 42.79999999999998,
             bearing: 0.9000000000005457,
             // bearing: 180,
@@ -67,7 +67,7 @@
 
             // camera.add(new THREE.PointLight(0xffffff, 1));
             fetch(
-                "https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_110m_admin_0_countries_lakes.geojson"
+                "https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_110m_admin_1_states_provinces_shp.geojson"
             ).then((res) => res.json())
                 .then((geojson) => {
                     addExtrudePolygon(geojson);
