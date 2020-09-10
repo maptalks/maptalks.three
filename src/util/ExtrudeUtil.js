@@ -47,12 +47,20 @@ export function getExtrudeGeometry(polygon, height, layer, center) {
 }
 
 
-export function getExtrudeGeometryParams(polygon, height, layer, center) {
+export function getExtrudeGeometryParams(polygon, height, layer, center, altCache) {
     const datas = getPolygonPositions(polygon, layer, center);
     const shapes = datas;
     //Possible later use of geojson
     if (!shapes) return null;
-    height = layer.distanceToVector3(height, height).x;
+    //Reduce height and repeat calculation
+    if (altCache) {
+        if (altCache[height] == null) {
+            altCache[height] = layer.distanceToVector3(height, height).x;
+        }
+        height = altCache[height];
+    } else {
+        height = layer.distanceToVector3(height, height).x;
+    }
     const { position, normal, uv, indices } = extrudePolygon(shapes, {
         depth: height
     });

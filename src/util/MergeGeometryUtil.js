@@ -2,14 +2,16 @@ import * as THREE from 'three';
 import { addAttribute } from './ThreeAdaptUtil';
 
 export function mergeBufferGeometries(geometries) {
-    const attributes = {};
+    const attributes = {}, attributesLen = {};
     for (let i = 0; i < geometries.length; ++i) {
         const geometry = geometries[i];
         for (let name in geometry) {
             if (attributes[name] === undefined) {
                 attributes[name] = [];
+                attributesLen[name] = 0;
             }
             attributes[name].push(geometry[name]);
+            attributesLen[name] += geometry[name].length;
         }
     }
     // merge attributes
@@ -27,7 +29,7 @@ export function mergeBufferGeometries(geometries) {
                 indexOffset += attributes['position'][i].length / 3;
             }
         } else {
-            const mergedAttribute = mergeBufferAttributes(attributes[name]);
+            const mergedAttribute = mergeBufferAttributes(attributes[name], attributesLen[name]);
             if (!mergedAttribute) return null;
             mergedGeometry[name] = mergedAttribute;
         }
@@ -49,12 +51,7 @@ export function mergeBufferGeometries(geometries) {
 
 
 
-function mergeBufferAttributes(attributes) {
-    let arrayLength = 0;
-    for (let i = 0; i < attributes.length; ++i) {
-        const attribute = attributes[i];
-        arrayLength += attribute.length;
-    }
+function mergeBufferAttributes(attributes, arrayLength) {
     const array = new Float32Array(arrayLength);
     let offset = 0;
     for (let i = 0; i < attributes.length; ++i) {
