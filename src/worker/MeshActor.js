@@ -56,7 +56,7 @@ export function getActor() {
  */
 function gengerateExtrudePolygons(polygons = [], center, layer) {
     const len = polygons.length;
-    const datas = [], transfer = [];
+    const datas = [], transfer = [], altCache = {};
     for (let i = 0; i < len; i++) {
         const polygon = polygons[i];
         const data = getPolygonPositions(polygon, layer, center, true);
@@ -68,7 +68,10 @@ function gengerateExtrudePolygons(polygons = [], center, layer) {
             }
         }
         let height = (isGeoJSONPolygon(polygon) ? polygon.properties : polygon.getProperties() || {}).height || 1;
-        height = layer.distanceToVector3(height, height).x;
+        if (altCache[height] == null) {
+            altCache[height] = layer.distanceToVector3(height, height).x;
+        }
+        height = altCache[height];
         datas.push({
             data,
             height

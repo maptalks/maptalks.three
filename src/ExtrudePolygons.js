@@ -1,7 +1,7 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
-import { initVertexColors, getCenterOfPoints, getExtrudeGeometryParams } from './util/ExtrudeUtil';
+import { initVertexColors, getExtrudeGeometryParams } from './util/ExtrudeUtil';
 import ExtrudePolygon from './ExtrudePolygon';
 import MergedMixin from './MergedMixin';
 import { getGeoJSONCenter, isGeoJSONPolygon } from './util/GeoJSONUtil';
@@ -36,14 +36,30 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
         if (!Array.isArray(polygons)) {
             polygons = [polygons];
         }
-        const centers = [];
         const len = polygons.length;
+        if (len === 0) {
+            console.error('polygons is empty');
+        }
+        // const centers = [];
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         for (let i = 0; i < len; i++) {
             const polygon = polygons[i];
-            centers.push(isGeoJSONPolygon(polygon) ? getGeoJSONCenter(polygon) : polygon.getCenter());
+            const center = (polygon.getCenter ? polygon.getCenter() : getGeoJSONCenter(polygon));
+            let x, y;
+            if (Array.isArray(center)) {
+                x = center[0];
+                y = center[1];
+            } else if (center instanceof maptalks.Coordinate) {
+                x = center.x;
+                y = center.y;
+            }
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
         }
         // Get the center point of the point set
-        const center = getCenterOfPoints(centers);
+        const center = new maptalks.Coordinate((minX + maxX) / 2, (minY + maxY) / 2);
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, polygons, coordinate: center });
         const { topColor, bottomColor, altitude, asynchronous } = options;
         let bufferGeometry;
@@ -77,10 +93,11 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
         } else {
             const geometries = [];
             let faceIndex = 0, psIndex = 0, normalIndex = 0, uvIndex = 0;
+            const altCache = {};
             for (let i = 0; i < len; i++) {
                 const polygon = polygons[i];
                 const height = (isGeoJSONPolygon(polygon) ? polygon.properties : polygon.getProperties() || {}).height || 1;
-                const buffGeom = getExtrudeGeometryParams(polygon, height, layer, center);
+                const buffGeom = getExtrudeGeometryParams(polygon, height, layer, center, altCache);
                 geometries.push(buffGeom);
 
                 // const extrudePolygon = new ExtrudePolygon(polygon, Object.assign({}, options, { height, index: i }), material, layer);
