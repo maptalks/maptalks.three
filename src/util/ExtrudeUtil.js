@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as maptalks from 'maptalks';
 import { isGeoJSONPolygon, spliteGeoJSONMulti, getGeoJSONCenter, isGeoJSONMulti, getGeoJSONCoordinates } from './GeoJSONUtil';
-import { extrudePolygon } from 'geometry-extrude';
+import { extrudePolygon } from 'deyihu-geometry-extrude';
 import { addAttribute } from './ThreeAdaptUtil';
 /**
  * this is for ExtrudeMesh util
