@@ -1,4 +1,4 @@
-import { extrudePolygon } from 'geometry-extrude';
+import { extrudePolygon } from 'deyihu-geometry-extrude';
 
 export const initialize = function () {
 };

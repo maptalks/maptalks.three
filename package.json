@@ -44,6 +44,6 @@
     "maptalks": ">=0.39.0"
   },
   "dependencies": {
-    "geometry-extrude": "^0.1.2"
+    "deyihu-geometry-extrude": "^0.1.3"
   }
 }
