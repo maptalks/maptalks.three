@@ -904,17 +904,22 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         if (!this.canvas) {
             return;
         }
-        let size;
+        let size, map = this.getMap();
         if (!canvasSize) {
-            size = this.getMap().getSize();
+            size = map.getSize();
         } else {
             size = canvasSize;
         }
-        const r = maptalks.Browser.retina ? 2 : 1;
+        // const r = maptalks.Browser.retina ? 2 : 1;
+        const r = map.getDevicePixelRatio ? map.getDevicePixelRatio() : (maptalks.Browser.retina ? 2 : 1);
         const canvas = this.canvas;
         //retina support
         canvas.height = r * size['height'];
         canvas.width = r * size['width'];
+        if (this.layer._canvas && canvas.style) {
+            canvas.style.width = size.width + 'px';
+            canvas.style.height = size.height + 'px';
+        }
         this.context.setSize(canvas.width, canvas.height);
     }
 
