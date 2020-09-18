@@ -80,7 +80,9 @@
             `;
 
         const fragmentShader = `
-           // #extension GL_OES_standard_derivatives : enable
+            #if __VERSION__ == 100
+                #extension GL_OES_standard_derivatives : enable
+            #endif
 
             varying vec2 vUv;
             uniform float thickness;
