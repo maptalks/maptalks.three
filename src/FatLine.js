@@ -1,8 +1,7 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
-import { getLinePosition } from './util/LineUtil';
-import { isGeoJSON, getGeoJSONCenter } from './util/GeoJSONUtil';
+import { getLinePosition, LineStringSplit } from './util/LineUtil';
 import LineGeometry from './util/fatline/LineGeometry';
 import Line2 from './util/fatline/Line2';
 import LineMaterial from './util/fatline/LineMaterial';
@@ -16,15 +15,17 @@ class FatLine extends BaseObject {
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, lineString });
         super();
         this._initOptions(options);
-        const center = (isGeoJSON(lineString) ? getGeoJSONCenter(lineString) : lineString.getCenter());
-        const positionsV = getLinePosition(lineString, layer, center).positionsV;
+        const { lineStrings, center } = LineStringSplit(lineString);
         const ps = [];
-        for (let i = 0, len = positionsV.length; i < len; i++) {
-            const v = positionsV[i];
-            if (i > 0 && i < len - 1) {
+        for (let m = 0, le = lineStrings.length; m < le; m++) {
+            const positionsV = getLinePosition(lineStrings[m], layer, center).positionsV;
+            for (let i = 0, len = positionsV.length; i < len; i++) {
+                const v = positionsV[i];
+                if (i > 0 && i < len - 1) {
+                    ps.push(v.x, v.y, v.z);
+                }
                 ps.push(v.x, v.y, v.z);
             }
-            ps.push(v.x, v.y, v.z);
         }
         const geometry = new LineGeometry();
         geometry.setPositions(ps);

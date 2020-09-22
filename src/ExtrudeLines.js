@@ -3,10 +3,10 @@ import * as THREE from 'three';
 import MergedMixin from './MergedMixin';
 import BaseObject from './BaseObject';
 import { getCenterOfPoints } from './util/ExtrudeUtil';
-import { getExtrudeLineParams } from './util/LineUtil';
+import { getExtrudeLineParams, LineStringSplit } from './util/LineUtil';
 import ExtrudeLine from './ExtrudeLine';
-import { getGeoJSONCenter, isGeoJSON } from './util/GeoJSONUtil';
-import { mergeBufferGeometries } from './util/MergeGeometryUtil';
+import { isGeoJSON } from './util/GeoJSONUtil';
+import { mergeBufferGeometries, mergeBufferGeometriesAttribute } from './util/MergeGeometryUtil';
 import { addAttribute } from './util/ThreeAdaptUtil';
 
 const OPTIONS = {
@@ -20,11 +20,13 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
         if (!Array.isArray(lineStrings)) {
             lineStrings = [lineStrings];
         }
-        const centers = [];
+        const centers = [], lineStringList = [];
         const len = lineStrings.length;
         for (let i = 0; i < len; i++) {
             const lineString = lineStrings[i];
-            centers.push(isGeoJSON(lineString) ? getGeoJSONCenter(lineString) : lineString.getCenter());
+            const result = LineStringSplit(lineString);
+            centers.push(result.center);
+            lineStringList.push(result.lineStrings);
         }
         // Get the center point of the point set
         const center = getCenterOfPoints(centers);
@@ -37,7 +39,12 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
             const { height, width } = opts;
             const w = layer.distanceToVector3(width, width).x;
             const h = layer.distanceToVector3(height, height).x;
-            const buffGeom = getExtrudeLineParams(lineString, w, h, layer, center);
+            const lls = lineStringList[i];
+            const extrudeParams = [];
+            for (let m = 0, le = lls.length; m < le; m++) {
+                extrudeParams.push(getExtrudeLineParams(lls[m], w, h, layer, center));
+            }
+            const buffGeom = mergeBufferGeometriesAttribute(extrudeParams);
             geometries.push(buffGeom);
 
             const extrudeLine = new ExtrudeLine(lineString, opts, material, layer);

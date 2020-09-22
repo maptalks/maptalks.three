@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as maptalks from 'maptalks';
 import { extrudePolyline } from 'deyihu-geometry-extrude';
-import { isGeoJSON, getGeoJSONCoordinates, getGeoJSONCenter } from './GeoJSONUtil';
+import { isGeoJSON, getGeoJSONCoordinates, getGeoJSONCenter, isGeoJSONMulti, spliteGeoJSONMulti } from './GeoJSONUtil';
 import { addAttribute } from './ThreeAdaptUtil';
 const COMMA = ',';
 
@@ -155,5 +155,27 @@ export function getExtrudeLineParams(lineString, lineWidth = 1, depth = 1, layer
         normal: normal,
         indices: indices,
         uv
+    };
+}
+
+export function LineStringSplit(lineString) {
+    let lineStrings = [], center;
+    if (lineString.getGeometries) {
+        lineStrings = lineString.getGeometries();
+        center = lineString.getCenter();
+    } else if (lineString instanceof maptalks.LineString) {
+        lineStrings.push(lineString);
+        center = lineString.getCenter();
+    } else if (isGeoJSON(lineString)) {
+        center = getGeoJSONCenter(lineString);
+        if (isGeoJSONMulti(lineString)) {
+            lineStrings = spliteGeoJSONMulti(lineString);
+        } else {
+            lineStrings.push(lineString);
+        }
+    }
+    return {
+        lineStrings,
+        center
     };
 }
