@@ -1,11 +1,11 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
-import { getLinePosition } from './util/LineUtil';
+import { getLinePosition, LineStringSplit } from './util/LineUtil';
 import MergedMixin from './MergedMixin';
 import { getCenterOfPoints } from './util/ExtrudeUtil';
 import Line from './Line';
-import { getGeoJSONCenter, isGeoJSONLine } from './util/GeoJSONUtil';
+import { isGeoJSONLine } from './util/GeoJSONUtil';
 import { addAttribute } from './util/ThreeAdaptUtil';
 
 const OPTIONS = {
@@ -22,11 +22,13 @@ class Lines extends MergedMixin(BaseObject) {
             lineStrings = [lineStrings];
         }
 
-        const centers = [];
+        const centers = [], lineStringList = [];
         const len = lineStrings.length;
         for (let i = 0; i < len; i++) {
             const lineString = lineStrings[i];
-            centers.push(isGeoJSONLine(lineString) ? getGeoJSONCenter(lineString) : lineString.getCenter());
+            const result = LineStringSplit(lineString);
+            centers.push(result.center);
+            lineStringList.push(result.lineStrings);
         }
         // Get the center point of the point set
         const center = getCenterOfPoints(centers);
@@ -36,22 +38,25 @@ class Lines extends MergedMixin(BaseObject) {
         let faceIndex = 0, faceMap = [], geometriesAttributes = [],
             psIndex = 0, ps = [];
         for (let i = 0; i < len; i++) {
-            const lineString = lineStrings[i];
-            // const opts = maptalks.Util.extend({}, { altitude: options.altitude, index: i }, lineString.getProperties());
-            const { positionsV } = getLinePosition(lineString, layer, center);
-
-            for (let j = 0, len1 = positionsV.length; j < len1; j++) {
-                const v = positionsV[j];
-                if (j > 0 && j < len1 - 1) {
+            const lls = lineStringList[i];
+            let psCount = 0;
+            for (let m = 0, le = lls.length; m < le; m++) {
+                const { positionsV } = getLinePosition(lls[m], layer, center);
+                psCount += (positionsV.length * 2 - 2);
+                for (let j = 0, len1 = positionsV.length; j < len1; j++) {
+                    const v = positionsV[j];
+                    if (j > 0 && j < len1 - 1) {
+                        ps.push(v.x, v.y, v.z);
+                    }
                     ps.push(v.x, v.y, v.z);
                 }
-                ps.push(v.x, v.y, v.z);
             }
+
 
             // const line = new Line(lineString, opts, material, layer);
             // lines.push(line);
 
-            const psCount = positionsV.length + positionsV.length - 2;
+            // const psCount = positionsV.length + positionsV.length - 2;
             const faceLen = psCount;
             faceMap[i] = [faceIndex, faceIndex + faceLen];
             faceIndex += faceLen;

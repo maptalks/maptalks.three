@@ -2,6 +2,22 @@ import * as THREE from 'three';
 import { addAttribute } from './ThreeAdaptUtil';
 
 export function mergeBufferGeometries(geometries) {
+    const { position, normal, uv, indices } = mergeBufferGeometriesAttribute(geometries);
+    const bufferGeomertry = new THREE.BufferGeometry();
+    const color = new Float32Array(position.length);
+    color.fill(1, 0, position.length);
+    addAttribute(bufferGeomertry, 'color', new THREE.BufferAttribute(color, 3));
+    addAttribute(bufferGeomertry, 'normal', new THREE.BufferAttribute(normal, 3));
+    addAttribute(bufferGeomertry, 'position', new THREE.BufferAttribute(position, 3));
+    if (uv && uv.length) {
+        addAttribute(bufferGeomertry, 'uv', new THREE.BufferAttribute(uv, 2));
+    }
+    bufferGeomertry.setIndex(new THREE.BufferAttribute(indices, 1));
+    return bufferGeomertry;
+}
+
+
+export function mergeBufferGeometriesAttribute(geometries) {
     const attributes = {}, attributesLen = {};
     for (let i = 0; i < geometries.length; ++i) {
         const geometry = geometries[i];
@@ -35,18 +51,7 @@ export function mergeBufferGeometries(geometries) {
         }
     }
     mergedGeometry['indices'] = new Uint32Array(mergedIndex);
-    const { position, normal, uv, indices } = mergedGeometry;
-    const bufferGeomertry = new THREE.BufferGeometry();
-    const color = new Float32Array(position.length);
-    color.fill(1, 0, position.length);
-    addAttribute(bufferGeomertry, 'color', new THREE.BufferAttribute(color, 3));
-    addAttribute(bufferGeomertry, 'normal', new THREE.BufferAttribute(normal, 3));
-    addAttribute(bufferGeomertry, 'position', new THREE.BufferAttribute(position, 3));
-    if (uv && uv.length) {
-        addAttribute(bufferGeomertry, 'uv', new THREE.BufferAttribute(uv, 2));
-    }
-    bufferGeomertry.setIndex(new THREE.BufferAttribute(indices, 1));
-    return bufferGeomertry;
+    return mergedGeometry;
 }
 
 
