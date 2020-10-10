@@ -404,7 +404,32 @@ class ThreeLayer extends maptalks.CanvasLayer {
     }
 
 
+    getBaseObjects() {
+        return this.getMeshes().filter((mesh => {
+            return mesh instanceof BaseObject;
+        }));
+    }
 
+
+    getMeshes() {
+        const scene = this.getScene();
+        if (!scene) {
+            return [];
+        }
+        const meshes = [];
+        for (let i = 0, len = scene.children.length; i < len; i++) {
+            const child = scene.children[i];
+            if (child instanceof THREE.Object3D && !(child instanceof THREE.Camera)) {
+                meshes.push(child.__parent || child);
+            }
+        }
+        return meshes;
+    }
+
+
+    clear() {
+        return this.clearMesh();
+    }
 
     clearMesh() {
         const scene = this.getScene();
@@ -412,8 +437,15 @@ class ThreeLayer extends maptalks.CanvasLayer {
             return this;
         }
         for (var i = scene.children.length - 1; i >= 0; i--) {
-            if (scene.children[i] instanceof THREE.Mesh) {
-                scene.remove(scene.children[i]);
+            const child = scene.children[i];
+            if (child instanceof THREE.Object3D && !(child instanceof THREE.Camera)) {
+                scene.remove(child);
+                const parent = child.__parent;
+                if (parent && parent instanceof BaseObject) {
+                    parent.isAdd = false;
+                    parent._fire('remove', { target: parent });
+                    delete this._animationBaseObjectMap[child.uuid];
+                }
             }
         }
         return this;
