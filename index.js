@@ -27,7 +27,8 @@ const options = {
     'renderer': 'gl',
     'doubleBuffer': false,
     'glOptions': null,
-    'geometryEvents': true
+    'geometryEvents': true,
+    'identifyOneMesh': false
 };
 
 const RADIAN = Math.PI / 180;
@@ -705,7 +706,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         }
         this._mousemoveTimeOut = now;
         map.resetCursor('default');
-        const baseObjects = this.identify(coordinate);
+        const baseObjects = this.identify(coordinate, this.options['identifyOneMesh'] ? { count: 1 } : null);
         const scene = this.getScene();
         if (baseObjects.length === 0 && scene) {
             for (let i = 0, len = scene.children.length; i < len; i++) {
