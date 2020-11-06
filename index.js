@@ -59,7 +59,7 @@ const EVENTS = [
     'touchend'
 ];
 
-const MATRIX4 = new THREE.Matrix4();
+// const MATRIX4 = new THREE.Matrix4();
 
 /**
  * A Layer to render with THREE.JS (http://threejs.org), the most popular library for WebGL. <br>
@@ -915,6 +915,7 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
     }
 
     _initThreeRenderer() {
+        this.matrix4 = new THREE.Matrix4();
         const renderer = new THREE.WebGLRenderer({ 'context': this.gl, alpha: true });
         renderer.autoClear = false;
         renderer.setClearColor(new THREE.Color(1, 1, 1), 0);
@@ -996,7 +997,9 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         const camera = this.camera;
         camera.matrix.elements = map.cameraWorldMatrix;
         camera.projectionMatrix.elements = map.projMatrix;
-        camera.projectionMatrixInverse.elements = MATRIX4.getInverse(camera.projectionMatrix).elements;
+        //https://github.com/mrdoob/three.js/commit/d52afdd2ceafd690ac9e20917d0c968ff2fa7661
+        const inverseName = this.matrix4.invert ? 'invert' : 'getInverse';
+        camera.projectionMatrixInverse.elements = this.matrix4[inverseName](camera.projectionMatrix).elements;
     }
 
     _createGLContext(canvas, options) {
