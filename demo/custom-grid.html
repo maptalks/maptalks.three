@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>custom-grid</title>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.13.0/d3.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/turf@7.0.0-alpha.1/dist/turf.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="./js/geohash.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.104.0/build/three.min.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.97.0/examples/js/libs/stats.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            "center": [114.63810907180073, 30.087485367227174], "zoom": 5.995224890993399, "pitch": 47.599999999999994, "bearing": 4.2000000000000455,
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+        map.on('click', e => {
+            console.log(e.coordinate.toArray());
+        });
+        const layer = new maptalks.VectorLayer('layer').addTo(map);
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+        });
+        var stats;
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+
+            // camera.add(new THREE.PointLight(0xffffff, 1));
+
+            addBars();
+
+        };
+        threeLayer.addTo(map);
+
+        const _COLORS = {
+            '#FF3417': [19, Infinity],
+            '#FF7412': [13, 19],
+            '#FFB02A': [11, 13],
+            '#FFE754': [8, 11],
+            '#46F3FF': [6, 8],
+            '#02BEFF': [4, 6],
+            '#1A7AFF': [2, 4],
+            '#0A1FB2': [0, 2],
+        };
+        const keys = Object.keys(_COLORS);
+
+        function getColor(value) {
+            let color;
+            const len = keys.length;
+            for (let i = 0; i < len; i++) {
+                const [minV, maxV] = _COLORS[keys[i]];
+                if (minV <= value && value < maxV) {
+                    color = keys[i];
+                    break;
+                }
+            }
+            return color;
+        }
+
+        const geohashlen = 5;
+        function Grid(geojson) {
+            let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+            const coordinates = geojson.geometry.coordinates[0];
+            for (let i = 0, len = coordinates.length; i < len; i++) {
+                const [lng, lat] = coordinates[i];
+                minLng = Math.min(lng, minLng);
+                minLat = Math.min(lat, minLat);
+                maxLng = Math.max(lng, maxLng);
+                maxLat = Math.max(lat, maxLat);
+            }
+            this.minLng = minLng;
+            this.minLat = minLat;
+            this.maxLng = maxLng;
+            this.maxLat = maxLat;
+            this.count = 0;
+            this.altitude = 0;
+            this.radius = 1000;
+            this.color = '#fff';
+            this.center = this.getCenter();
+            const [lng, lat] = this.center;
+            this.geohash = geohash.encode(lat, lng, geohashlen);
+        }
+
+        Grid.prototype.getCenter = function () {
+            return [this.minLng / 2 + this.maxLng / 2, this.minLat / 2 + this.maxLat / 2];
+        }
+
+        var material = new THREE.MeshLambertMaterial({ color: '#fff', transparent: true, vertexColors: THREE.VertexColors });
+
+        const gridMap = {};
+        const lnglats = [];
+
+        var bars = [];
+        function addBars(scene) {
+            d3.csv('https://gw.alipayobjects.com/os/basement_prod/7359a5e9-3c5e-453f-b207-bc892fb23b84.csv', (error, response) => {
+                let minLng = 63.34425210104371, minLat = 13.50923035548422, maxLng = 146.75790830392293, maxLat = 57.69160333787326;
+
+                for (let i = 0, len = response.length; i < len; i++) {
+                    let lng = response[i].lng, lat = response[i].lat;
+                    lng = parseFloat(lng);
+                    lat = parseFloat(lat);
+                    // minLng = Math.min(lng, minLng);
+                    // minLat = Math.min(lat, minLat);
+                    // maxLng = Math.max(lng, maxLng);
+                    // maxLat = Math.max(lat, maxLat);
+                    if (minLng <= lng && lng <= maxLng && lat >= minLat && lat <= maxLat) {
+                        lnglats.push([lng, lat, geohash.encode(lat, lng, geohashlen)]);
+                    }
+                }
+                // minLng = Math.max(minLng, 63.34425210104371);
+                // minLat = Math.max(minLat, 13.50923035548422);
+                // maxLng = Math.min(maxLng, 146.75790830392293);
+                // maxLat = Math.min(maxLat, 57.69160333787326);
+
+                const center = new maptalks.Coordinate((minLng + maxLng) / 2, (minLat + maxLat) / 2);
+                const size = 10000;
+                const cells = turf.squareGrid([minLng, minLat, maxLng, maxLat], size / 1000, { unit: '' });
+                const grids = [], radius = size / 2;
+                for (let i = 0, len = cells.features.length; i < len; i++) {
+                    const grid = new Grid(cells.features[i]);
+                    grid.radius = radius;
+                    gridMap[grid.geohash] = grid;
+                    grids.push(grid);
+                }
+                console.log(grids);
+                const notfinds = [];
+
+                for (let i = 0, len = lnglats.length; i < len; i++) {
+                    let [lng, lat, key] = lnglats[i];
+                    if (minLng <= lng && lng <= maxLng && lat >= minLat && lat <= maxLat) {
+                        if (gridMap[key]) {
+                            gridMap[key].count++;
+                        } else {
+                            // notfinds.push(key);
+                        }
+                    }
+                }
+
+                // console.log(notfinds);
+                const timer = 'time';
+                console.time(timer);
+                let max = -Infinity;
+                const filterGrids = [];
+                for (let i = 0, len = grids.length; i < len; i++) {
+                    if (grids[i].count > 0) {
+                        const grid = grids[i];
+                        max = Math.max(max, grid.count);
+                        const color = getColor(grid.count);
+                        grid.color = color;
+                        filterGrids.push(grid);
+                    }
+                }
+
+                console.timeEnd(timer);
+                console.log(max);
+                const boxs = new Boxs(filterGrids, { center: center }, material, threeLayer);
+                threeLayer.addMesh(boxs);
+                console.log(boxs);
+                bars.push(boxs);
+            });
+
+            initGui();
+            animation();
+        }
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer.renderScene();
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+        }
+
+        function initGui() {
+            var params = {
+                add: true,
+                color: '#fff',
+                show: true,
+                opacity: 1,
+                altitude: 0,
+                interactive: false
+            };
+
+            var gui = new dat.GUI();
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    threeLayer.addMesh(bars);
+                } else {
+                    threeLayer.removeMesh(bars);
+                }
+            });
+            gui.add(params, 'opacity', 0, 1).onChange(function () {
+                material.opacity = params.opacity;
+            });
+            gui.add(params, 'show').onChange(function () {
+                bars.forEach(function (mesh) {
+                    if (params.show) {
+                        mesh.show();
+                    } else {
+                        mesh.hide();
+                    }
+                });
+            });
+            gui.add(params, 'altitude', 0, 300000).onChange(function () {
+                bars.forEach(function (mesh) {
+                    mesh.setAltitude(params.altitude);
+                });
+            });
+        }
+
+        const OPTIONS = {
+            altitude: 0,
+            interactive: false
+        };
+
+        class Boxs extends maptalks.BaseObject {
+            constructor(grids, options, material, layer) {
+                options = maptalks.Util.extend({}, OPTIONS, options, { layer, grids });
+                let center = options.center;
+                if (!center) {
+                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                    const len = grids.length;
+                    for (let i = 0; i < len; i++) {
+                        const [x, y] = grids[i].getCenter();
+                        minX = Math.min(minX, x);
+                        minY = Math.min(minY, y);
+                        maxX = Math.max(maxX, x);
+                        maxY = Math.max(maxY, y);
+                    }
+                    center = new maptalks.Coordinate((minX + maxX) / 2, (minY + maxY) / 2);
+                }
+                const centerPt = layer.coordinateToVector3(center, 0);
+                const radius = grids[0].radius;
+                const r = layer.distanceToVector3(radius, radius).x;
+                const geometry = new THREE.BoxBufferGeometry(r, r, 0.0001);
+                const geometryList = [];
+                const colors = [];
+                const len = grids.length;
+                for (let i = 0; i < len; i++) {
+                    const center = grids[i].center;
+                    const altitude = grids[i].altitude;
+                    const color = grids[i].color;
+                    let z = 0;
+                    if (altitude !== 0) {
+                        z = layer.distanceToVector3(altitude, altitude).x;
+                    }
+                    const v = layer.coordinateToVector3(center, z);
+                    const v1 = v.sub(centerPt);
+
+                    const position = geometry.attributes.position.clone();
+                    const normal = geometry.attributes.normal.clone();
+                    const uv = geometry.attributes.uv.clone();
+                    const c = new THREE.Color(color);
+                    for (let j = 0, len1 = position.array.length; j < len1; j += 3) {
+                        position.array[j] += v1.x;
+                        position.array[j + 1] += v1.y;
+                        position.array[j + 2] += v1.z;
+                        colors.push(c.r, c.g, c.b);
+                    }
+
+                    const index = geometry.index.clone();
+                    geometryList.push({
+                        position: position.array,
+                        normal: normal.array,
+                        uv: uv.array,
+                        indices: index.array
+                    });
+
+                }
+                geometry.dispose();
+                const bufferGeomertry = mergeBufferGeometries(geometryList);
+                for (let i = 0, len = bufferGeomertry.attributes.position.array.length; i < len; i++) {
+                    bufferGeomertry.attributes.color.array[i] = colors[i];
+                }
+                super();
+                //Initialize internal configuration
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L135
+                this._initOptions(options);
+                const { altitude } = options;
+                //generate geometry
+
+
+                //Initialize internal object3d
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L140
+                this._createMesh(bufferGeomertry, material);
+
+                //set object3d position
+                const z = layer.distanceToVector3(altitude, altitude).x;
+                const position = layer.coordinateToVector3(center, z);
+                this.getObject3d().position.copy(position);
+            }
+        }
+
+        function mergeBufferGeometries(geometries) {
+            const { position, normal, uv, indices } = mergeBufferGeometriesAttribute(geometries);
+            const bufferGeomertry = new THREE.BufferGeometry();
+            const color = new Float32Array(position.length);
+            color.fill(1, 0, position.length);
+            bufferGeomertry.addAttribute('color', new THREE.BufferAttribute(color, 3));
+            bufferGeomertry.addAttribute('normal', new THREE.BufferAttribute(normal, 3));
+            bufferGeomertry.addAttribute('position', new THREE.BufferAttribute(position, 3));
+            if (uv && uv.length) {
+                bufferGeomertry.addAttribute('uv', new THREE.BufferAttribute(uv, 2));
+            }
+            bufferGeomertry.setIndex(new THREE.BufferAttribute(indices, 1));
+            return bufferGeomertry;
+        }
+
+
+        function mergeBufferGeometriesAttribute(geometries) {
+            const attributes = {}, attributesLen = {};
+            for (let i = 0; i < geometries.length; ++i) {
+                const geometry = geometries[i];
+                for (let name in geometry) {
+                    if (attributes[name] === undefined) {
+                        attributes[name] = [];
+                        attributesLen[name] = 0;
+                    }
+                    attributes[name].push(geometry[name]);
+                    attributesLen[name] += geometry[name].length;
+                }
+            }
+            // merge attributes
+            const mergedGeometry = {};
+            let indexOffset = 0;
+            const mergedIndex = [];
+            for (let name in attributes) {
+                if (name === 'indices') {
+                    const indices = attributes[name];
+                    for (let i = 0, len = indices.length; i < len; i++) {
+                        const index = indices[i];
+                        for (let j = 0, len1 = index.length; j < len1; j++) {
+                            mergedIndex.push(index[j] + indexOffset);
+                        }
+                        indexOffset += attributes['position'][i].length / 3;
+                    }
+                } else {
+                    const mergedAttribute = mergeBufferAttributes(attributes[name], attributesLen[name]);
+                    if (!mergedAttribute) return null;
+                    mergedGeometry[name] = mergedAttribute;
+                }
+            }
+            mergedGeometry['indices'] = new Uint32Array(mergedIndex);
+            return mergedGeometry;
+        }
+
+
+
+        function mergeBufferAttributes(attributes, arrayLength) {
+            const array = new Float32Array(arrayLength);
+            let offset = 0;
+            for (let i = 0; i < attributes.length; ++i) {
+                array.set(attributes[i], offset);
+                offset += attributes[i].length;
+            }
+            return array;
+        }
+
+
+    </script>
+</body>
+
+</html>
