@@ -998,8 +998,11 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         camera.matrix.elements = map.cameraWorldMatrix;
         camera.projectionMatrix.elements = map.projMatrix;
         //https://github.com/mrdoob/three.js/commit/d52afdd2ceafd690ac9e20917d0c968ff2fa7661
-        const inverseName = this.matrix4.invert ? 'invert' : 'getInverse';
-        camera.projectionMatrixInverse.elements = this.matrix4[inverseName](camera.projectionMatrix).elements;
+        if (this.matrix4.invert) {
+            camera.projectionMatrixInverse.elements = this.matrix4.copy(camera.projectionMatrix).invert().elements;
+        } else {
+            camera.projectionMatrixInverse.elements = this.matrix4.getInverse(camera.projectionMatrix).elements;
+        }
     }
 
     _createGLContext(canvas, options) {
