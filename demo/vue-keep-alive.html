@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>vue map test</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/randomcolor@0.6.2/randomColor.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.104.0/build/three.min.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.97.0/examples/js/libs/stats.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vue-router@3.4.9/dist/vue-router.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        .map {
+            width: 1000px;
+            height: 500px;
+            /* background-color: #000; */
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        {{msg}}<br>
+        <router-link to="/page1">page1</router-link>
+        <router-link to="/page2">page2</router-link>
+        <router-link to="/page3"> page3</router-link>
+        <br><br>
+        <keep-alive>
+            <router-view v-if="$route.meta.keepAlive">
+            </router-view>
+        </keep-alive>
+
+        <router-view v-if="!$route.meta.keepAlive">
+        </router-view>
+    </div>
+    <script>
+        //地图组件
+        Vue.component('vue-map', {
+            data: function () {
+                return {
+                    id: maptalks.Util.GUID()
+                }
+            },
+            computed: {
+                mapId() {
+                    return 'map' + this.id
+                }
+            },
+            methods: {
+
+            },
+            activated() {
+                // 我会执行多次
+                console.log('activated', this.mapId);
+            },
+            mounted() {
+                // 我只会执行一遍
+                console.log('mounted', this.mapId);
+                var map = this.map = new maptalks.Map(this.mapId, {
+                    center: [-0.113049, 51.498568],
+                    zoom: 14,
+                    baseLayer: new maptalks.TileLayer('base', {
+                        urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                        subdomains: ['a', 'b', 'c', 'd'],
+                        attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+                    })
+                });
+                var polygon = new maptalks.Polygon([
+                    [
+                        [-0.131049, 51.498568],
+                        [-0.107049, 51.498568],
+                        [-0.107049, 51.493568],
+                        [-0.131049, 51.493568],
+                        [-0.131049, 51.498568]
+                    ]
+                ], {
+                    visible: true,
+                    editable: true,
+                    cursor: 'pointer',
+                    shadowBlur: 0,
+                    shadowColor: 'black',
+                    draggable: false,
+                    dragShadow: false, // display a shadow during dragging
+                    drawOnAxis: null,  // force dragging stick on a axis, can be: x, y
+                    symbol: {
+                        'lineColor': '#34495e',
+                        'lineWidth': 2,
+                        'polygonFill': randomColor(),
+                        'polygonOpacity': 0.6
+                    }
+                });
+
+                new maptalks.VectorLayer('vector', polygon).addTo(map);
+                polygon.startEdit();
+            },
+            template: '<div :id="mapId" class="map"></div>'
+        })
+
+        const page1 = { template: '<div><vue-map></vue-map></div>' }
+        const page2 = { template: '<div><vue-map></vue-map></div>' }
+        const page3 = {
+            template: '<div>id:{{msg}}</div>',
+            data: function () {
+                return {
+                    msg: maptalks.Util.GUID()
+                }
+
+            }
+        }
+        const routes = [
+            {
+                path: '/page1', component: page1, meta: {
+                    keepAlive: true // 需要被缓存
+                }
+            },
+            {
+                path: '/page2', component: page2, meta: {
+                    keepAlive: true // 需要被缓存
+                }
+            },
+            {
+                path: '/page3', component: page3
+            }
+        ]
+
+        // 3. 创建 router 实例，然后传 `routes` 配置
+        // 你还可以传别的配置参数, 不过先这么简单着吧。
+        const router = new VueRouter({
+            routes // (缩写) 相当于 routes: routes
+        })
+
+        const vm = new Vue({
+            el: '#app',
+            components: [
+
+            ],
+            data: {
+                msg: 'Hello maptalks.three,You can switch the route below,This example is used to test whether the map is maintained during route switching in Vue'
+            },
+            router
+        })
+
+    </script>
+</body>
+
+</html>
