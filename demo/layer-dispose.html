@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>dispose test</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/randomcolor@0.6.2/randomColor.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.104.0/build/three.min.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.97.0/examples/js/libs/stats.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            center: [120, 31],
+            zoom: 11,
+            pitch: 60,
+            // bearing: 180,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+        var threeLayer;
+        var material = new THREE.MeshLambertMaterial({ color: '#fff', transparent: true });
+        function createLayer() {
+            if (threeLayer) {
+                console.log('dispose threelayer');
+                threeLayer.getThreeRenderer().dispose();
+                threeLayer.getThreeRenderer().forceContextLoss();;
+                const object3ds = threeLayer.getMeshes();
+                threeLayer.clear();
+                object3ds.forEach(object3d => {
+                    object3d = null;
+                });
+                let camera = threeLayer.getCamera();
+                let scene = threeLayer.getScene();
+                let pick = threeLayer.getPick();
+                let pickingTexture = pick.pickingTexture;
+                let pickingScene = pick.pickingScene;
+                scene.remove(camera);
+                camera = null;
+                scene = null;
+                pickingTexture.dispose();
+                pickingTexture = null;
+                pickingScene = null;
+                threeLayer.remove();
+            }
+            // the ThreeLayer to draw buildings
+            threeLayer = new maptalks.ThreeLayer(maptalks.Util.GUID(), {
+                forceRenderOnMoving: true,
+                forceRenderOnRotating: true
+                // animation: true
+            });
+
+            threeLayer.prepareToDraw = function (gl, scene, camera) {
+                console.log('create Layer');
+                var light = new THREE.DirectionalLight(0xffffff);
+                light.position.set(0, -10, 10).normalize();
+                scene.add(light);
+                scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+
+                material.color.setStyle(randomColor());
+                const bar = new BarText(map.getCenter(), { radius: 5000 }, material, this);
+                this.addMesh(bar);
+
+                setTimeout(() => {
+                    createLayer();
+                }, 10);
+            };
+            threeLayer.addTo(map);
+        }
+        createLayer();
+
+
+        const OPTIONS = {
+            altitude: 0,
+            radius: 500
+        };
+
+        class BarText extends maptalks.BaseObject {
+            constructor(coordinate, options, material, layer) {
+                options = maptalks.Util.extend({}, OPTIONS, options, { layer, coordinate });
+                super();
+                //Initialize internal configuration
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L135
+                this._initOptions(options);
+                const { altitude, radius } = options;
+                //generate geometry
+                const r = layer.distanceToVector3(radius, radius).x;
+                const h = 40;
+                const geometry = new THREE.BoxBufferGeometry(r, r, h);
+                geometry.translate(0, 0, h / 2);
+
+                //Initialize internal object3d
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L140
+                this._createMesh(geometry, material);
+
+                //set object3d position
+                const z = layer.distanceToVector3(altitude, altitude).x;
+                const position = layer.coordinateToVector3(coordinate, z);
+                this.getObject3d().position.copy(position);
+            }
+        }
+    </script>
+</body>
+
+</html>
