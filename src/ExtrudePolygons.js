@@ -87,6 +87,12 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
                     this.getObject3d().geometry = bufferGeometry;
                     this.getObject3d().material.needsUpdate = true;
                     this._geometryCache = bufferGeometry.clone();
+                    this._setPickObject3d();
+                    this._init();
+                    if (this.isAdd) {
+                        const pick = this.getLayer().getPick();
+                        pick.add(this.pickObject3d);
+                    }
                     this._fire('workerload', { target: this });
                 }
             });
@@ -161,8 +167,12 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
         this.faceIndex = null;
         this._geometryCache = bufferGeometry.clone();
         this.isHide = false;
-
+        this._colorMap = {};
         this._initBaseObjectsEvent(extrudePolygons);
+        if (!asynchronous) {
+            this._setPickObject3d();
+            this._init();
+        }
     }
 
     // eslint-disable-next-line consistent-return
@@ -185,16 +195,59 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
     // eslint-disable-next-line consistent-return
     _getIndex(faceIndex) {
         if (faceIndex == null) {
-            faceIndex = this.faceIndex;
+            faceIndex = this.faceIndex || this.index;
         }
-        if (faceIndex != null) {
-            for (let i = 0, len = this._faceMap.length; i < len; i++) {
-                const [start, end] = this._faceMap[i];
-                if (start <= faceIndex && faceIndex < end) {
-                    return i;
-                }
+        return faceIndex;
+        // if (faceIndex != null) {
+        //     for (let i = 0, len = this._faceMap.length; i < len; i++) {
+        //         const [start, end] = this._faceMap[i];
+        //         if (start <= faceIndex && faceIndex < end) {
+        //             return i;
+        //         }
+        //     }
+        // }
+    }
+
+    _init() {
+        const pick = this.getLayer().getPick();
+        this.on('add', () => {
+            pick.add(this.pickObject3d);
+        });
+        this.on('remove', () => {
+            pick.remove(this.pickObject3d);
+        });
+    }
+
+    _setPickObject3d() {
+        const geometry = this.getObject3d().geometry.clone();
+        const pick = this.getLayer().getPick();
+        const { _geometriesAttributes } = this;
+        const colors = [];
+        for (let i = 0, len = _geometriesAttributes.length; i < len; i++) {
+            const color = pick.getColor();
+            const colorIndex = color.getHex();
+            this._colorMap[colorIndex] = i;
+            const { count } = _geometriesAttributes[i].position;
+            this._datas[i].colorIndex = colorIndex;
+            for (let j = 0; j < count; j++) {
+                colors.push(color.r, color.g, color.b);
             }
         }
+        addAttribute(geometry, 'color', new THREE.Float32BufferAttribute(colors, 3, true));
+        const material = new THREE.MeshBasicMaterial();
+        // material.color.set('#fff');
+        material.vertexColors = THREE.VertexColors;
+        const color = pick.getColor();
+        const colorIndex = color.getHex();
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.copy(this.getObject3d().position);
+        mesh._colorIndex = colorIndex;
+        this.setPickObject3d(mesh);
+    }
+
+    // eslint-disable-next-line no-unused-vars
+    identify(coordinate) {
+        return this.picked;
     }
 }
 
