@@ -657,6 +657,16 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 }
             });
         }
+        const len = baseObjects.length;
+        for (let i = 0; i < len; i++) {
+            if (baseObjects[i]) {
+                for (let j = i + 1; j < len; j++) {
+                    if (baseObjects[i] === baseObjects[j]) {
+                        baseObjects.splice(j, 1);
+                    }
+                }
+            }
+        }
         options = maptalks.Util.extend({}, options);
         const count = options.count;
         return (maptalks.Util.isNumber(count) && count > 0 ? baseObjects.slice(0, count) : baseObjects);
@@ -700,7 +710,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         const { type, coordinate } = e;
         const now = maptalks.Util.now();
         if (this._mousemoveTimeOut && type === 'mousemove') {
-            if (now - this._mousemoveTimeOut < 16) {
+            if (now - this._mousemoveTimeOut < 64) {
                 return this;
             }
         }
