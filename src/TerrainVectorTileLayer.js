@@ -117,7 +117,7 @@ class TerrainVectorTileLayer extends BaseVectorTileLayer {
                 tileImage.height = tileSize['height'];
                 tileImage.onload = this.onTileLoad.bind(this, tileImage, tile);
                 tileImage.onerror = this.onTileError.bind(this, tileImage, tile);
-                this.loadTileImage(tileImage, tile['url'], tile.dupKey);
+                this.loadTileImage(tileImage, tile['url'], tile.id);
                 return tileImage;
             };
 
@@ -128,12 +128,12 @@ class TerrainVectorTileLayer extends BaseVectorTileLayer {
                 tile.image.onload = null;
                 tile.image.onerror = null;
                 const tileinfo = tile.info || {};
-                const rgbImage = this._imgQueue[tileinfo.dupKey];
+                const rgbImage = this._imgQueue[tileinfo.id];
                 if (rgbImage) {
                     rgbImage.src = '';
                     rgbImage.onload = null;
                     rgbImage.onerror = null;
-                    delete this._imgQueue[tileinfo.dupKey];
+                    delete this._imgQueue[tileinfo.id];
                 }
             };
             e.renderer.loadTileImage = (img, url, key) => {

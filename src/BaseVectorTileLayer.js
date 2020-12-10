@@ -91,9 +91,9 @@ class BaseVectorTileLayer extends maptalks.TileLayer {
             const d = tileGrids[i];
             const tiles = d.tiles || [];
             for (let j = 0, len1 = tiles.length; j < len1; j++) {
-                const { dupKey } = tiles[j];
-                keys.push(dupKey);
-                keysMap[dupKey] = true;
+                const { id } = tiles[j];
+                keys.push(id);
+                keysMap[id] = true;
             }
 
         }
