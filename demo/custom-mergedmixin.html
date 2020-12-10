@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>merged mesh gpu pick test</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.104.0/build/three.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.104.0/examples/js/libs/stats.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        .map {
+            width: 100%;
+            height: 100%;
+            background-color: #8896b1;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map" class="map"></div>
+
+    <script>
+
+
+        var map = new maptalks.Map("map", {
+            center: [13.416935229170008, 52.529564137540376],
+            zoom: 15,
+            pitch: 70,
+            bearing: 0,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            // baseLayer: new maptalks.TileLayer('tile', {
+            //     urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+            //     subdomains: ['a', 'b', 'c', 'd'],
+            //     attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            // })
+        });
+
+
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true,
+            // animation: true
+        });
+
+
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+            addBox();
+        };
+        threeLayer.addTo(map);
+
+
+        var boxs = [], selectMesh = [];
+        var material = new THREE.MeshPhongMaterial({
+            color: 'rgb(38,160,146)', flatShading: true, shininess: 0
+        });
+        var highlightmaterial = new THREE.MeshPhongMaterial({
+            color: 'red', flatShading: true, shininess: 0
+        });
+        function addBox() {
+            const center = [13.328180824463743, 52.487501981279564];
+            var lnglats = [];
+            while (lnglats.length < 10000) {
+                const lng = center[0] + Math.random() * 0.5, lat = center[1] + Math.random() * 0.4;
+                lnglats.push([lng, lat]);
+            }
+
+            const data = lnglats.map(l => {
+                return {
+                    coordinate: l,
+                    radius: 40,
+                    height: Math.random() * 500 + 50
+                }
+            });
+            const box = new TestBoxs(data, {}, material, threeLayer);
+            box.setToolTip('hello', {
+                showTimeout: 0,
+                eventsPropagation: true,
+                dx: 10
+            });
+
+            //infowindow test
+            box.setInfoWindow({
+                content: 'hello world',
+                title: 'message',
+                animationDuration: 0,
+                autoOpenOn: false
+            });
+            //event test
+            ['click', 'mousemove', 'empty', 'mouseout', 'mouseover', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].forEach(function (eventType) {
+                box.on(eventType, function (e) {
+                    // console.log(e.type);
+                    const select = e.selectMesh;
+                    if (e.type === 'empty' && selectMesh.length) {
+                        threeLayer.removeMesh(selectMesh);
+                        selectMesh = [];
+                    }
+
+                    let data, baseObject;
+                    if (select) {
+                        data = select.data;
+                        baseObject = select.baseObject;
+                        if (baseObject && !baseObject.isAdd) {
+                            baseObject.setSymbol(highlightmaterial);
+                            threeLayer.addMesh(baseObject);
+                            selectMesh.push(baseObject);
+                        }
+                    }
+
+
+                    if (selectMesh.length > 20) {
+                        threeLayer.removeMesh(selectMesh);
+                        selectMesh = [];
+                    }
+
+
+                    // override tooltip
+                    if (e.type === 'mousemove' && data) {
+                        const height = data.height;
+                        const tooltip = this.getToolTip();
+                        tooltip._content = `height:${height}`;
+                    }
+                    //override infowindow
+                    if (e.type === 'click' && data) {
+                        const height = data.height;
+                        const infoWindow = this.getInfoWindow();
+                        infoWindow.setContent(`height:${height}`);
+                        if (infoWindow && (!infoWindow._owner)) {
+                            infoWindow.addTo(this);
+                        }
+                        this.openInfoWindow(e.coordinate);
+
+                    }
+                });
+            });
+            boxs.push(box);
+
+            threeLayer.addMesh(boxs);
+            animation();
+        }
+
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer.renderScene();
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+        }
+
+
+        //default values
+        var OPTIONS = {
+            altitude: 0,
+            radius: 10,
+            height: 100,
+            interactive: true
+        };
+
+        class TestBox extends maptalks.BaseObject {
+            constructor(coordinate, options, material, layer) {
+                options = maptalks.Util.extend({}, OPTIONS, options, { layer, coordinate });
+                super();
+                //Initialize internal configuration
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L135
+                this._initOptions(options);
+                const { altitude, radius, height } = options;
+                //generate geometry
+                const h = layer.distanceToVector3(height, height).x;
+                const r = layer.distanceToVector3(radius, radius).x;
+                const geometry = new THREE.BoxBufferGeometry(r * 2, r * 2, h);
+                geometry.translate(0, 0, h / 2);
+
+                //Initialize internal object3d
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L140
+                this._createMesh(geometry, material);
+                //set object3d position
+                const z = layer.distanceToVector3(altitude, altitude).x;
+                const position = layer.coordinateToVector3(coordinate, z);
+                this.getObject3d().position.copy(position);
+            }
+        }
+
+
+        var OPTIONS1 = {
+            altitude: 0,
+            radius: 10,
+            height: 100,
+            interactive: true
+        };
+        const defaultGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
+        defaultGeometry.translate(0, 0, 0.5);
+
+        class TestBoxs extends maptalks.MergedMixin(maptalks.BaseObject) {
+            constructor(points, options, material, layer) {
+                if (!Array.isArray(points)) {
+                    points = [points];
+                }
+                const len = points.length;
+                const center = getCenterOfPoints(points);
+                const centerPt = layer.coordinateToVector3(center);
+                const geometries = [], bars = [], geometriesAttributes = [], faceMap = [];
+                let faceIndex = 0, psIndex = 0, normalIndex = 0, uvIndex = 0;
+                for (let i = 0; i < len; i++) {
+                    const opts = maptalks.Util.extend({ index: i }, OPTIONS1, points[i]);
+                    const { radius, altitude, topColor, bottomColor, height, coordinate } = opts;
+                    const r = layer.distanceToVector3(radius, radius).x;
+                    const h = layer.distanceToVector3(height, height).x;
+                    const alt = layer.distanceToVector3(altitude, altitude).x;
+                    const buffGeom = defaultGeometry.clone();
+                    buffGeom.scale(r * 2, r * 2, h);
+                    const v = layer.coordinateToVector3(coordinate).sub(centerPt);
+                    const parray = buffGeom.attributes.position.array;
+                    for (let j = 0, len1 = parray.length; j < len1; j += 3) {
+                        parray[j + 2] += alt;
+                        parray[j] += v.x;
+                        parray[j + 1] += v.y;
+                        parray[j + 2] += v.z;
+                    }
+                    const position = buffGeom.attributes.position;
+                    const normal = buffGeom.attributes.normal;
+                    const uv = buffGeom.attributes.uv;
+                    const index = buffGeom.index;
+                    geometries.push({
+                        position: position.array,
+                        normal: normal.array,
+                        uv: uv.array,
+                        indices: index.array
+                    });
+                    const bar = new TestBox(coordinate, opts, material, layer);
+                    bars.push(bar);
+
+                    const faceLen = buffGeom.index.count / 3;
+                    faceMap[i] = [faceIndex + 1, faceIndex + faceLen];
+                    faceIndex += faceLen;
+
+                    const psCount = buffGeom.attributes.position.count,
+                        //  colorCount = buffGeom.attributes.color.count,
+                        normalCount = buffGeom.attributes.normal.count, uvCount = buffGeom.attributes.uv.count;
+                    geometriesAttributes[i] = {
+                        position: {
+                            count: psCount,
+                            start: psIndex,
+                            end: psIndex + psCount * 3,
+                        },
+                        normal: {
+                            count: normalCount,
+                            start: normalIndex,
+                            end: normalIndex + normalCount * 3,
+                        },
+                        // color: {
+                        //     count: colorCount,
+                        //     start: colorIndex,
+                        //     end: colorIndex + colorCount * 3,
+                        // },
+                        uv: {
+                            count: uvCount,
+                            start: uvIndex,
+                            end: uvIndex + uvCount * 2,
+                        },
+                        hide: false
+                    };
+                    psIndex += psCount * 3;
+                    normalIndex += normalCount * 3;
+                    // colorIndex += colorCount * 3;
+                    uvIndex += uvCount * 2;
+                }
+                super();
+                options = maptalks.Util.extend({}, { altitude: 0, layer, points }, options);
+                this._initOptions(options);
+                const geometry = maptalks.MergeGeometryUtil.mergeBufferGeometries(geometries);
+                this._createMesh(geometry, material);
+                const altitude = options.altitude;
+                const z = layer.distanceToVector3(altitude, altitude).x;
+                const v = centerPt.clone();
+                v.z = z;
+                this.getObject3d().position.copy(v);
+
+                this._faceMap = faceMap;
+                this._baseObjects = bars;
+                this._datas = points;
+                this._geometriesAttributes = geometriesAttributes;
+                this.faceIndex = null;
+                this._geometryCache = geometry.clone();
+                this.isHide = false;
+                this._colorMap = {};
+                this._initBaseObjectsEvent(bars);
+                this._setPickObject3d();
+                this._init();
+            }
+
+            // eslint-disable-next-line no-unused-vars
+            identify(coordinate) {
+                return this.picked;
+            }
+        }
+
+        function getCenterOfPoints(points = []) {
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            for (let i = 0, len = points.length; i < len; i++) {
+                const { coordinate } = points[i];
+                let x, y;
+                if (Array.isArray(coordinate)) {
+                    x = coordinate[0];
+                    y = coordinate[1];
+                } else if (coordinate instanceof maptalks.Coordinate) {
+                    x = coordinate.x;
+                    y = coordinate.y;
+                }
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+            }
+            return new maptalks.Coordinate((minX + maxX) / 2, (minY + maxY) / 2);
+        }
+
+    </script>
+</body>
+
+</html>
