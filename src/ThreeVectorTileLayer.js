@@ -149,7 +149,7 @@ class ThreeVectorTileLayer extends BaseVectorTileLayer {
                 tileImage.height = tileSize['height'];
                 tileImage.onload = this.onTileLoad.bind(this, tileImage, tile);
                 tileImage.onerror = this.onTileError.bind(this, tileImage, tile);
-                this.loadTileImage(tileImage, tile['url'], tile.dupKey);
+                this.loadTileImage(tileImage, tile['url'], tile.id);
                 return tileImage;
             };
 
@@ -160,7 +160,7 @@ class ThreeVectorTileLayer extends BaseVectorTileLayer {
                 tile.image.onload = null;
                 tile.image.onerror = null;
                 const tileinfo = tile.info || {};
-                outQueue(tileinfo.dupKey);
+                outQueue(tileinfo.id);
             };
 
             e.renderer.loadTileImage = (img, url, key) => {
