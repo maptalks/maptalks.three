@@ -1,8 +1,11 @@
 import * as THREE from 'three';
+import * as maptalks from 'maptalks';
 import { mergeBufferGeometries } from './MergeGeometryUtil';
 import { addAttribute } from './ThreeAdaptUtil';
 const barGeometryCache = {};
 const KEY = '-';
+const defaultBoxGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
+defaultBoxGeometry.translate(0, 0, 0.5);
 
 /**
  * Reuse Geometry   , Meter as unit
@@ -107,4 +110,27 @@ export function mergeBarGeometry(geometries) {
 
 }
 
+export function getCenterOfPoints(points = []) {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (let i = 0, len = points.length; i < len; i++) {
+        const { coordinate } = points[i];
+        let x, y;
+        if (Array.isArray(coordinate)) {
+            x = coordinate[0];
+            y = coordinate[1];
+        } else if (coordinate instanceof maptalks.Coordinate) {
+            x = coordinate.x;
+            y = coordinate.y;
+        }
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+    }
+    return new maptalks.Coordinate((minX + maxX) / 2, (minY + maxY) / 2);
+}
+
+export function getDefaultBoxGeometry() {
+    return defaultBoxGeometry;
+}
 

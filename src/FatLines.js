@@ -107,16 +107,6 @@ class FatLines extends MergedMixin(BaseObject) {
         this._init();
     }
 
-    _init() {
-        const pick = this.getLayer().getPick();
-        this.on('add', () => {
-            pick.add(this.pickObject3d);
-        });
-        this.on('remove', () => {
-            pick.remove(this.pickObject3d);
-        });
-    }
-
     _setMaterialRes(layer, material) {
         const map = layer.getMap();
         const size = map.getSize();
@@ -193,15 +183,6 @@ class FatLines extends MergedMixin(BaseObject) {
                 baseObject: this._baseObjects[index]
             };
         }
-    }
-
-    // eslint-disable-next-line consistent-return
-    _getIndex(faceIndex) {
-        if (faceIndex == null) {
-            faceIndex = this.faceIndex || this.index;
-        }
-        return faceIndex;
-
     }
 
     /**

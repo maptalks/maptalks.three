@@ -1,25 +1,20 @@
+
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
-import { getCenterOfPoints, getGeometry, initVertexColors, mergeBarGeometry } from './util/BarUtil';
-import Bar from './Bar';
+import Box from './Box';
 import MergedMixin from './MergedMixin';
-
+import { getCenterOfPoints, getDefaultBoxGeometry, initVertexColors, mergeBarGeometry } from './util/BarUtil';
 
 const OPTIONS = {
-    coordinate: null,
     radius: 10,
     height: 100,
-    radialSegments: 6,
     altitude: 0,
     topColor: null,
     bottomColor: '#2d2f61',
 };
 
-/**
- * merged bars
- */
-class Bars extends MergedMixin(BaseObject) {
+class Boxs extends MergedMixin(BaseObject) {
     constructor(points, options, material, layer) {
         if (!Array.isArray(points)) {
             points = [points];
@@ -31,16 +26,16 @@ class Bars extends MergedMixin(BaseObject) {
         let faceIndex = 0, psIndex = 0, normalIndex = 0, uvIndex = 0;
         for (let i = 0; i < len; i++) {
             const opts = maptalks.Util.extend({ index: i }, OPTIONS, points[i]);
-            const { radius, radialSegments, altitude, topColor, bottomColor, height, coordinate } = opts;
+            const { radius, altitude, topColor, bottomColor, height, coordinate } = opts;
             const r = layer.distanceToVector3(radius, radius).x;
             const h = layer.distanceToVector3(height, height).x;
             const alt = layer.distanceToVector3(altitude, altitude).x;
-            const buffGeom = getGeometry({ radius: r, height: h, radialSegments }, false);
+            const buffGeom = getDefaultBoxGeometry().clone();
+            buffGeom.scale(r * 2, r * 2, h);
             if (topColor && !material.map) {
                 initVertexColors(buffGeom, bottomColor, topColor, 'z', h / 2);
                 material.vertexColors = THREE.VertexColors;
             }
-            // buffGeom.rotateX(Math.PI / 2);
             const v = layer.coordinateToVector3(coordinate).sub(centerPt);
             const parray = buffGeom.attributes.position.array;
             for (let j = 0, len1 = parray.length; j < len1; j += 3) {
@@ -50,7 +45,7 @@ class Bars extends MergedMixin(BaseObject) {
                 parray[j + 2] += v.z;
             }
             geometries.push(buffGeom);
-            const bar = new Bar(coordinate, opts, material, layer);
+            const bar = new Box(coordinate, opts, material, layer);
             bars.push(bar);
 
             const faceLen = buffGeom.index.count / 3;
@@ -98,6 +93,7 @@ class Bars extends MergedMixin(BaseObject) {
         const v = centerPt.clone();
         v.z = z;
         this.getObject3d().position.copy(v);
+
         this._faceMap = faceMap;
         this._baseObjects = bars;
         this._datas = points;
@@ -116,5 +112,4 @@ class Bars extends MergedMixin(BaseObject) {
         return this.picked;
     }
 }
-
-export default Bars;
+export default Boxs;
