@@ -116,32 +116,6 @@ class Lines extends MergedMixin(BaseObject) {
         }
     }
 
-    // eslint-disable-next-line consistent-return
-    _getIndex(faceIndex) {
-        if (faceIndex == null) {
-            faceIndex = this.faceIndex || this.index;
-        }
-        return faceIndex;
-        // if (faceIndex != null) {
-        //     for (let i = 0, len = this._faceMap.length; i < len; i++) {
-        //         const [start, end] = this._faceMap[i];
-        //         if (start <= faceIndex && faceIndex < end) {
-        //             return i;
-        //         }
-        //     }
-        // }
-    }
-
-    _init() {
-        const pick = this.getLayer().getPick();
-        this.on('add', () => {
-            pick.add(this.pickObject3d);
-        });
-        this.on('remove', () => {
-            pick.remove(this.pickObject3d);
-        });
-    }
-
     _setPickObject3d() {
         const geometry = this.getObject3d().geometry.clone();
         const pick = this.getLayer().getPick();

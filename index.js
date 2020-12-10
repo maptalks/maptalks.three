@@ -22,6 +22,16 @@ import { setRaycasterLinePrecision } from './src/util/ThreeAdaptUtil';
 import GPUPick from './src/GPUPick';
 import FatLine from './src/FatLine';
 import FatLines from './src/FatLines';
+import Box from './src/Box';
+import Boxs from './src/Boxs';
+import MergedMixin from './src/MergedMixin';
+import * as GeoJSONUtil from './src/util/GeoJSONUtil';
+import * as GeoUtil from './src/util/GeoUtil';
+import * as MergeGeometryUtil from './src/util/MergeGeometryUtil';
+import * as ExtrudeUtil from './src/util/ExtrudeUtil';
+import * as LineUtil from './src/util/LineUtil';
+import * as IdentifyUtil from './src/util/IdentifyUtil';
+import * as geometryExtrude from 'deyihu-geometry-extrude';
 
 const options = {
     'renderer': 'gl',
@@ -402,6 +412,26 @@ class ThreeLayer extends maptalks.CanvasLayer {
      */
     toFatLines(lineStrings, options, material) {
         return new FatLines(lineStrings, options, material, this);
+    }
+
+    /**
+     *
+     * @param {*} coorindate
+     * @param {*} options
+     * @param {*} material
+     */
+    toBox(coorindate, options, material) {
+        return new Box(coorindate, options, material, this);
+    }
+
+    /**
+     *
+     * @param {*} points
+     * @param {*} options
+     * @param {*} material
+     */
+    toBoxs(points, options, material) {
+        return new Boxs(points, options, material, this);
     }
 
 
@@ -1039,5 +1069,7 @@ function getTargetZoom(map) {
 }
 
 export {
-    ThreeLayer, ThreeRenderer, BaseObject
+    ThreeLayer, ThreeRenderer, BaseObject, MergedMixin,
+    GeoJSONUtil, MergeGeometryUtil, GeoUtil, ExtrudeUtil, LineUtil,
+    IdentifyUtil, geometryExtrude
 };
