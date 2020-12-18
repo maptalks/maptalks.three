@@ -4,6 +4,7 @@ import BaseObject from './BaseObject';
 import { getCenterOfPoints, getGeometry, initVertexColors, mergeBarGeometry } from './util/BarUtil';
 import Bar from './Bar';
 import MergedMixin from './MergedMixin';
+import { distanceToVector3 } from './util';
 
 
 const OPTIONS = {
@@ -29,12 +30,13 @@ class Bars extends MergedMixin(BaseObject) {
         const centerPt = layer.coordinateToVector3(center);
         const geometries = [], bars = [], geometriesAttributes = [], faceMap = [];
         let faceIndex = 0, psIndex = 0, normalIndex = 0, uvIndex = 0;
+        const cache = {};
         for (let i = 0; i < len; i++) {
             const opts = maptalks.Util.extend({ index: i }, OPTIONS, points[i]);
             const { radius, radialSegments, altitude, topColor, bottomColor, height, coordinate } = opts;
-            const r = layer.distanceToVector3(radius, radius).x;
-            const h = layer.distanceToVector3(height, height).x;
-            const alt = layer.distanceToVector3(altitude, altitude).x;
+            const r = distanceToVector3(cache, radius, layer);
+            const h = distanceToVector3(cache, height, layer);
+            const alt = distanceToVector3(cache, altitude, layer);
             const buffGeom = getGeometry({ radius: r, height: h, radialSegments }, false);
             if (topColor && !material.map) {
                 initVertexColors(buffGeom, bottomColor, topColor, 'z', h / 2);

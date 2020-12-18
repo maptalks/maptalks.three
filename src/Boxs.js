@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import BaseObject from './BaseObject';
 import Box from './Box';
 import MergedMixin from './MergedMixin';
+import { distanceToVector3 } from './util';
 import { getCenterOfPoints, getDefaultBoxGeometry, initVertexColors, mergeBarGeometry } from './util/BarUtil';
 
 const OPTIONS = {
@@ -24,12 +25,13 @@ class Boxs extends MergedMixin(BaseObject) {
         const centerPt = layer.coordinateToVector3(center);
         const geometries = [], bars = [], geometriesAttributes = [], faceMap = [];
         let faceIndex = 0, psIndex = 0, normalIndex = 0, uvIndex = 0;
+        const cache = {};
         for (let i = 0; i < len; i++) {
             const opts = maptalks.Util.extend({ index: i }, OPTIONS, points[i]);
             const { radius, altitude, topColor, bottomColor, height, coordinate } = opts;
-            const r = layer.distanceToVector3(radius, radius).x;
-            const h = layer.distanceToVector3(height, height).x;
-            const alt = layer.distanceToVector3(altitude, altitude).x;
+            const r = distanceToVector3(cache, radius, layer);
+            const h = distanceToVector3(cache, height, layer);
+            const alt = distanceToVector3(cache, altitude, layer);
             const buffGeom = getDefaultBoxGeometry().clone();
             buffGeom.scale(r * 2, r * 2, h);
             if (topColor && !material.map) {
