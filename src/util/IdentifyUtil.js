@@ -1,12 +1,13 @@
 /* eslint-disable indent */
 import * as THREE from 'three';
+import { distanceToVector3 } from '.';
 
 function positionsConvert(worldPoints, altitude = 0, layer) {
-    const vectors = [];
+    const vectors = [], cache = {};
     for (let i = 0, len = worldPoints.length; i < len; i += 3) {
         let x = worldPoints[i], y = worldPoints[i + 1], z = worldPoints[i + 2];
         if (altitude > 0) {
-            z += layer.distanceToVector3(altitude, altitude).x;
+            z += distanceToVector3(cache, altitude, layer);
         }
         vectors.push(new THREE.Vector3(x, y, z));
     }

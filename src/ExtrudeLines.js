@@ -6,6 +6,7 @@ import { getExtrudeLineParams, LineStringSplit } from './util/LineUtil';
 import ExtrudeLine from './ExtrudeLine';
 import { isGeoJSON } from './util/GeoJSONUtil';
 import { mergeBufferGeometries, mergeBufferGeometriesAttribute } from './util/MergeGeometryUtil';
+import { distanceToVector3 } from './util';
 
 const OPTIONS = {
     width: 3,
@@ -31,12 +32,13 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
         const geometries = [], extrudeLines = [];
         let faceIndex = 0, faceMap = [], geometriesAttributes = [],
             psIndex = 0, normalIndex = 0;
+        const cache = {};
         for (let i = 0; i < len; i++) {
             const lineString = lineStrings[i];
             const opts = maptalks.Util.extend({}, OPTIONS, isGeoJSON(lineString) ? lineString.properties : lineString.getProperties(), { index: i });
             const { height, width } = opts;
-            const w = layer.distanceToVector3(width, width).x;
-            const h = layer.distanceToVector3(height, height).x;
+            const w = distanceToVector3(cache, width, layer);
+            const h = distanceToVector3(cache, height, layer);
             const lls = lineStringList[i];
             const extrudeParams = [];
             for (let m = 0, le = lls.length; m < le; m++) {
