@@ -3,50 +3,34 @@ import * as maptalks from 'maptalks';
 import { mergeBufferGeometries } from './MergeGeometryUtil';
 import { addAttribute } from './ThreeAdaptUtil';
 const barGeometryCache = {};
-const KEY = '-';
 const defaultBoxGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
 defaultBoxGeometry.translate(0, 0, 0.5);
+
+const topColor = new THREE.Color('#fff'), bottomColor = new THREE.Color('#fff');
+
+function getDefaultCylinderBufferGeometry(radialSegments = 6) {
+    if (!barGeometryCache[radialSegments]) {
+        const geometry = new THREE.CylinderBufferGeometry(1, 1, 1, radialSegments, 1);
+        geometry.rotateX(Math.PI / 2);
+        geometry.translate(0, 0, 0.5);
+        barGeometryCache[radialSegments] = geometry;
+    }
+    return barGeometryCache[radialSegments];
+}
 
 /**
  * Reuse Geometry   , Meter as unit
  * @param {*} property
  */
+// eslint-disable-next-line no-unused-vars
 export function getGeometry(property, isCache = true) {
     const {
         height,
         radialSegments,
-        radius,
-        _radius,
-        _height
+        radius
     } = property;
-    if (!isCache) { //for bars
-        const geometry = new THREE.CylinderBufferGeometry(radius, radius, height, radialSegments, 1);
-        geometry.rotateX(Math.PI / 2);
-        const parray = geometry.attributes.position.array;
-        for (let j = 0, len1 = parray.length; j < len1; j += 3) {
-            parray[j + 2] += (height / 2);
-        }
-        return geometry;
-    }
-    let geometry;
-    for (let i = 0; i <= 4; i++) {
-        let key = [(_height + i), _radius, radialSegments].join(KEY).toString();
-        geometry = barGeometryCache[key];
-        if (geometry) break;
-        key = [(_height - i), _radius, radialSegments].join(KEY).toString();
-        geometry = barGeometryCache[key];
-        if (geometry) break;
-    }
-    if (!geometry) {
-        const key = [_height, _radius, radialSegments].join(KEY).toString();
-        geometry = barGeometryCache[key] = new THREE.CylinderBufferGeometry(radius, radius, height, radialSegments, 1);
-        geometry.rotateX(Math.PI / 2);
-        const parray = geometry.attributes.position.array;
-        for (let j = 0, len1 = parray.length; j < len1; j += 3) {
-            parray[j + 2] += (height / 2);
-        }
-        return geometry;
-    }
+    const geometry = getDefaultCylinderBufferGeometry(radialSegments).clone();
+    geometry.scale(radius, radius, height);
     return geometry;
 }
 
@@ -66,8 +50,8 @@ export function initVertexColors(geometry, color, _topColor, key = 'y', v = 0) {
     }
     const position = geometry.attributes.position.array;
     const len = position.length;
-    const bottomColor = (color instanceof THREE.Color ? color : new THREE.Color(color));
-    const topColor = new THREE.Color(_topColor);
+    bottomColor.setStyle(color);
+    topColor.setStyle(_topColor);
     const colors = [];
     for (let i = 0; i < len; i += 3) {
         const y = position[i + offset];
@@ -105,6 +89,9 @@ export function mergeBarGeometry(geometries) {
         for (let i = 0, len = colors.length; i < len; i++) {
             bufferGeometry.attributes.color.array[i] = colors[i];
         }
+    }
+    for (let i = 0, len = geometries.length; i < len; i++) {
+        geometries[i].dispose();
     }
     return bufferGeometry;
 
