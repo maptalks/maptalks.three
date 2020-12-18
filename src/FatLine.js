@@ -37,6 +37,7 @@ class FatLine extends BaseObject {
         this.getObject3d().position.copy(v);
         this._setPickObject3d(ps, material.linewidth);
         this._init();
+        this.type = 'FatLine';
     }
 
     _init() {

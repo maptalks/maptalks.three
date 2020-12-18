@@ -36,6 +36,7 @@ class Point extends BaseObject {
         const z1 = layer.distanceToVector3(altitude, altitude).x;
         const v1 = new THREE.Vector3(v.x, v.y, z1);
         this.getObject3d().position.copy(v1);
+        this.type = 'Point';
     }
 
     /**

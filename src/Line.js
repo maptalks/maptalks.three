@@ -54,6 +54,7 @@ class Line extends BaseObject {
         const z = layer.distanceToVector3(altitude, altitude).x;
         const v = layer.coordinateToVector3(center, z);
         this.getObject3d().position.copy(v);
+        this.type = 'Line';
     }
 }
 

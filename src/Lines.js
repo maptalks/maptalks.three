@@ -96,6 +96,7 @@ class Lines extends MergedMixin(BaseObject) {
         this._initBaseObjectsEvent(lines);
         this._setPickObject3d();
         this._init();
+        this.type = 'Lines';
     }
 
     // eslint-disable-next-line consistent-return

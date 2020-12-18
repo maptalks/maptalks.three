@@ -173,6 +173,7 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
             this._setPickObject3d();
             this._init();
         }
+        this.type = 'ExtrudePolygons';
     }
 
     // eslint-disable-next-line consistent-return

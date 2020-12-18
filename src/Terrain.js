@@ -114,6 +114,7 @@ class Terrain extends BaseObject {
                 console.error(`not load ${rgbImg.src}`);
             };
         }
+        this.type = 'Terrain';
     }
 }
 

@@ -107,6 +107,7 @@ class Boxs extends MergedMixin(BaseObject) {
         this._initBaseObjectsEvent(bars);
         this._setPickObject3d();
         this._init();
+        this.type = 'Boxs';
     }
 
     // eslint-disable-next-line no-unused-vars
