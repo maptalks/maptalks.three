@@ -64,7 +64,7 @@
                 audioContext.decodeAudioData(oReq.response, initVisualizer);
             };
             oReq.send();
-            threeLayer.config('animation', true);
+            // threeLayer.config('animation', true);
             animation();
 
 
@@ -73,7 +73,10 @@
 
 
         function animation() {
-            // map.setBearing(map.getBearing() - 0.08);
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer.renderScene();
+            }
             requestAnimationFrame(animation);
         }
 
@@ -166,23 +169,37 @@
 
 
         var bars;
+        var barCache = {};
         var minValue = Infinity, maxValue = -Infinity;
         function addBars(data) {
             if (bars) {
-                threeLayer.removeMesh(bars);
+                threeLayer.removeMesh(bars, false);
             }
             bars = data.map(function (d) {
                 var value = d.value;
                 minValue = Math.min(minValue, value[2]);
                 maxValue = Math.max(maxValue, value[2]);
-                return threeLayer.toBar(value.slice(0, 2), {
-                    height: value[2],
-                    radius: 900,
-                    topColor: '#fff',
-                    radialSegments: 4
-                }, getMaterial(value[2]));
+                const material = getMaterial(value[2]);
+                if (!barCache[value[2]]) {
+                    barCache[value[2]] = threeLayer.toBox(value.slice(0, 2), {
+                        height: value[2],
+                        radius: 600,
+                        topColor: '#fff',
+                        interactive: false
+                    }, material);
+                }
+                //复用geometry
+                const geometry = barCache[value[2]].getObject3d().geometry;
+                const options = barCache[value[2]].getOptions();
+                const coordinate = value.slice(0, 2);
+                const bar = new maptalks.BaseObject();
+                bar._initOptions(Object.assign({}, options, { coordinate }));
+                bar._createMesh(geometry, material);
+                const position = threeLayer.coordinateToVector3(coordinate);
+                bar.getObject3d().position.copy(position);
+                return bar;
             });
-            threeLayer.addMesh(bars);
+            threeLayer.addMesh(bars, false);
         }
 
 
