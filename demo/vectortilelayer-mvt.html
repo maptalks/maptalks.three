@@ -33,6 +33,37 @@
     <div id="map"></div>
     <script>
 
+        //custom worker
+        const workerKey = 'mvtfetch'
+        maptalks.registerWorkerAdapter(workerKey, function (exports, global) {
+            //will be called only for once when loaded in worker thread
+            exports.initialize = function () {
+                console.log('[worker] initialized');
+            };
+            //to receive message from main thread sent by maptalks.worker.Actor
+            exports.onmessage = function (message, postResponse) {
+                const data = message.data;
+                const { url } = data;
+                fetch(url).then(res => res.arrayBuffer()).then(arrayBuffer => {
+                    postResponse(null, { data: arrayBuffer }, [arrayBuffer]);
+                }).catch(error => {
+                    postResponse(null, {}, []);
+                });
+                //send message back to main thread
+                //the parameters:
+                //error, data, buffers (arraybuffers in data)
+                // postResponse(null, 'message from worker thread', null);
+            };
+        })
+        const actor = new maptalks.worker.Actor(workerKey);
+        actor.test = function (params) {
+            const { url, key, callback } = params;
+            this.send({ url }, null, (err, message) => {
+                callback(message);
+            });
+        }
+
+
         var baseLaer = new maptalks.TileLayer('tile', {
             urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
             subdomains: ['a', 'b', 'c', 'd'],
@@ -74,13 +105,9 @@
             var light = new THREE.DirectionalLight(0xffffff);
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
-            // const workers = [1, 1].map(d => {
-            //     return new Worker('./js/worker.three.js');
-            // });
-            // threeLayer.initWorkers(workers);
 
 
-            const url = `https://{s}.tiles.mapbox.com/v4/mapbox.mapbox-terrain-v2,mapbox.mapbox-streets-v7/{z}/{x}/{y}.vector.pbf?access_token=`+accesstoken;
+            const url = `https://{s}.tiles.mapbox.com/v4/mapbox.mapbox-terrain-v2,mapbox.mapbox-streets-v7/{z}/{x}/{y}.vector.pbf?access_token=` + accesstoken;
             vectortilelayer = threeLayer.toThreeVectorTileLayer(url,
                 {
                     // minZoom: 6,
@@ -104,22 +131,40 @@
                 x = parseInt(x);
                 y = parseInt(y);
                 z = parseInt(z);
-                axios.get(url, {
-                    timeout: 10000,
-                    responseType: 'arraybuffer'
-                }).then(function (response) {
-                    // console.log(url);
-                    //https://github.com/mapbox/vector-tile-js
-                    const geojson = mvt2GeoJSON(response.data, x, y, z)
-                    // console.log(geojson);
-                    // handle success
-                    callback(key, geojson, img);
-                }).catch(function (error) {
-                    console.error(error);
-                    callback(key, null, img);
-                }).finally(() => {
+                //将数据访问放到worker里，避免阻塞主线程
+                actor.test({
+                    url,
+                    key,
+                    callback: function (message) {
+                        const { data } = message;
+                        if (data) {
+                            const geojson = mvt2GeoJSON(data, x, y, z);
+                            //避免单位时间内同时callback,尽可能的将callback分开，减少单位时间内的CPU计算
+                            setTimeout(() => {
+                                callback(key, geojson, img);
+                            }, 100 * Math.random());
+                        
+                        } else {
+                            callback(key, null, img);
+                        }
+                    }
+                })
+                // axios.get(url, {
+                //     timeout: 10000,
+                //     responseType: 'arraybuffer'
+                // }).then(function (response) {
+                //     // console.log(url);
+                //     //https://github.com/mapbox/vector-tile-js
+                //     const geojson = mvt2GeoJSON(response.data, x, y, z)
+                //     // console.log(geojson);
+                //     // handle success
+                //     callback(key, geojson, img);
+                // }).catch(function (error) {
+                //     console.error(error);
+                //     callback(key, null, img);
+                // }).finally(() => {
 
-                });
+                // });
             }
             map.addLayer(vectortilelayer);
             animation();
@@ -265,7 +310,7 @@
 
         const roadMaterial = new THREE.LineBasicMaterial({ color: 'rgb(43,69,107)', transparent: true, opacity: 1 });
         const waterMaterial = new THREE.MeshBasicMaterial({ color: 'green', transparent: true });
-        const waterwayMaterial = new THREE.LineBasicMaterial({ color: 'green', transparent: true, opacity: 1 });
+        const waterwayMaterial = new THREE.LineBasicMaterial({ color: 'red', transparent: true, opacity: 1 });
         const buildMaterial = new THREE.MeshPhongMaterial({ color: '#fff', transparent: true });
         const pointMaterial = new THREE.PointsMaterial({
             // size: 10,
