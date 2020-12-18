@@ -105,6 +105,7 @@ class FatLines extends MergedMixin(BaseObject) {
         this._initBaseObjectsEvent(lines);
         this._setPickObject3d(ps, material.linewidth);
         this._init();
+        this.type = 'FatLines';
     }
 
     _setMaterialRes(layer, material) {

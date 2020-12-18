@@ -25,6 +25,7 @@ class Model extends BaseObject {
         const z = layer.distanceToVector3(altitude, altitude).x;
         const position = layer.coordinateToVector3(coordinate, z);
         this.getObject3d().position.copy(position);
+        this.type = 'Model';
     }
 }
 

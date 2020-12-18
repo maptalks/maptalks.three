@@ -133,6 +133,7 @@ class HeatMap extends BaseObject {
         this._createMesh(geometry, material);
         const z = layer.distanceToVector3(altitude, altitude).x;
         this.getObject3d().position.copy(new THREE.Vector3((minX + maxX) / 2, (minY + maxY) / 2, z));
+        this.type = 'HeatMap';
 
     }
 }

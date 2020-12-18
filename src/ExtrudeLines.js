@@ -109,6 +109,7 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
         this._initBaseObjectsEvent(extrudeLines);
         this._setPickObject3d();
         this._init();
+        this.type = 'ExtrudeLines';
     }
 
     // eslint-disable-next-line no-unused-vars

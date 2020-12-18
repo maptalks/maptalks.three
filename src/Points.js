@@ -101,6 +101,7 @@ class Points extends MergedMixin(BaseObject) {
         this._initBaseObjectsEvent(pointMeshes);
         this._grids = grids;
         this._bindMapEvents();
+        this.type = 'Points';
     }
 
     _bindMapEvents() {
