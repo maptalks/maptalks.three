@@ -1,7 +1,8 @@
 import * as maptalks from 'maptalks';
+import * as THREE from 'three';
 import MergedMixin from './MergedMixin';
 import BaseObject from './BaseObject';
-import { getCenterOfPoints } from './util/ExtrudeUtil';
+import { getCenterOfPoints, initVertexColors } from './util/ExtrudeUtil';
 import { getExtrudeLineParams, LineStringSplit } from './util/LineUtil';
 import ExtrudeLine from './ExtrudeLine';
 import { isGeoJSON } from './util/GeoJSONUtil';
@@ -11,7 +12,9 @@ import { distanceToVector3 } from './util';
 const OPTIONS = {
     width: 3,
     height: 1,
-    altitude: 0
+    altitude: 0,
+    topColor: null,
+    bottomColor: '#2d2f61'
 };
 
 class ExtrudeLines extends MergedMixin(BaseObject) {
@@ -88,11 +91,15 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
         const geometry = mergeBufferGeometries(geometries);
 
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, lineStrings, coordinate: center });
+        const { altitude, topColor, bottomColor } = options;
+        if (topColor) {
+            initVertexColors(geometry, bottomColor, topColor);
+            material.vertexColors = THREE.VertexColors;
+        }
         super();
         this._initOptions(options);
 
         this._createMesh(geometry, material);
-        const { altitude } = options;
         const z = layer.distanceToVector3(altitude, altitude).x;
         const v = layer.coordinateToVector3(center, z);
         this.getObject3d().position.copy(v);
