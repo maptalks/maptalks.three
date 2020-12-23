@@ -54,6 +54,7 @@
             var light = new THREE.DirectionalLight(0xffffff);
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
             setTimeout(() => {
                 addBars(scene);
             }, 1000);
@@ -63,7 +64,7 @@
 
 
         var bars;
-        var material = new THREE.MeshBasicMaterial({ color: '#fff', transparent: true });
+        var material = new THREE.MeshLambertMaterial({ color: '#fff', transparent: true });
         var highlightmaterial = new THREE.MeshBasicMaterial({ color: 'yellow', transparent: true });
         function addBars(scene) {
             fetch('./data/population.json').then((function (res) {
@@ -72,7 +73,7 @@
                 const time = 'time';
                 console.time(time);
                 bars = json.filter(function (dataItem) {
-                    return dataItem[2] > 50;
+                    return dataItem[2] > 500;
                 }).slice(0, Infinity).map(function (dataItem) {
                     return {
                         coordinate: dataItem.slice(0, 2),
