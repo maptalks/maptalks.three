@@ -263,7 +263,7 @@ class BaseVectorTileLayer extends maptalks.TileLayer {
                 baseobject._colorMap = null;
                 if (baseobject.pickObject3d) {
                     baseobject.pickObject3d.geometry.dispose();
-                    baseobject.pickObject3d.material.dispose();
+                    // baseobject.pickObject3d.material.dispose();
                 }
                 baseobject = null;
             });

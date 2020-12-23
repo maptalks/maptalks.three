@@ -118,7 +118,7 @@ class Lines extends MergedMixin(BaseObject) {
     }
 
     _setPickObject3d() {
-        const geometry = this.getObject3d().geometry.clone();
+        const geometry = this._geometryCache || this.getObject3d().geometry.clone();
         const pick = this.getLayer().getPick();
         const { _geometriesAttributes } = this;
         const colors = [];

@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { addAttribute } from './util/ThreeAdaptUtil';
 
 const EVENTS = ['click', 'mousemove', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].join(' ').toString();
+const defaultMaterial = new THREE.MeshBasicMaterial();
+defaultMaterial.vertexColors = THREE.VertexColors;
 
 /**
  * This is for the merger, MergedExtrudeMesh,Points ...
@@ -164,8 +166,10 @@ const MergedMixin = (Base) => {
             });
         }
 
+        //Different objects need to implement their own methods
         _setPickObject3d() {
-            const geometry = this.getObject3d().geometry.clone();
+            // multiplexing geometry
+            const geometry = this._geometryCache || this.getObject3d().geometry.clone();
             const pick = this.getLayer().getPick();
             const { _geometriesAttributes } = this;
             const colors = [];
@@ -180,11 +184,11 @@ const MergedMixin = (Base) => {
                 }
             }
             addAttribute(geometry, 'color', new THREE.Float32BufferAttribute(colors, 3, true));
-            const material = new THREE.MeshBasicMaterial();
-            material.vertexColors = THREE.VertexColors;
+            // const material = new THREE.MeshBasicMaterial();
+            // material.vertexColors = THREE.VertexColors;
             const color = pick.getColor();
             const colorIndex = color.getHex();
-            const mesh = new THREE.Mesh(geometry, material);
+            const mesh = new THREE.Mesh(geometry, defaultMaterial);
             mesh.position.copy(this.getObject3d().position);
             mesh._colorIndex = colorIndex;
             this.setPickObject3d(mesh);
