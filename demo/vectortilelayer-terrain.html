@@ -34,12 +34,12 @@
     <script>
 
         var baseLaer = new maptalks.TileLayer('tile', {
-            urlTemplate: 'https://mt2.google.cn/maps/vt?lyrs=m&hl=zh-CN&gl=CN&x={x}&y={y}&z={z}',
+            urlTemplate: 'https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}.png?access_token=' + accesstoken,
             subdomains: ['a', 'b', 'c', 'd'],
             // attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
         });
         var map = new maptalks.Map("map", {
-            "center": [-122.50826912411787, 37.85734070553329], "zoom": 14, "pitch": 40.800000000000004, "bearing": -1.8000000000000682,
+            "center": [-122.19168933099672, 46.20424386406356], "zoom": 13.825049258220004, "pitch": 62.800000000000026, "bearing": 3.6000000000001364,
             // pitch: 60,
             // bearing: 180,
 
@@ -69,7 +69,7 @@
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
 
-            const url = `https://mt2.google.cn/maps/vt?lyrs=s&hl=zh-CN&gl=CN&x={x}&y={y}&z={z}`;
+            const url = baseLaer.options.urlTemplate;
             vectortilelayer = threeLayer.toTerrainVectorTileLayer(url,
                 {
                     // minZoom: 6,
@@ -86,7 +86,7 @@
             let MAPBOX_RGB_URL = 'http://localhost:8080/tilelayer?z={z}&x={x}&y={y}', debug = true
             if (window.location.host.includes('maptalks')) {
                 debug = false;
-                MAPBOX_RGB_URL = 'https://{s}.tiles.mapbox.com/v4/mapbox.terrain-rgb/{z}/{x}/{y}.pngraw?access_token'+accesstoken;
+                MAPBOX_RGB_URL = 'https://{s}.tiles.mapbox.com/v4/mapbox.terrain-rgb/{z}/{x}/{y}.pngraw?access_token=' + accesstoken;
             }
             vectortilelayer.getTileData = function (q) {
                 const { key, url, callback, img, rgbImage } = q;
@@ -96,12 +96,10 @@
                 rgbImage.onload = function () {
                     if (debug) {
                         setTimeout(() => {
-                            const base64 = getRGBData(rgbImage);
-                            callback(key, base64, img);
+                            callback(key, rgbImage, img);
                         }, 3000 * Math.random());
                     } else {
-                        const base64 = getRGBData(rgbImage);
-                        callback(key, base64, img);
+                        callback(key, rgbImage, img);
                     }
 
                 }
@@ -109,9 +107,6 @@
                     callback(key, null, img);
                 }
                 rgbImage.crossOrigin = 'Anonymous';
-                // setTimeout(() => {
-                //     callback(key, terrainRGBUrl, img);
-                // }, 2000 * Math.random());
             }
             map.addLayer(vectortilelayer);
             animation();
@@ -129,15 +124,6 @@
                 idx = 0;
             }
             return s;
-        }
-
-        const canvas = document.createElement('canvas'), tileSize = 256;
-        function getRGBData(image, width = tileSize, height = tileSize) {
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(image, 0, 0, width, height);
-            return canvas.toDataURL();
         }
 
         const material = new THREE.MeshPhongMaterial({ transparent: true, wireframe: false });
