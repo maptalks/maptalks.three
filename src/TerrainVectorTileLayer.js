@@ -4,7 +4,8 @@ import BaseVectorTileLayer from './BaseVectorTileLayer';
 
 const OPTIONS = {
     // worker: false
-    scale: 1
+    scale: 1,
+    tileDivisor: 4
 };
 /**
  *
@@ -34,7 +35,7 @@ class TerrainVectorTileLayer extends BaseVectorTileLayer {
      */
     formatBaseObjects(index, image) {
         const opts = this.options, baseobjects = [];
-        const { scale } = opts;
+        const { scale, tileDivisor } = opts;
         const { x, y, z } = this._getXYZOfIndex(index);
         const zoom = this.getMap().getZoom();
         const textUrl = this.getTileUrl(x, y, z);
@@ -45,8 +46,8 @@ class TerrainVectorTileLayer extends BaseVectorTileLayer {
         if ((z + 1) >= Math.round(zoom)) {
             const terrain = new Terrain(extent, {
                 image,
-                imageWidth: imageWidth / 8,
-                imageHeight: imageHeight / 8,
+                imageWidth: imageWidth / tileDivisor,
+                imageHeight: imageHeight / tileDivisor,
                 texture: textUrl
             }, material, this._layer);
             terrain.getObject3d().scale.set(scale, scale, 1);

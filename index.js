@@ -69,6 +69,8 @@ const EVENTS = [
     'touchend'
 ];
 
+const DEFAULT_CENTER = new maptalks.Coordinate(0, 0);
+
 // const MATRIX4 = new THREE.Matrix4();
 
 /**
@@ -137,7 +139,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
     distanceToVector3(w, h, coord) {
         const map = this.getMap();
         const zoom = getTargetZoom(map);
-        let center = coord || map.getCenter();
+        let center = coord || DEFAULT_CENTER;
         if (!(center instanceof maptalks.Coordinate)) {
             center = new maptalks.Coordinate(center);
         }
