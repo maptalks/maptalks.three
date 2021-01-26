@@ -13,6 +13,7 @@ function getDefaultCylinderBufferGeometry(radialSegments = 6) {
         const geometry = new THREE.CylinderBufferGeometry(1, 1, 1, radialSegments, 1);
         geometry.rotateX(Math.PI / 2);
         geometry.translate(0, 0, 0.5);
+        geometry.rotateZ(Math.PI / 6);
         barGeometryCache[radialSegments] = geometry;
     }
     return barGeometryCache[radialSegments];
