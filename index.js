@@ -38,7 +38,8 @@ const options = {
     'doubleBuffer': false,
     'glOptions': null,
     'geometryEvents': true,
-    'identifyCountOnEvent': 0
+    'identifyCountOnEvent': 0,
+    'forceRenderOnZooming': true
 };
 
 const RADIAN = Math.PI / 180;
