@@ -5,9 +5,10 @@ import BaseObject from './BaseObject';
 import { getCenterOfPoints, initVertexColors } from './util/ExtrudeUtil';
 import { getExtrudeLineParams, LineStringSplit } from './util/LineUtil';
 import ExtrudeLine from './ExtrudeLine';
-import { isGeoJSON } from './util/GeoJSONUtil';
-import { mergeBufferGeometries, mergeBufferGeometriesAttribute } from './util/MergeGeometryUtil';
+import { isGeoJSON, isGeoJSONLine } from './util/GeoJSONUtil';
+import { generateBufferGeometry, getDefaultBufferGeometry, mergeBufferGeometries, mergeBufferGeometriesAttribute } from './util/MergeGeometryUtil';
 import { distanceToVector3 } from './util';
+import { getActor } from './worker/MeshActor';
 
 const OPTIONS = {
     width: 3,
@@ -32,74 +33,111 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
         }
         // Get the center point of the point set
         const center = getCenterOfPoints(centers);
-        const geometries = [], extrudeLines = [];
-        let faceIndex = 0, faceMap = [], geometriesAttributes = [],
-            psIndex = 0, normalIndex = 0;
-        const cache = {};
-        for (let i = 0; i < len; i++) {
-            const lineString = lineStrings[i];
-            const opts = maptalks.Util.extend({}, OPTIONS, isGeoJSON(lineString) ? lineString.properties : lineString.getProperties(), { index: i });
-            const { height, width } = opts;
-            const w = distanceToVector3(cache, width, layer);
-            const h = distanceToVector3(cache, height, layer);
-            const lls = lineStringList[i];
-            const extrudeParams = [];
-            for (let m = 0, le = lls.length; m < le; m++) {
-                extrudeParams.push(getExtrudeLineParams(lls[m], w, h, layer, center));
-            }
-            const buffGeom = mergeBufferGeometriesAttribute(extrudeParams);
-            geometries.push(buffGeom);
-
-            const extrudeLine = new ExtrudeLine(lineString, opts, material, layer);
-            extrudeLines.push(extrudeLine);
-
-            const { position, normal, indices } = buffGeom;
-            const faceLen = indices.length / 3;
-            faceMap[i] = [faceIndex + 1, faceIndex + faceLen];
-            faceIndex += faceLen;
-            const psCount = position.length / 3,
-                //  colorCount = buffGeom.attributes.color.count,
-                normalCount = normal.length / 3;
-            geometriesAttributes[i] = {
-                position: {
-                    count: psCount,
-                    start: psIndex,
-                    end: psIndex + psCount * 3,
-                },
-                normal: {
-                    count: normalCount,
-                    start: normalIndex,
-                    end: normalIndex + normalCount * 3,
-                },
-                // color: {
-                //     count: colorCount,
-                //     start: colorIndex,
-                //     end: colorIndex + colorCount * 3,
-                // },
-                // uv: {
-                //     count: uvCount,
-                //     start: uvIndex,
-                //     end: uvIndex + uvCount * 2,
-                // },
-                hide: false
-            };
-            psIndex += psCount * 3;
-            normalIndex += normalCount * 3;
-            // colorIndex += colorCount * 3;
-            // uvIndex += uvCount * 2;
-        }
-        const geometry = mergeBufferGeometries(geometries);
-
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, lineStrings, coordinate: center });
-        const { altitude, topColor, bottomColor } = options;
-        if (topColor) {
-            initVertexColors(geometry, bottomColor, topColor);
-            material.vertexColors = THREE.VertexColors;
+        const { altitude, topColor, bottomColor, asynchronous } = options;
+        let bufferGeometry;
+        const faceMap = [], extrudeLines = [], geometriesAttributes = [];
+        if (asynchronous) {
+            var actor = getActor();
+            bufferGeometry = getDefaultBufferGeometry();
+            actor.pushQueue({
+                type: 'LineString',
+                layer,
+                key: options.key,
+                center,
+                data: lineStringList,
+                lineStrings,
+                callback: (e) => {
+                    const { faceMap, geometriesAttributes } = e;
+                    this._faceMap = faceMap;
+                    this._geometriesAttributes = geometriesAttributes;
+                    const bufferGeometry = generateBufferGeometry(e);
+                    if (topColor) {
+                        initVertexColors(bufferGeometry, bottomColor, topColor);
+                        material.vertexColors = THREE.VertexColors;
+                    }
+                    this.getObject3d().geometry.dispose();
+                    this.getObject3d().geometry = bufferGeometry;
+                    this.getObject3d().material.needsUpdate = true;
+                    this._geometryCache = bufferGeometry.clone();
+                    this._setPickObject3d();
+                    this._init();
+                    if (this.isAdd) {
+                        const pick = this.getLayer().getPick();
+                        pick.add(this.pickObject3d);
+                    }
+                    this._fire('workerload', { target: this });
+                }
+            });
+        } else {
+            const geometries = [];
+            let faceIndex = 0, faceMap = [],
+                psIndex = 0, normalIndex = 0;
+            const cache = {};
+            for (let i = 0; i < len; i++) {
+                const lineString = lineStrings[i];
+                const opts = maptalks.Util.extend({}, OPTIONS, isGeoJSON(lineString) ? lineString.properties : lineString.getProperties(), { index: i });
+                const { height, width } = opts;
+                const w = distanceToVector3(cache, width, layer);
+                const h = distanceToVector3(cache, height, layer);
+                const lls = lineStringList[i];
+                const extrudeParams = [];
+                for (let m = 0, le = lls.length; m < le; m++) {
+                    extrudeParams.push(getExtrudeLineParams(lls[m], w, h, layer, center));
+                }
+                const buffGeom = mergeBufferGeometriesAttribute(extrudeParams);
+                geometries.push(buffGeom);
+
+                // const extrudeLine = new ExtrudeLine(lineString, opts, material, layer);
+                // extrudeLines.push(extrudeLine);
+
+                const { position, normal, indices } = buffGeom;
+                const faceLen = indices.length / 3;
+                faceMap[i] = [faceIndex + 1, faceIndex + faceLen];
+                faceIndex += faceLen;
+                const psCount = position.length / 3,
+                    //  colorCount = buffGeom.attributes.color.count,
+                    normalCount = normal.length / 3;
+                geometriesAttributes[i] = {
+                    position: {
+                        count: psCount,
+                        start: psIndex,
+                        end: psIndex + psCount * 3,
+                    },
+                    normal: {
+                        count: normalCount,
+                        start: normalIndex,
+                        end: normalIndex + normalCount * 3,
+                    },
+                    // color: {
+                    //     count: colorCount,
+                    //     start: colorIndex,
+                    //     end: colorIndex + colorCount * 3,
+                    // },
+                    // uv: {
+                    //     count: uvCount,
+                    //     start: uvIndex,
+                    //     end: uvIndex + uvCount * 2,
+                    // },
+                    hide: false
+                };
+                psIndex += psCount * 3;
+                normalIndex += normalCount * 3;
+                // colorIndex += colorCount * 3;
+                // uvIndex += uvCount * 2;
+            }
+            bufferGeometry = mergeBufferGeometries(geometries);
+
+            if (topColor) {
+                initVertexColors(bufferGeometry, bottomColor, topColor);
+                material.vertexColors = THREE.VertexColors;
+            }
         }
+
         super();
         this._initOptions(options);
 
-        this._createMesh(geometry, material);
+        this._createMesh(bufferGeometry, material);
         const z = layer.distanceToVector3(altitude, altitude).x;
         const v = layer.coordinateToVector3(center, z);
         this.getObject3d().position.copy(v);
@@ -110,13 +148,32 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
         this._datas = lineStrings;
         this._geometriesAttributes = geometriesAttributes;
         this.faceIndex = null;
-        this._geometryCache = geometry.clone();
+        this._geometryCache = bufferGeometry.clone();
         this.isHide = false;
         this._colorMap = {};
         this._initBaseObjectsEvent(extrudeLines);
-        this._setPickObject3d();
-        this._init();
+        if (!asynchronous) {
+            this._setPickObject3d();
+            this._init();
+        }
         this.type = 'ExtrudeLines';
+    }
+
+    // eslint-disable-next-line consistent-return
+    getSelectMesh() {
+        const index = this._getIndex();
+        if (index != null) {
+            if (!this._baseObjects[index]) {
+                const lineString = this._datas[index];
+                const opts = Object.assign({}, this.options, isGeoJSONLine(lineString) ? lineString.properties : lineString.getProperties(), { index });
+                this._baseObjects[index] = new ExtrudeLine(lineString, opts, this.getObject3d().material, this.getLayer());
+                this._proxyEvent(this._baseObjects[index]);
+            }
+            return {
+                data: this._datas[index],
+                baseObject: this._baseObjects[index]
+            };
+        }
     }
 
     // eslint-disable-next-line no-unused-vars
