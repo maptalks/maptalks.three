@@ -9,8 +9,7 @@
     <script type="text/javascript" src="./js/maptalks.js"></script>
     <script type="text/javascript" src="./accesstoken.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.109.0/build/three.min.js"></script>
-    <script type="text/javascript"
-        src="https://cdn.jsdelivr.net/npm/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks.three@latest/dist/maptalks.three.js"></script>
     <!-- <script type="text/javascript" src="./https://cdn.jsdelivr.net/npm/maptalks.three@latest/dist/maptalks.three.js"></script> -->
     <script type="text/javascript"
         src="https://cdn.jsdelivr.net/npm/three@0.109.0/examples/js/libs/stats.min.js"></script>
@@ -84,7 +83,7 @@
                 }, material);
 
             //自定义数据访问方法
-            let MAPBOX_RGB_URL = `http://localhost:9090/rgb-tile/{z}/{x}/{y}`, debug = true
+            let MAPBOX_RGB_URL = 'http://localhost:8080/tilelayer?z={z}&x={x}&y={y}', debug = true
             if (window.location.host.includes('maptalks')) {
                 debug = false;
                 MAPBOX_RGB_URL = 'https://{s}.tiles.mapbox.com/v4/mapbox.terrain-rgb/{z}/{x}/{y}.pngraw?access_token=' + accesstoken;
