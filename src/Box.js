@@ -22,7 +22,7 @@ class Box extends BaseObject {
         const r = layer.distanceToVector3(radius, radius).x;
         const geometry = getDefaultBoxGeometry().clone();
         geometry.scale(r * 2, r * 2, h);
-        if (topColor && !material.map) {
+        if (topColor) {
             initVertexColors(geometry, bottomColor, topColor, 'z', h / 2);
             material.vertexColors = THREE.VertexColors;
         }

@@ -3,12 +3,12 @@ import * as THREE from 'three';
 import BaseObject from './BaseObject';
 import { getLinePosition, LineStringSplit } from './util/LineUtil';
 import MergedMixin from './MergedMixin';
-import { getCenterOfPoints } from './util/ExtrudeUtil';
 import FatLine from './FatLine';
 import { isGeoJSONLine } from './util/GeoJSONUtil';
 import LineGeometry from './util/fatline/LineGeometry';
 import Line2 from './util/fatline/Line2';
 import LineMaterial from './util/fatline/LineMaterial';
+import { getCenterOfPoints } from './util';
 
 const OPTIONS = {
     altitude: 0,

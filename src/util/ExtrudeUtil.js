@@ -3,6 +3,8 @@ import * as maptalks from 'maptalks';
 import { isGeoJSONPolygon, spliteGeoJSONMulti, getGeoJSONCenter, isGeoJSONMulti, getGeoJSONCoordinates } from './GeoJSONUtil';
 import { extrudePolygon } from 'deyihu-geometry-extrude';
 import { addAttribute } from './ThreeAdaptUtil';
+
+const topColor = new THREE.Color('#fff'), bottomColor = new THREE.Color('#fff');
 /**
  * this is for ExtrudeMesh util
  */
@@ -78,8 +80,8 @@ export function getExtrudeGeometryParams(polygon, height, layer, center, altCach
 export function initVertexColors(geometry, color, _topColor) {
     const position = geometry.attributes.position.array;
     const len = position.length;
-    const bottomColor = (color instanceof THREE.Color ? color : new THREE.Color(color));
-    const topColor = new THREE.Color(_topColor);
+    bottomColor.setStyle(color);
+    topColor.setStyle(_topColor);
     const colors = [];
     for (let i = 0; i < len; i += 3) {
         const z = position[i + 2];
@@ -92,31 +94,6 @@ export function initVertexColors(geometry, color, _topColor) {
     addAttribute(geometry, 'color', new THREE.Float32BufferAttribute(colors, 3, true));
     return colors;
 }
-
-/**
- *Get the center point of the point set
- * @param {*} coordinates
- */
-export function getCenterOfPoints(coordinates = []) {
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (let i = 0, len = coordinates.length; i < len; i++) {
-        const c = coordinates[i];
-        let x, y;
-        if (Array.isArray(c)) {
-            x = c[0];
-            y = c[1];
-        } else if (c instanceof maptalks.Coordinate) {
-            x = c.x;
-            y = c.y;
-        }
-        minX = Math.min(minX, x);
-        minY = Math.min(minY, y);
-        maxX = Math.max(maxX, x);
-        maxY = Math.max(maxY, y);
-    }
-    return new maptalks.Coordinate((minX + maxX) / 2, (minY + maxY) / 2);
-}
-
 
 /**
  *

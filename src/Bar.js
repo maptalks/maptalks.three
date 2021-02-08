@@ -29,7 +29,7 @@ class Bar extends BaseObject {
         options._radius = this.options.radius;
         options._height = this.options.height;
         const geometry = getGeometry(options);
-        if (topColor && !material.map) {
+        if (topColor) {
             initVertexColors(geometry, bottomColor, topColor, 'z', options.height / 2);
             material.vertexColors = THREE.VertexColors;
         }

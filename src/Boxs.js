@@ -4,8 +4,8 @@ import * as THREE from 'three';
 import BaseObject from './BaseObject';
 import Box from './Box';
 import MergedMixin from './MergedMixin';
-import { distanceToVector3 } from './util';
-import { getCenterOfPoints, getDefaultBoxGeometry, initVertexColors, mergeBarGeometry } from './util/BarUtil';
+import { distanceToVector3, getCenterOfPoints } from './util';
+import { getDefaultBoxGeometry, initVertexColors, mergeBarGeometry } from './util/BarUtil';
 
 const OPTIONS = {
     radius: 10,
@@ -34,7 +34,7 @@ class Boxs extends MergedMixin(BaseObject) {
             const alt = distanceToVector3(cache, altitude, layer);
             const buffGeom = getDefaultBoxGeometry().clone();
             buffGeom.scale(r * 2, r * 2, h);
-            if (topColor && !material.map) {
+            if (topColor) {
                 initVertexColors(buffGeom, bottomColor, topColor, 'z', h / 2);
                 material.vertexColors = THREE.VertexColors;
             }

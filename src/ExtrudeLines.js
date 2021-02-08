@@ -2,12 +2,12 @@ import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import MergedMixin from './MergedMixin';
 import BaseObject from './BaseObject';
-import { getCenterOfPoints, initVertexColors } from './util/ExtrudeUtil';
+import { initVertexColors } from './util/ExtrudeUtil';
 import { getExtrudeLineParams, LineStringSplit } from './util/LineUtil';
 import ExtrudeLine from './ExtrudeLine';
 import { isGeoJSON, isGeoJSONLine } from './util/GeoJSONUtil';
 import { generateBufferGeometry, getDefaultBufferGeometry, mergeBufferGeometries, mergeBufferGeometriesAttribute } from './util/MergeGeometryUtil';
-import { distanceToVector3 } from './util';
+import { distanceToVector3, getCenterOfPoints } from './util';
 import { getActor } from './worker/MeshActor';
 
 const OPTIONS = {
