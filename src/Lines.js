@@ -3,10 +3,10 @@ import * as THREE from 'three';
 import BaseObject from './BaseObject';
 import { getLinePosition, LineStringSplit } from './util/LineUtil';
 import MergedMixin from './MergedMixin';
-import { getCenterOfPoints } from './util/ExtrudeUtil';
 import Line from './Line';
 import { isGeoJSONLine } from './util/GeoJSONUtil';
 import { addAttribute } from './util/ThreeAdaptUtil';
+import { getCenterOfPoints } from './util';
 
 const OPTIONS = {
     altitude: 0,

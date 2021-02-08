@@ -62,7 +62,7 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
                     this._faceMap = faceMap;
                     this._geometriesAttributes = geometriesAttributes;
                     const bufferGeometry = generateBufferGeometry(e);
-                    if (topColor && !material.map) {
+                    if (topColor) {
                         initVertexColors(bufferGeometry, bottomColor, topColor);
                         material.vertexColors = THREE.VertexColors;
                     }
@@ -128,7 +128,7 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
                 uvIndex += uvCount * 2;
             }
             bufferGeometry = mergeBufferGeometries(geometries);
-            if (topColor && !material.map) {
+            if (topColor) {
                 initVertexColors(bufferGeometry, bottomColor, topColor);
                 material.vertexColors = THREE.VertexColors;
             }

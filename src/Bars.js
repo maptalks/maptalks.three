@@ -1,10 +1,10 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
-import { getCenterOfPoints, getGeometry, initVertexColors, mergeBarGeometry } from './util/BarUtil';
+import { getGeometry, initVertexColors, mergeBarGeometry } from './util/BarUtil';
 import Bar from './Bar';
 import MergedMixin from './MergedMixin';
-import { distanceToVector3 } from './util';
+import { distanceToVector3, getCenterOfPoints } from './util';
 
 
 const OPTIONS = {
@@ -38,7 +38,7 @@ class Bars extends MergedMixin(BaseObject) {
             const h = distanceToVector3(cache, height, layer);
             const alt = distanceToVector3(cache, altitude, layer);
             const buffGeom = getGeometry({ radius: r, height: h, radialSegments }, false);
-            if (topColor && !material.map) {
+            if (topColor) {
                 initVertexColors(buffGeom, bottomColor, topColor, 'z', h / 2);
                 material.vertexColors = THREE.VertexColors;
             }
