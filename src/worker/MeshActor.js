@@ -1,8 +1,7 @@
 import * as maptalks from 'maptalks';
-import { isGeoJSONLine, isGeoJSONPolygon } from '../util/GeoJSONUtil';
+import { isGeoJSONPolygon } from '../util/GeoJSONUtil';
 import { getPolygonPositions } from '../util/ExtrudeUtil';
 import pkg from './../../package.json';
-import { getLinePosition } from '../util/LineUtil';
 
 let MeshActor;
 if (maptalks.worker) {
@@ -13,13 +12,12 @@ if (maptalks.worker) {
         }
 
         pushQueue(q = {}) {
-            const { type, data, callback, layer, key, center, lineStrings } = q;
+            const { type, data, callback, layer, key, center } = q;
             let params;
             if (type === 'Polygon') {
                 params = gengerateExtrudePolygons(data, center, layer);
-            } else if (type === 'LineString') {
+            } else if (type === 'Line') {
                 //todo liness
-                params = gengerateExtrudeLines(data, center, layer, lineStrings);
             } else if (type === 'Point') {
                 //todo points
             }
@@ -77,50 +75,6 @@ function gengerateExtrudePolygons(polygons = [], center, layer) {
         datas.push({
             data,
             height
-        });
-    }
-    return {
-        datas,
-        transfer
-    };
-}
-
-/**
- * generate ExtrudeLines data for worker
- * @param {*} lineStringList
- * @param {*} center
- * @param {*} layer
- */
-function gengerateExtrudeLines(lineStringList, center, layer, lineStrings) {
-    const datas = [], transfer = [], altCache = {};
-    const len = lineStringList.length;
-    for (let i = 0; i < len; i++) {
-        const multiLineString = lineStringList[i];
-        const properties = (isGeoJSONLine(lineStrings[i]) ? lineStrings[i].properties : lineStrings[i].getProperties() || {});
-        const width = properties.width || 1;
-        const height = properties.height || 1;
-        if (altCache[height] == null) {
-            altCache[height] = layer.distanceToVector3(height, height).x;
-        }
-        if (altCache[width] == null) {
-            altCache[width] = layer.distanceToVector3(width, width).x;
-        }
-        const data = [];
-        for (let j = 0, len1 = multiLineString.length; j < len1; j++) {
-            const lineString = multiLineString[j];
-            const positionsV = getLinePosition(lineString, layer, center).positionsV;
-            const array = new Float32Array(positionsV.length * 2);
-            for (let j = 0, len1 = positionsV.length; j < len1; j++) {
-                array[j * 2] = positionsV[j].x;
-                array[j * 2 + 1] = positionsV[j].y;
-            }
-            transfer.push(array);
-            data.push(array);
-        }
-        datas.push({
-            data,
-            height: altCache[height],
-            width: altCache[width]
         });
     }
     return {

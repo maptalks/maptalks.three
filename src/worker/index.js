@@ -1,4 +1,4 @@
-import { extrudePolygon, extrudePolyline } from 'deyihu-geometry-extrude';
+import { extrudePolygon } from 'deyihu-geometry-extrude';
 
 export const initialize = function () {
 };
@@ -8,15 +8,7 @@ export const onmessage = function (message, postResponse) {
     let { type, datas } = data;
     if (type === 'Polygon') {
         generateData(datas);
-        const result = generateExtrude(datas);
-        postResponse(null, result, [result.position, result.normal, result.uv, result.indices]);
-    } else if (type === 'LineString') {
-        for (let i = 0, len = datas.length; i < len; i++) {
-            for (let j = 0, len1 = datas[i].data.length; j < len1; j++) {
-                datas[i].data[j] = arrayBufferToArray(datas[i].data[j]);
-            }
-        }
-        const result = generateExtrude(datas, true);
+        const result = generateExtrudePolygons(datas);
         postResponse(null, result, [result.position, result.normal, result.uv, result.indices]);
     }
 };
@@ -50,12 +42,12 @@ function arrayBufferToArray(buffer) {
 
 
 
-function generateExtrude(datas, isLine = false) {
+function generateExtrudePolygons(datas) {
     const len = datas.length;
     const geometriesAttributes = [], geometries = [], faceMap = [];
     let faceIndex = 0, psIndex = 0, normalIndex = 0, uvIndex = 0;
     for (let i = 0; i < len; i++) {
-        const buffGeom = isLine ? extrudeLine(datas[i]) : extrudePolygons(datas[i]);
+        const buffGeom = extrudePolygons(datas[i]);
         const { position, normal, uv, indices } = buffGeom;
         geometries.push(buffGeom);
         const faceLen = indices.length / 3;
@@ -113,14 +105,6 @@ function extrudePolygons(d) {
         }
     );
     return { position, normal, uv, indices };
-}
-
-function extrudeLine(d) {
-    const { data, height, width } = d;
-    return extrudePolyline(data, {
-        lineWidth: width,
-        depth: height
-    });
 }
 
 function mergeBufferAttributes(attributes, arrayLength) {
