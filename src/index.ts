@@ -119,6 +119,9 @@ class ThreeLayer extends maptalks.CanvasLayer {
 
     isRendering(): boolean {
         const map = this.getMap();
+        if (!map) {
+            return false;
+        }
         return map.isInteracting() || map.isAnimating();
     }
     /**
