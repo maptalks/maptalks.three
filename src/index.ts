@@ -102,19 +102,24 @@ const EVENTS = [
  */
 class ThreeLayer extends maptalks.CanvasLayer {
     options: BaseLayerOptionType;
+    map: maptalks.Map;
+    type: string;
     _animationBaseObjectMap: { [key: string]: BaseObject } = {};
+    _needsUpdate: boolean = true;
     _raycaster: THREE.Raycaster;
     _mouse: THREE.Vector2;
     _containerPoint: any;
     _mousemoveTimeOut: number = 0;
     _baseObjects: Array<BaseObject> = [];
-    map: maptalks.Map;
-    _needsUpdate: boolean = true;
-    type: string;
 
     constructor(id: string, options: BaseLayerOptionType) {
         super(id, options);
         this.type = 'ThreeLayer';
+    }
+
+    isRendering(): boolean {
+        const map = this.getMap();
+        return map.isInteracting() || map.isAnimating();
     }
     /**
      * Draw method of ThreeLayer
@@ -953,7 +958,8 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
     gl: any
     context: THREE.WebGLRenderer;
     matrix4: THREE.Matrix4;
-    pick: any;
+    pick: GPUPick;
+    _renderTime: number = 0;
 
     getPrepareParams(): Array<any> {
         return [this.scene, this.camera];
@@ -1063,7 +1069,12 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
     }
 
     renderScene() {
-        this.layer._callbackBaseObjectAnimation();
+        const time = maptalks.Util.now();
+        // Make sure to execute only once in a frame
+        if (time - this._renderTime >= 16) {
+            this.layer._callbackBaseObjectAnimation();
+            this._renderTime = time;
+        }
         this._syncCamera();
         this.context.render(this.scene, this.camera);
         this.completeRender();

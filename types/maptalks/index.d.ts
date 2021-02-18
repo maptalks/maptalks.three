@@ -164,6 +164,7 @@ declare class Map {
   _getResolution(zoom: number): number
   getProjection(): any
   isInteracting(): boolean
+  isAnimating(): boolean
 }
 
 
