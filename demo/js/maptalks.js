@@ -1,5 +1,5 @@
 /*!
- * maptalks v1.0.0-alpha.9
+ * maptalks v1.0.0-alpha.14
  * LICENSE : BSD-3-Clause
  * (c) 2016-2020 maptalks.org
  */
@@ -9,7 +9,7 @@
   (factory((global.maptalks = {})));
 }(this, (function (exports) { 'use strict';
 
-  var version = "1.0.0-alpha.9";
+  var version = "1.0.0-alpha.14";
 
   var INTERNAL_LAYER_PREFIX = '_maptalks__internal_layer_';
   var GEOMETRY_COLLECTION_TYPES = ['MultiPoint', 'MultiLineString', 'MultiPolygon', 'GeometryCollection'];
@@ -1196,6 +1196,90 @@
       return extend.apply(this, args);
     }
   }
+  function parseStyleRootPath(style) {
+    if (style.symbol) {
+      style = [style];
+    }
+
+    if (Array.isArray(style)) {
+      return style;
+    }
+
+    var root = style['$root'];
+    var iconset = style['$iconset'];
+    style = style.style;
+
+    if (root || iconset) {
+      if (root && root[root.length - 1] === '/') {
+        root = root.substring(0, root.length - 1);
+      }
+
+      if (iconset && iconset[iconset.length - 1] === '/') {
+        iconset = iconset.substring(0, iconset.length - 1);
+      }
+
+      var replacer = function replacer(match) {
+        if (match === '{$root}') {
+          return root;
+        } else if (match === '{$iconset}') {
+          return iconset;
+        }
+
+        return null;
+      };
+
+      convertStylePath(style, replacer);
+    }
+
+    return style;
+  }
+  function convertStylePath(styles, replacer) {
+    for (var i = 0; i < styles.length; i++) {
+      var symbol = styles[i].symbol;
+
+      if (symbol) {
+        parseSymbolPath(symbol, replacer);
+      }
+    }
+  }
+  var URL_PATTERN = /(\{\$root\}|\{\$iconset\})/g;
+  function parseSymbolPath(symbol, replacer) {
+    for (var p in symbol) {
+      if (symbol.hasOwnProperty(p) && p !== 'textName') {
+        if (isString(symbol[p]) && symbol[p].length > 2) {
+          symbol[p] = symbol[p].replace(URL_PATTERN, replacer);
+        } else if (isFunctionDefinition(symbol[p])) {
+          symbol[p] = parseStops(symbol[p], replacer);
+        } else if (isObject(symbol[p])) {
+          parseSymbolPath(symbol[p], replacer);
+        }
+      }
+    }
+  }
+
+  function parseStops(value, replacer) {
+    var defaultValue = value['default'];
+
+    if (isString(defaultValue)) {
+      value['default'] = defaultValue.replace(URL_PATTERN, replacer);
+    }
+
+    var stops = value.stops;
+
+    for (var i = 0; i < stops.length; i++) {
+      if (!Array.isArray(stops[i])) {
+        continue;
+      }
+
+      if (isString(stops[i][1])) {
+        stops[i][1] = stops[i][1].replace(URL_PATTERN, replacer);
+      } else if (isFunctionDefinition(stops[i][1])) {
+        stops[i][1] = parseStops(stops[i][1], replacer);
+      }
+    }
+
+    return value;
+  }
 
 
 
@@ -1249,7 +1333,10 @@
     getGradientStamp: getGradientStamp,
     getSymbolStamp: getSymbolStamp,
     lowerSymbolOpacity: lowerSymbolOpacity,
-    extendSymbol: extendSymbol
+    extendSymbol: extendSymbol,
+    parseStyleRootPath: parseStyleRootPath,
+    convertStylePath: convertStylePath,
+    parseSymbolPath: parseSymbolPath
   });
 
   var Browser = {};
@@ -1399,6 +1486,10 @@
       var x = point.x - this.x,
           y = point.y - this.y;
       return Math.sqrt(x * x + y * y);
+    };
+
+    _proto.mag = function mag() {
+      return Math.sqrt(this.x * this.x + this.y * this.y);
     };
 
     _proto._floor = function _floor() {
@@ -2936,7 +3027,7 @@
         ctx.lineCap = 'round';
         ctx.lineWidth = textHaloRadius * 2;
         ctx.strokeStyle = textHaloFill;
-        ctx.strokeText(text, Math.round(pt.x), Math.round(pt.y + textOffsetY));
+        ctx.strokeText(text, pt.x, pt.y + textOffsetY);
         ctx.miterLimit = 10;
         ctx.globalAlpha = alpha;
         gco = ctx.globalCompositeOperation;
@@ -2969,7 +3060,7 @@
         ctx.fillStyle = rgba;
       }
 
-      ctx.fillText(text, Math.round(pt.x), Math.round(pt.y + textOffsetY));
+      ctx.fillText(text, pt.x, pt.y + textOffsetY);
     },
     _stroke: function _stroke(ctx, strokeOpacity, x, y) {
       if (hitTesting) {
@@ -3480,6 +3571,33 @@
       target.height = canvas.height;
       target.getContext('2d').drawImage(canvas, 0, 0);
       return target;
+    },
+    pixelRect: function pixelRect(ctx, point, lineOpacity, fillOpacity) {
+      var lineWidth = ctx.lineWidth;
+      var alpha = ctx.globalAlpha;
+
+      if (lineWidth > 0 && lineOpacity > 0) {
+        if (ctx.fillStyle !== ctx.strokeStyle) {
+          ctx.fillStyle = ctx.strokeStyle;
+        }
+
+        if (lineOpacity < 1) {
+          ctx.globalAlpha *= lineOpacity;
+        }
+      } else if (fillOpacity > 0) {
+        if (fillOpacity < 1) {
+          ctx.globalAlpha *= fillOpacity;
+        }
+      } else {
+        return;
+      }
+
+      ctx.canvas._drawn = true;
+      ctx.fillRect(point[0], point[1], 1, 1);
+
+      if (ctx.globalAlpha !== alpha) {
+        ctx.globalAlpha = alpha;
+      }
     }
   };
 
@@ -6872,7 +6990,7 @@
         return null;
       }
 
-      var maskExtent2D = this._maskExtent = mask._getPainter().get2DExtent();
+      var maskExtent2D = this._maskExtent = mask._getMaskPainter().get2DExtent();
 
       if (!maskExtent2D.intersects(this._extent2D)) {
         this.layer.fire('renderstart', {
@@ -6912,14 +7030,14 @@
         var masks = mask.getGeometries() || [];
         context.beginPath();
         masks.forEach(function (_mask) {
-          var painter = _mask._getPainter();
+          var painter = _mask._getMaskPainter();
 
           painter.paint(null, context);
         });
         context.stroke();
         delete context.isMultiClip;
       } else {
-        var painter = mask._getPainter();
+        var painter = mask._getMaskPainter();
 
         painter.paint(null, context);
       }
@@ -7037,6 +7155,7 @@
       var me = this,
           resources = this.resources,
           crossOrigin = this.layer.options['crossOrigin'];
+      var renderer = this.layer.options['renderer'] || '';
       return function (resolve) {
         if (resources.isResourceLoaded(url, true)) {
           resolve(url);
@@ -7047,6 +7166,8 @@
 
         if (!isNil(crossOrigin)) {
           img['crossOrigin'] = crossOrigin;
+        } else if (renderer !== 'canvas') {
+          img['crossOrigin'] = '';
         }
 
         if (isSVG(url[0]) && !IS_NODE) {
@@ -7426,10 +7547,21 @@
     var _proto = CanvasSymbolizer.prototype;
 
     _proto._prepareContext = function _prepareContext(ctx) {
+      if (isFunctionDefinition(this.symbol['opacity'])) {
+        if (!this._opacityFn) {
+          this._opacityFn = interpolated(this.symbol['opacity']);
+        }
+      } else {
+        delete this._opacityFn;
+      }
+
       if (isNumber(this.symbol['opacity'])) {
         if (ctx.globalAlpha !== this.symbol['opacity']) {
           ctx.globalAlpha = this.symbol['opacity'];
         }
+      } else if (this._opacityFn) {
+        var map = this.getMap();
+        ctx.globalAlpha = this._opacityFn(map.getZoom());
       } else if (ctx.globalAlpha !== 1) {
         ctx.globalAlpha = 1;
       }
@@ -7479,6 +7611,8 @@
 
   var TEMP_POINT0$1 = new Point(0, 0);
   var TEMP_POINT1 = new Point(0, 0);
+  var TEMP_POINT2 = new Point(0, 0);
+  var TEMP_POINT3 = new Point(0, 0);
 
   var PointSymbolizer = function (_CanvasSymbolizer) {
     _inheritsLoose(PointSymbolizer, _CanvasSymbolizer);
@@ -7529,16 +7663,36 @@
     };
 
     _proto._getRenderContainerPoints = function _getRenderContainerPoints(ignoreAltitude) {
-      var painter = this.getPainter(),
-          points = this._getRenderPoints()[0];
+      var painter = this.getPainter();
 
       if (painter.isSpriting()) {
-        return points;
+        return this._getRenderPoints()[0];
       }
 
+      var geometry = this.geometry;
       var dxdy = this.getDxDy();
+      var cpoints;
 
-      var cpoints = this.painter._pointContainerPoints(points, dxdy.x, dxdy.y, ignoreAltitude, true, this.getPlacement());
+      if (geometry._cPoint && !ignoreAltitude) {
+        var p = ignoreAltitude ? TEMP_POINT2 : TEMP_POINT3;
+        p.set(geometry._cPoint.x, geometry._cPoint.y);
+        var containerOffset = painter.containerOffset;
+
+        p._sub(containerOffset);
+
+        var dx = dxdy.x,
+            dy = dxdy.y;
+
+        if (dx || dy) {
+          p._add(dx || 0, dy || 0);
+        }
+
+        cpoints = [p];
+      } else {
+        var points = this._getRenderPoints()[0];
+
+        cpoints = this.painter._pointContainerPoints(points, dxdy.x, dxdy.y, ignoreAltitude, true, this.getPlacement());
+      }
 
       if (!cpoints || !Array.isArray(cpoints[0])) {
         return cpoints;
@@ -7597,6 +7751,8 @@
 
     return PointSymbolizer;
   }(CanvasSymbolizer);
+
+  var TEMP_SIZE = new Size(1, 1);
 
   var VectorMarkerSymbolizer = function (_PointSymbolizer) {
     _inheritsLoose(VectorMarkerSymbolizer, _PointSymbolizer);
@@ -7672,8 +7828,7 @@
 
       for (var i = cookedPoints.length - 1; i >= 0; i--) {
         var point = cookedPoints[i];
-
-        var origin = this._rotate(ctx, point, this._getRotationAt(i));
+        var origin = this.getRotation() ? this._rotate(ctx, point, this._getRotationAt(i)) : null;
 
         if (origin) {
           point = origin;
@@ -7701,8 +7856,7 @@
 
       for (var i = cookedPoints.length - 1; i >= 0; i--) {
         var point = cookedPoints[i];
-
-        var origin = this._rotate(ctx, point, this._getRotationAt(i));
+        var origin = this.getRotation() ? this._rotate(ctx, point, this._getRotationAt(i)) : null;
 
         if (origin) {
           point = origin;
@@ -7762,7 +7916,9 @@
     _proto._getAnchor = function _getAnchor(w, h) {
       var shadow = 2 * (this.symbol['shadowBlur'] || 0),
           margin = shadow + this.padding;
-      var p = getAlignPoint(new Size(w, h), this.style['markerHorizontalAlignment'], this.style['markerVerticalAlignment']);
+      TEMP_SIZE.width = w;
+      TEMP_SIZE.height = h;
+      var p = getAlignPoint(TEMP_SIZE, this.style['markerHorizontalAlignment'], this.style['markerVerticalAlignment']);
 
       if (p.x !== -w / 2) {
         p.x -= sign(p.x + w / 2) * margin;
@@ -8118,6 +8274,8 @@
     return DebugSymbolizer;
   }(PointSymbolizer);
 
+  var TEMP_SIZE$1 = new Size(1, 1);
+
   var ImageMarkerSymbolizer = function (_PointSymbolizer) {
     _inheritsLoose(ImageMarkerSymbolizer, _PointSymbolizer);
 
@@ -8196,12 +8354,13 @@
         ctx.globalAlpha *= style['markerOpacity'];
       }
 
-      var alignPoint = getAlignPoint(new Size(width, height), style['markerHorizontalAlignment'], style['markerVerticalAlignment']);
+      TEMP_SIZE$1.width = width;
+      TEMP_SIZE$1.height = height;
+      var alignPoint = getAlignPoint(TEMP_SIZE$1, style['markerHorizontalAlignment'], style['markerVerticalAlignment']);
 
       for (var i = 0, len = cookedPoints.length; i < len; i++) {
         var p = cookedPoints[i];
-
-        var origin = this._rotate(ctx, p, this._getRotationAt(i));
+        var origin = this.getRotation() ? this._rotate(ctx, p, this._getRotationAt(i)) : null;
 
         if (origin) {
           p = origin;
@@ -8252,7 +8411,9 @@
       var width = style['markerWidth'] || (img ? img.width : 0),
           height = style['markerHeight'] || (img ? img.height : 0);
       var dxdy = this.getDxDy();
-      var alignPoint = getAlignPoint(new Size(width, height), style['markerHorizontalAlignment'], style['markerVerticalAlignment']);
+      TEMP_SIZE$1.width = width;
+      TEMP_SIZE$1.height = height;
+      var alignPoint = getAlignPoint(TEMP_SIZE$1, style['markerHorizontalAlignment'], style['markerVerticalAlignment']);
       var result = new PointExtent(dxdy.add(0, 0), dxdy.add(width, height));
 
       result._add(alignPoint);
@@ -8550,8 +8711,7 @@
 
       for (var i = 0, len = cookedPoints.length; i < len; i++) {
         var p = cookedPoints[i];
-
-        var origin = this._rotate(ctx, p, this._getRotationAt(i));
+        var origin = this.getRotation() ? this._rotate(ctx, p, this._getRotationAt(i)) : null;
 
         if (origin) {
           p = origin;
@@ -8991,8 +9151,13 @@
   var TEMP_PAINT_EXTENT = new PointExtent();
   var TEMP_EXTENT$1 = new PointExtent();
   var TEMP_FIXED_EXTENT = new PointExtent();
-  var TEMP_CLIP_EXTENT0 = new PointExtent();
   var TEMP_CLIP_EXTENT1 = new PointExtent();
+  var TEMP_BBOX = {
+    minx: Infinity,
+    miny: Infinity,
+    maxx: -Infinity,
+    maxy: -Infinity
+  };
 
   var Painter = function (_Class) {
     _inheritsLoose(Painter, _Class);
@@ -9074,18 +9239,37 @@
     };
 
     _proto.getPaintParams = function getPaintParams(dx, dy, ignoreAltitude) {
-      var map = this.getMap(),
-          geometry = this.geometry,
-          res = map.getResolution(),
-          pitched = map.getPitch() !== 0,
-          rotated = map.getBearing() !== 0;
+      var renderer = this.getLayer()._getRenderer();
+
+      var mapStateCache = renderer.mapStateCache;
+      var resolution, pitch, bearing, glScale, containerExtent;
+      var map = this.getMap();
+
+      if (mapStateCache && !this._hitPoint) {
+        resolution = mapStateCache.resolution;
+        pitch = mapStateCache.pitch;
+        bearing = mapStateCache.bearing;
+        glScale = mapStateCache.glScale;
+        containerExtent = mapStateCache.containerExtent;
+      } else {
+        resolution = map.getResolution();
+        pitch = map.getPitch();
+        bearing = map.getBearing();
+        glScale = map.getGLScale();
+        containerExtent = map.getContainerExtent();
+      }
+
+      var geometry = this.geometry,
+          res = resolution,
+          pitched = pitch !== 0,
+          rotated = bearing !== 0;
       var params = this._cachedParams;
 
       var paintAsPath = geometry._paintAsPath && geometry._paintAsPath();
 
       if (paintAsPath && this._unsimpledParams && res <= this._unsimpledParams._res) {
         params = this._unsimpledParams;
-      } else if (!params || params._res !== map.getResolution() || this._pitched !== pitched && geometry._redrawWhenPitch() || this._rotated !== rotated && geometry._redrawWhenRotate()) {
+      } else if (!params || params._res !== resolution || this._pitched !== pitched && geometry._redrawWhenPitch() || this._rotated !== rotated && geometry._redrawWhenRotate()) {
         params = geometry._getPaintParams();
 
         if (!params) {
@@ -9113,10 +9297,10 @@
 
       this._pitched = pitched;
       this._rotated = rotated;
-      var zoomScale = map.getGLScale(),
+      var zoomScale = glScale,
           tr = [],
           points = params[0];
-      var mapExtent = map.getContainerExtent();
+      var mapExtent = containerExtent;
 
       var cPoints = this._pointContainerPoints(points, dx, dy, ignoreAltitude, this._hitPoint && !mapExtent.contains(this._hitPoint));
 
@@ -9146,19 +9330,58 @@
         return null;
       }
 
+      var renderer = this.getLayer()._getRenderer();
+
+      var mapStateCache = renderer.mapStateCache;
       var map = this.getMap(),
-          glZoom = map.getGLZoom(),
           containerOffset = this.containerOffset;
+      var glZoom;
+
+      if (mapStateCache) {
+        glZoom = mapStateCache.glZoom;
+      } else {
+        glZoom = map.getGLZoom();
+      }
+
       var cPoints;
+      var roundPoint = this.getLayer().options['roundPoint'];
+      var minx = Infinity,
+          miny = Infinity,
+          maxx = -Infinity,
+          maxy = -Infinity;
 
-      function pointContainerPoint(point, alt) {
-        var p = map._pointToContainerPoint(point, glZoom, alt)._sub(containerOffset);
-
-        if (dx || dy) {
-          p._add(dx || 0, dy || 0);
+      function pointsContainerPoints(viewPoints, alts) {
+        if (viewPoints === void 0) {
+          viewPoints = [];
         }
 
-        return p;
+        if (alts === void 0) {
+          alts = [];
+        }
+
+        var pts = map._pointsToContainerPoints(viewPoints, glZoom, alts);
+
+        for (var i = 0, len = pts.length; i < len; i++) {
+          var p = pts[i];
+
+          p._sub(containerOffset);
+
+          if (dx || dy) {
+            p._add(dx || 0, dy || 0);
+          }
+
+          if (roundPoint) {
+            p.x = Math.ceil(p.x);
+            p.y = Math.ceil(p.y);
+          }
+
+          minx = Math.min(p.x, minx);
+          miny = Math.min(p.y, miny);
+          maxx = Math.max(p.x, maxx);
+          maxy = Math.max(p.y, maxy);
+        }
+
+        return pts;
       }
 
       var altitude = this.getAltitude();
@@ -9185,16 +9408,23 @@
 
         var alt = altitude;
         cPoints = [];
+        var alts = [];
+        var altitudeIsNumber = isNumber(altitude);
 
         for (var i = 0, l = clipPoints.length; i < l; i++) {
           var c = clipPoints[i];
 
           if (Array.isArray(c)) {
-            var cring = [];
+            if (altitudeIsNumber) {
+              var _cring = pointsContainerPoints(c, altitude);
+
+              cPoints.push(_cring);
+              continue;
+            }
+
+            var altArray = [];
 
             for (var ii = 0, ll = c.length; ii < ll; ii++) {
-              var cc = c[ii];
-
               if (Array.isArray(altitude)) {
                 if (altitude[i]) {
                   alt = altitude[i][ii];
@@ -9203,9 +9433,10 @@
                 }
               }
 
-              cring.push(pointContainerPoint(cc, alt));
+              altArray.push(alt);
             }
 
+            var cring = pointsContainerPoints(c, altArray);
             cPoints.push(cring);
           } else {
             if (Array.isArray(altitude)) {
@@ -9218,8 +9449,12 @@
               }
             }
 
-            cPoints.push(pointContainerPoint(c, alt));
+            alts.push(alt);
           }
+        }
+
+        if (alts.length) {
+          cPoints = pointsContainerPoints(clipPoints, alts);
         }
       } else if (points instanceof Point) {
         if (ignoreAltitude) {
@@ -9233,6 +9468,11 @@
         }
       }
 
+      TEMP_BBOX.minx = minx;
+      TEMP_BBOX.miny = miny;
+      TEMP_BBOX.maxx = maxx;
+      TEMP_BBOX.maxy = maxy;
+      this.__bbox = TEMP_BBOX;
       return cPoints;
     };
 
@@ -9245,9 +9485,25 @@
         lineWidth = 4;
       }
 
-      var extent2D = map._get2DExtent(undefined, TEMP_CLIP_EXTENT0)._expand(lineWidth);
+      var renderer = this.getLayer()._getRenderer();
 
-      if (map.getPitch() > 0 && altitude) {
+      var mapStateCache = renderer.mapStateCache;
+
+      var _2DExtent, glExtent, pitch;
+
+      if (mapStateCache) {
+        _2DExtent = mapStateCache._2DExtent;
+        glExtent = mapStateCache.glExtent;
+        pitch = mapStateCache.pitch;
+      } else {
+        _2DExtent = map._get2DExtent();
+        glExtent = map._get2DExtent(map.getGLZoom());
+        pitch = map.getPitch();
+      }
+
+      var extent2D = _2DExtent._expand(lineWidth);
+
+      if (pitch > 0 && altitude) {
         var c = map.cameraLookAt;
         var pos = map.cameraPosition;
         TEMP_POINT0$2.set(pos.x, pos.y);
@@ -9264,7 +9520,7 @@
         };
       }
 
-      var glExtent2D = map._get2DExtent(map.getGLZoom(), TEMP_CLIP_EXTENT0)._expand(lineWidth * map._glScale);
+      var glExtent2D = glExtent._expand(lineWidth * map._glScale);
 
       var smoothness = geometry.options['smoothness'];
 
@@ -9357,8 +9613,12 @@
         return;
       }
 
-      if (extent && !extent.intersects(this.get2DExtent(renderer.resources, TEMP_PAINT_EXTENT))) {
-        return;
+      var mapStateCache = renderer.mapStateCache || {};
+
+      if (!this.geometry._isCheck) {
+        if (extent && !extent.intersects(this.get2DExtent(renderer.resources, TEMP_PAINT_EXTENT))) {
+          return;
+        }
       }
 
       var map = this.getMap();
@@ -9369,7 +9629,7 @@
         return;
       }
 
-      this.containerOffset = offset || map._pointToContainerPoint(renderer.southWest)._add(0, -map.height);
+      this.containerOffset = offset || mapStateCache.offset || map._pointToContainerPoint(renderer.southWest)._add(0, -map.height);
 
       this._beforePaint();
 
@@ -9929,11 +10189,12 @@
   var CollectionPainter = function (_Class) {
     _inheritsLoose(CollectionPainter, _Class);
 
-    function CollectionPainter(geometry) {
+    function CollectionPainter(geometry, isMask) {
       var _this;
 
       _this = _Class.call(this) || this;
       _this.geometry = geometry;
+      _this.isMask = isMask;
       return _this;
     }
 
@@ -9944,7 +10205,7 @@
       var painter;
 
       for (var i = 0, len = geometries.length; i < len; i++) {
-        painter = geometries[i]._getPainter();
+        painter = this.isMask ? geometries[i]._getMaskPainter() : geometries[i]._getPainter();
 
         if (!painter) {
           continue;
@@ -10237,6 +10498,8 @@
             return false;
           }
         }
+      } else if (r1 || r2) {
+        return false;
       }
 
       return true;
@@ -10572,6 +10835,7 @@
     _proto.setSymbol = function setSymbol(symbol) {
       this._symbol = this._prepareSymbol(symbol);
       this.onSymbolChanged();
+      this.__symbol = JSON.stringify(this._symbol);
       return this;
     };
 
@@ -10582,7 +10846,19 @@
 
       var s = this._getSymbol();
 
-      if (s) {
+      if (Array.isArray(s)) {
+        if (!Array.isArray(props)) {
+          throw new Error('Parameter of updateSymbol is not an array.');
+        }
+
+        for (var i = 0; i < props.length; i++) {
+          if (s[i] && props[i]) {
+            s[i] = extendSymbol(s[i], props[i]);
+          }
+        }
+      } else if (Array.isArray(props)) {
+        throw new Error('Geometry\'s symbol is not an array to update.');
+      } else if (s) {
         s = extendSymbol(s, props);
       } else {
         s = extendSymbol(this._getInternalSymbol(), props);
@@ -10705,7 +10981,7 @@
 
         return false;
       } else {
-        return isNil(symbol['opacity']) || isNumber(symbol['opacity']) && symbol['opacity'] > 0;
+        return isNil(symbol['opacity']) || isObject(symbol['opacity']) || isNumber(symbol['opacity']) && symbol['opacity'] > 0;
       }
     };
 
@@ -10978,6 +11254,7 @@
     };
 
     _proto._setExternSymbol = function _setExternSymbol(symbol) {
+      this._eventSymbolProperties = symbol;
       this._externSymbol = this._prepareSymbol(symbol);
       this.onSymbolChanged();
       return this;
@@ -11086,15 +11363,31 @@
     };
 
     _proto._getPainter = function _getPainter() {
-      if (!this._painter && this.getMap()) {
+      var layer = this.getLayer();
+
+      if (!this._painter && layer) {
         if (GEOMETRY_COLLECTION_TYPES.indexOf(this.type) !== -1) {
-          this._painter = new CollectionPainter(this);
-        } else {
-          this._painter = new Painter(this);
+          if (layer.constructor.getCollectionPainterClass) {
+            var clazz = layer.constructor.getCollectionPainterClass();
+            this._painter = new clazz(this);
+          }
+        } else if (layer.constructor.getPainterClass) {
+          var _clazz = layer.constructor.getPainterClass();
+
+          this._painter = new _clazz(this);
         }
       }
 
       return this._painter;
+    };
+
+    _proto._getMaskPainter = function _getMaskPainter() {
+      if (this._maskPainter) {
+        return this._maskPainter;
+      }
+
+      this._maskPainter = this.getGeometries && this.getGeometries() ? new CollectionPainter(this, true) : new Painter(this);
+      return this._maskPainter;
     };
 
     _proto._removePainter = function _removePainter() {
@@ -11107,6 +11400,18 @@
 
     _proto._paint = function _paint(extent) {
       if (this._painter) {
+        if (this._dirtyCoords) {
+          delete this._dirtyCoords;
+
+          var projection = this._getProjection();
+
+          if (projection) {
+            this._pcenter = projection.project(this._coordinates);
+
+            this._clearCache();
+          }
+        }
+
         this._painter.paint(extent);
       }
     };
@@ -11154,7 +11459,7 @@
       var e = {};
 
       if (this._eventSymbolProperties) {
-        e.properties = this._eventSymbolProperties;
+        e.properties = extend({}, this._eventSymbolProperties);
         delete this._eventSymbolProperties;
       }
 
@@ -11773,7 +12078,7 @@
         return null;
       }
 
-      var painter = this._mask._getPainter();
+      var painter = this._mask._getMaskPainter();
 
       if (!painter) {
         return null;
@@ -11807,6 +12112,228 @@
     return fire.apply(this, arguments);
   };
 
+  function set$2(out, x, y, z) {
+    out[0] = x;
+    out[1] = y;
+    out[2] = z;
+    return out;
+  }
+  function add(out, a, b) {
+    out[0] = a[0] + b[0];
+    out[1] = a[1] + b[1];
+    out[2] = a[2] + b[2];
+    return out;
+  }
+  function subtract(out, a, b) {
+    out[0] = a[0] - b[0];
+    out[1] = a[1] - b[1];
+    out[2] = a[2] - b[2];
+    return out;
+  }
+  function length(a) {
+    var x = a[0],
+        y = a[1],
+        z = a[2];
+    return Math.sqrt(x * x + y * y + z * z);
+  }
+  function normalize(out, a) {
+    var x = a[0],
+        y = a[1],
+        z = a[2];
+    var len = x * x + y * y + z * z;
+
+    if (len > 0) {
+      len = 1 / Math.sqrt(len);
+      out[0] = a[0] * len;
+      out[1] = a[1] * len;
+      out[2] = a[2] * len;
+    }
+
+    return out;
+  }
+  function dot(a, b) {
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  }
+  function scale(out, a, b) {
+    out[0] = a[0] * b;
+    out[1] = a[1] * b;
+    out[2] = a[2] * b;
+    return out;
+  }
+  function cross(out, a, b) {
+    var ax = a[0],
+        ay = a[1],
+        az = a[2],
+        bx = b[0],
+        by = b[1],
+        bz = b[2];
+    out[0] = ay * bz - az * by;
+    out[1] = az * bx - ax * bz;
+    out[2] = ax * by - ay * bx;
+    return out;
+  }
+  function distance(a, b) {
+    var x = b[0] - a[0];
+    var y = b[1] - a[1];
+    var z = b[2] - a[2];
+    return Math.hypot ? Math.hypot(x, y, z) : hypot(x, y, z);
+  }
+  function transformMat4(out, a, m) {
+    var x = a[0],
+        y = a[1],
+        z = a[2];
+    var w = m[3] * x + m[7] * y + m[11] * z + m[15];
+    w = w || 1.0;
+    out[0] = (m[0] * x + m[4] * y + m[8] * z + m[12]) / w;
+    out[1] = (m[1] * x + m[5] * y + m[9] * z + m[13]) / w;
+    out[2] = (m[2] * x + m[6] * y + m[10] * z + m[14]) / w;
+    return out;
+  }
+
+  function hypot() {
+    var y = 0;
+    var i = arguments.length;
+
+    while (i--) {
+      y += arguments[i] * arguments[i];
+    }
+
+    return Math.sqrt(y);
+  }
+
+  function applyMatrix(out, v, e) {
+    var x = v[0],
+        y = v[1],
+        z = v[2];
+    var w = 1 / (e[3] * x + e[7] * y + e[11] * z + e[15]);
+    out[0] = (e[0] * x + e[4] * y + e[8] * z + e[12]) * w;
+    out[1] = (e[1] * x + e[5] * y + e[9] * z + e[13]) * w;
+    out[2] = (e[2] * x + e[6] * y + e[10] * z + e[14]) * w;
+    return out;
+  }
+  function matrixToQuaternion(out, te) {
+    var m11 = te[0],
+        m12 = te[4],
+        m13 = te[8],
+        m21 = te[1],
+        m22 = te[5],
+        m23 = te[9],
+        m31 = te[2],
+        m32 = te[6],
+        m33 = te[10],
+        trace = m11 + m22 + m33;
+    var s;
+
+    if (trace > 0) {
+      s = 0.5 / Math.sqrt(trace + 1.0);
+      out.w = 0.25 / s;
+      out.x = (m32 - m23) * s;
+      out.y = (m13 - m31) * s;
+      out.z = (m21 - m12) * s;
+    } else if (m11 > m22 && m11 > m33) {
+      s = 2.0 * Math.sqrt(1.0 + m11 - m22 - m33);
+      out.w = (m32 - m23) / s;
+      out.x = 0.25 * s;
+      out.y = (m12 + m21) / s;
+      out.z = (m13 + m31) / s;
+    } else if (m22 > m33) {
+      s = 2.0 * Math.sqrt(1.0 + m22 - m11 - m33);
+      out.w = (m13 - m31) / s;
+      out.x = (m12 + m21) / s;
+      out.y = 0.25 * s;
+      out.z = (m23 + m32) / s;
+    } else {
+      s = 2.0 * Math.sqrt(1.0 + m33 - m11 - m22);
+      out.w = (m21 - m12) / s;
+      out.x = (m13 + m31) / s;
+      out.y = (m23 + m32) / s;
+      out.z = 0.25 * s;
+    }
+
+    return this;
+  }
+  function quaternionToMatrix(out, q) {
+    var te = out;
+    var x = q.x,
+        y = q.y,
+        z = q.z,
+        w = q.w;
+    var x2 = x + x,
+        y2 = y + y,
+        z2 = z + z;
+    var xx = x * x2,
+        xy = x * y2,
+        xz = x * z2;
+    var yy = y * y2,
+        yz = y * z2,
+        zz = z * z2;
+    var wx = w * x2,
+        wy = w * y2,
+        wz = w * z2;
+    te[0] = 1 - (yy + zz);
+    te[4] = xy - wz;
+    te[8] = xz + wy;
+    te[1] = xy + wz;
+    te[5] = 1 - (xx + zz);
+    te[9] = yz - wx;
+    te[2] = xz - wy;
+    te[6] = yz + wx;
+    te[10] = 1 - (xx + yy);
+    te[3] = 0;
+    te[7] = 0;
+    te[11] = 0;
+    te[12] = 0;
+    te[13] = 0;
+    te[14] = 0;
+    te[15] = 1;
+    return te;
+  }
+  function setPosition(out, v) {
+    var te = out;
+    te[12] = v[0];
+    te[13] = v[1];
+    te[14] = v[2];
+    return out;
+  }
+  function lookAt(te, eye, target, up) {
+    var x = [0, 0, 0];
+    var y = [0, 0, 0];
+    var z = [0, 0, 0];
+    subtract(z, eye, target);
+
+    if (length(z) === 0) {
+      z[2] = 1;
+    }
+
+    normalize(z, z);
+    cross(x, up, z);
+
+    if (length(z) === 0) {
+      if (Math.abs(up[2]) === 1) {
+        z[0] += 0.0001;
+      } else {
+        z[2] += 0.0001;
+      }
+
+      normalize(z, z);
+      cross(x, up, z);
+    }
+
+    normalize(x, x);
+    cross(y, z, x);
+    te[0] = x[0];
+    te[4] = y[0];
+    te[8] = z[0];
+    te[1] = x[1];
+    te[5] = y[1];
+    te[9] = z[1];
+    te[2] = x[2];
+    te[6] = y[2];
+    te[10] = z[2];
+    return te;
+  }
+
+  var TEMP_COORD = new Coordinate(0, 0);
   var options$2 = {
     'maxVisualPitch': 70,
     'maxPitch': 80,
@@ -12115,19 +12642,19 @@
       return this._zoomLevel;
     };
 
-    _proto.getZoomForScale = function getZoomForScale(scale, fromZoom, isFraction) {
+    _proto.getZoomForScale = function getZoomForScale(scale$$1, fromZoom, isFraction) {
       var zoom = this.getZoom();
 
       if (isNil(fromZoom)) {
         fromZoom = zoom;
       }
 
-      if (scale === 1 && fromZoom === zoom) {
+      if (scale$$1 === 1 && fromZoom === zoom) {
         return zoom;
       }
 
       var res = this._getResolution(fromZoom),
-          targetRes = res / scale;
+          targetRes = res / scale$$1;
 
       var scaleZoom = this.getZoomFromRes(targetRes);
 
@@ -12311,14 +12838,14 @@
 
       var size = this.getSize();
       var containerExtent = extent.convertTo(function (p) {
-        return _this2.coordToContainerPoint(p);
+        return _this2.coordToPoint(p);
       });
       var w = containerExtent.getWidth(),
           h = containerExtent.getHeight();
       var scaleX = size['width'] / w,
           scaleY = size['height'] / h;
-      var scale = this.getSpatialReference().getZoomDirection() < 0 ? Math.max(scaleX, scaleY) : Math.min(scaleX, scaleY);
-      var zoom = this.getZoomForScale(scale, null, isFraction);
+      var scale$$1 = this.getSpatialReference().getZoomDirection() < 0 ? Math.max(scaleX, scaleY) : Math.min(scaleX, scaleY);
+      var zoom = this.getZoomForScale(scale$$1, null, isFraction);
       return zoom;
     };
 
@@ -12658,13 +13185,13 @@
           file = 'export';
         }
 
-        var dataURL = renderer.toDataURL(mimeType);
+        var dataURL = renderer.toDataURL(mimeType, options.quality || 0.92);
 
         if (save && dataURL) {
           var imgURL;
 
           if (typeof Blob !== 'undefined' && typeof atob !== 'undefined') {
-            var blob = b64toBlob(dataURL.replace(/^data:image\/(png|jpeg|jpg);base64,/, ''), mimeType);
+            var blob = b64toBlob(dataURL.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/, ''), mimeType);
             imgURL = URL.createObjectURL(blob);
           } else {
             imgURL = dataURL;
@@ -12787,6 +13314,8 @@
     };
 
     _proto.remove = function remove() {
+      var _this3 = this;
+
       if (this.isRemoved()) {
         return this;
       }
@@ -12808,8 +13337,12 @@
         this._getRenderer().remove();
       }
 
-      if (this._containerDOM.innerHTML) {
-        this._containerDOM.innerHTML = '';
+      if (this._containerDOM.childNodes && this._containerDOM.childNodes.length > 0) {
+        Array.prototype.slice.call(this._containerDOM.childNodes, 0).filter(function (node) {
+          return node.className === 'maptalks-wrapper';
+        }).forEach(function (node) {
+          return _this3._containerDOM.removeChild(node);
+        });
       }
 
       delete this._panels;
@@ -12998,6 +13531,10 @@
 
       for (var i = 0, l = this._layers.length; i < l; i++) {
         this._layers[i]._order = i;
+
+        if (this._layers[i].sortLayersByZIndex) {
+          this._layers[i].sortLayersByZIndex();
+        }
       }
 
       this._layers.sort(function (a, b) {
@@ -13301,6 +13838,23 @@
       return this._spatialReference.getTransformation().transform(pCoord, this._getResolution(zoom), out);
     };
 
+    _proto._prjsToPoints = function _prjsToPoints(pCoords, zoom) {
+      zoom = isNil(zoom) ? this.getZoom() : zoom;
+
+      var res = this._getResolution(zoom);
+
+      var transformation = this._spatialReference.getTransformation();
+
+      var pts = [];
+
+      for (var i = 0, len = pCoords.length; i < len; i++) {
+        var pt = transformation.transform(pCoords[i], res);
+        pts.push(pt);
+      }
+
+      return pts;
+    };
+
     _proto._pointToPrj = function _pointToPrj(point, zoom, out) {
       zoom = isNil(zoom) ? this.getZoom() : zoom;
       return this._spatialReference.getTransformation().untransform(point, this._getResolution(zoom), out);
@@ -13390,6 +13944,59 @@
         return this._prjToContainerPoint(pCoordinate, zoom, out);
       };
     }(),
+    coordinatesToContainerPoints: function () {
+      return function (coordinates, zoom) {
+        zoom = isNil(zoom) ? this.getZoom() : zoom;
+        var pts = [];
+
+        var transformation = this._spatialReference.getTransformation();
+
+        var resolution = this._getResolution(zoom);
+
+        var res = resolution / this._getResolution();
+
+        var projection = this.getProjection();
+        var tempOut = [0, 0, 0];
+        var prjOut = new Coordinate(0, 0);
+        var isTransforming = this.isTransforming();
+
+        var centerPoint = this._prjToPoint(this._getPrjCenter(), undefined, TEMP_COORD);
+
+        var w = this.width / 2,
+            h = this.height / 2;
+
+        for (var i = 0, len = coordinates.length; i < len; i++) {
+          var pCoordinate = projection.project(coordinates[i], prjOut);
+          var point = transformation.transform(pCoordinate, resolution);
+          point = point._multi(res);
+
+          if (isTransforming) {
+            var scale$$1 = this._glScale;
+            set$2(tempOut, point.x * scale$$1, point.y * scale$$1, 0);
+
+            var t = this._projIfBehindCamera(tempOut, this.cameraPosition, this.cameraForward);
+
+            applyMatrix(t, t, this.projViewMatrix);
+            var w2 = w,
+                h2 = h;
+            t[0] = t[0] * w2 + w2;
+            t[1] = -(t[1] * h2) + h2;
+            point.x = t[0];
+            point.y = t[1];
+            pts.push(point);
+          } else {
+            var out = point;
+
+            out._sub(centerPoint.x, centerPoint.y);
+
+            out.set(out.x, -out.y);
+            pts.push(out._add(w, h));
+          }
+        }
+
+        return pts;
+      };
+    }(),
     containerPointToCoordinate: function () {
       var COORD = new Coordinate(0, 0);
       return function (containerPoint, out) {
@@ -13416,13 +14023,13 @@
           return null;
         }
 
-        var scale = this.getScale() / this.getScale(zoom);
+        var scale$$1 = this.getScale() / this.getScale(zoom);
         var center = this.getCenter(),
             target = projection.locate(center, xDist, yDist);
         var p0 = this.coordToContainerPoint(center, undefined, POINT0),
             p1 = this.coordToContainerPoint(target, undefined, POINT1);
 
-        p1._sub(p0)._multi(scale)._abs();
+        p1._sub(p0)._multi(scale$$1)._abs();
 
         return new Size(p1.x, p1.y);
       };
@@ -13491,7 +14098,7 @@
     _get2DExtent: function () {
       var POINT = new Point(0, 0);
       return function (zoom, out) {
-        var _this3 = this;
+        var _this4 = this;
 
         var cached;
 
@@ -13512,7 +14119,7 @@
 
         var cExtent = this.getContainerExtent();
         return cExtent.convertTo(function (c) {
-          return _this3._containerPointToPoint(c, zoom, POINT);
+          return _this4._containerPointToPoint(c, zoom, POINT);
         }, out);
       };
     }(),
@@ -13939,7 +14546,7 @@
       var oneMoreEvent = null;
       var eventType = type || domEvent.type;
 
-      if (eventType === 'mousedown' || eventType === 'touchstart' && domEvent.touches.length === 1) {
+      if (eventType === 'mousedown' || eventType === 'touchstart' && domEvent.touches && domEvent.touches.length === 1) {
         this._mouseDownTime = now();
       } else if ((eventType === 'click' || eventType === 'touchend') && this._mouseDownTime) {
         var downTime = this._mouseDownTime;
@@ -14226,7 +14833,7 @@
         _this2._zooming = false;
         delete _this2._timeout;
         map.onZoomEnd(map.getZoom(), _this2._zoomOrigin);
-      }, 320);
+      }, 210);
     };
 
     _proto._interval = function _interval(evt, origin) {
@@ -14566,7 +15173,7 @@
           }
 
           return [v1, v2 - v1, v2];
-        } else if (Array.isArray(v1) || v1 instanceof Coordinate || v1 instanceof Point) {
+        } else if (Array.isArray(v1) && isNumber(v1[0]) || v1 instanceof Coordinate || v1 instanceof Point) {
           if (Array.isArray(v1)) {
             v1 = new Coordinate(v1);
             v2 = new Coordinate(v2);
@@ -14582,7 +15189,7 @@
 
           return [v1, v2.sub(v1), v2];
         } else {
-          return [v1, 0, v2];
+          return [v1, v2, v2];
         }
       }
 
@@ -14684,6 +15291,8 @@
                 result[p] = deltaStyles(delta, s, d);
               } else if (s instanceof Point || s instanceof Coordinate) {
                 result[p] = s.add(d.multi(delta));
+              } else {
+                result[p] = d;
               }
             }
           }
@@ -15281,9 +15890,25 @@
         zoom = map.getZoom();
       }
 
-      return forEachCoord(prjCoords, function (c) {
-        return map._prjToPoint(c, zoom);
-      });
+      if (!Array.isArray(prjCoords)) {
+        return map._prjToPoint(prjCoords, zoom);
+      } else {
+        if (!Array.isArray(prjCoords[0])) {
+          return map._prjsToPoints(prjCoords, zoom);
+        }
+
+        var pts = [];
+
+        for (var i = 0, len = prjCoords.length; i < len; i++) {
+          var prjCoord = prjCoords[i];
+
+          var pt = map._prjsToPoints(prjCoord, zoom);
+
+          pts.push(pt);
+        }
+
+        return pts;
+      }
     };
 
     _proto._shouldSimplify = function _shouldSimplify() {
@@ -15715,6 +16340,7 @@
         this._coordinates = center;
 
         if (!this.getMap()) {
+          this._dirtyCoords = true;
           this.onPositionChanged();
           return this;
         }
@@ -18510,7 +19136,6 @@
   var options$e = {
     'drawImmediate': false
   };
-  var TEMP_EXTENT$3 = new PointExtent();
 
   var OverlayLayer = function (_Layer) {
     _inheritsLoose(OverlayLayer, _Layer);
@@ -18534,7 +19159,6 @@
       }
 
       var style = _this.options['style'];
-      delete _this.options['style'];
 
       if (style) {
         _this.setStyle(style);
@@ -18786,6 +19410,10 @@
       geo._fireEvent('add', {
         'layer': this
       });
+
+      if (this._cookedStyles) {
+        this._styleGeometry(geo);
+      }
     };
 
     _proto.removeGeometry = function removeGeometry(geometries) {
@@ -18859,15 +19487,16 @@
     };
 
     _proto.getStyle = function getStyle() {
-      if (!this._style) {
+      if (!this.options['style']) {
         return null;
       }
 
-      return this._style;
+      return this.options['style'];
     };
 
     _proto.setStyle = function setStyle(style) {
-      this._style = style;
+      this.options.style = style;
+      style = parseStyleRootPath(style);
       this._cookedStyles = compileStyle(style);
       this.forEach(function (geometry) {
         this._styleGeometry(geometry);
@@ -18897,11 +19526,11 @@
     };
 
     _proto.removeStyle = function removeStyle() {
-      if (!this._style) {
+      if (!this.options.style) {
         return this;
       }
 
-      delete this._style;
+      delete this.options.style;
       delete this._cookedStyles;
       this.forEach(function (geometry) {
         geometry._setExternSymbol(null);
@@ -18924,64 +19553,6 @@
       }
 
       return Layer.prototype.hide.call(this);
-    };
-
-    _proto.identify = function identify(coordinate, options) {
-      if (options === void 0) {
-        options = {};
-      }
-
-      if (!(coordinate instanceof Coordinate)) {
-        coordinate = new Coordinate(coordinate);
-      }
-
-      return this._hitGeos(this._geoList, coordinate, options);
-    };
-
-    _proto._hitGeos = function _hitGeos(geometries, coordinate, options) {
-      if (options === void 0) {
-        options = {};
-      }
-
-      var filter = options['filter'],
-          tolerance = options['tolerance'],
-          hits = [];
-      var map = this.getMap();
-      var point = map.coordToPoint(coordinate);
-
-      var cp = map._pointToContainerPoint(point, undefined, 0, point);
-
-      for (var i = geometries.length - 1; i >= 0; i--) {
-        var geo = geometries[i];
-
-        if (!geo || !geo.isVisible() || !geo._getPainter() || !geo.options['interactive']) {
-          continue;
-        }
-
-        if (!(geo instanceof LineString) || !geo._getArrowStyle() && !(geo instanceof Curve)) {
-          var extent = geo.getContainerExtent(TEMP_EXTENT$3);
-
-          if (tolerance) {
-            extent = extent._expand(tolerance);
-          }
-
-          if (!extent || !extent.contains(cp)) {
-            continue;
-          }
-        }
-
-        if (geo._containsPoint(cp, tolerance) && (!filter || filter(geo))) {
-          hits.push(geo);
-
-          if (options['count']) {
-            if (hits.length >= options['count']) {
-              break;
-            }
-          }
-        }
-      }
-
-      return hits;
     };
 
     _proto._initCache = function _initCache() {
@@ -19152,6 +19723,7 @@
 
   OverlayLayer.mergeOptions(options$e);
 
+  var TEMP_EXTENT$3 = new PointExtent();
   var options$f = {
     'debug': false,
     'enableSimplify': true,
@@ -19162,6 +19734,8 @@
     'enableAltitude': false,
     'altitudeProperty': 'altitude',
     'drawAltitude': false,
+    'sortByDistanceToCamera': false,
+    'roundPoint': false,
     'altitude': 0
   };
 
@@ -19197,7 +19771,57 @@
         return renderer.identify(coordinate, options);
       }
 
-      return _OverlayLayer.prototype.identify.call(this, coordinate, options);
+      if (!(coordinate instanceof Coordinate)) {
+        coordinate = new Coordinate(coordinate);
+      }
+
+      return this._hitGeos(this._geoList, coordinate, options);
+    };
+
+    _proto._hitGeos = function _hitGeos(geometries, coordinate, options) {
+      if (options === void 0) {
+        options = {};
+      }
+
+      var filter = options['filter'],
+          tolerance = options['tolerance'],
+          hits = [];
+      var map = this.getMap();
+      var point = map.coordToPoint(coordinate);
+
+      var cp = map._pointToContainerPoint(point, undefined, 0, point);
+
+      for (var i = geometries.length - 1; i >= 0; i--) {
+        var geo = geometries[i];
+
+        if (!geo || !geo.isVisible() || !geo._getPainter() || !geo.options['interactive']) {
+          continue;
+        }
+
+        if (!(geo instanceof LineString) || !geo._getArrowStyle() && !(geo instanceof Curve)) {
+          var extent = geo.getContainerExtent(TEMP_EXTENT$3);
+
+          if (tolerance) {
+            extent = extent._expand(tolerance);
+          }
+
+          if (!extent || !extent.contains(cp)) {
+            continue;
+          }
+        }
+
+        if (geo._containsPoint(cp, tolerance) && (!filter || filter(geo))) {
+          hits.push(geo);
+
+          if (options['count']) {
+            if (hits.length >= options['count']) {
+              break;
+            }
+          }
+        }
+      }
+
+      return hits;
     };
 
     _proto.getAltitude = function getAltitude() {
@@ -19214,10 +19838,6 @@
         'id': this.getId(),
         'options': this.config()
       };
-
-      if ((isNil(options['style']) || options['style']) && this.getStyle()) {
-        profile['style'] = this.getStyle();
-      }
 
       if (isNil(options['geometries']) || options['geometries']) {
         var clipExtent;
@@ -19267,12 +19887,15 @@
       }
 
       layer.addGeometry(geometries);
-
-      if (json['style']) {
-        layer.setStyle(json['style']);
-      }
-
       return layer;
+    };
+
+    VectorLayer.getPainterClass = function getPainterClass() {
+      return Painter;
+    };
+
+    VectorLayer.getCollectionPainterClass = function getCollectionPainterClass() {
+      return CollectionPainter;
     };
 
     return VectorLayer;
@@ -19443,8 +20066,11 @@
 
       _this._events = {
         'click': _this._clickHandler,
-        'mousemove': _this._mouseMoveHandler,
+        'mousemove touchmove': _this._mouseMoveHandler,
         'dblclick': _this._doubleClickHandler,
+        'mousedown touchstart': _this._mouseDownHandler,
+        'mouseup touchend': _this._mouseUpHandler,
+        'mousemove': _this._mouseMoveHandler,
         'mousedown': _this._mouseDownHandler,
         'mouseup': _this._mouseUpHandler
       };
@@ -19611,7 +20237,16 @@
 
       var actions = this._getRegisterMode()['action'];
 
-      if (actions.indexOf('mousedown') > -1) {
+      var dragging = false;
+
+      for (var i = 0; i < actions.length; i++) {
+        if (actions[i].indexOf('mousemove') >= 0) {
+          dragging = true;
+          break;
+        }
+      }
+
+      if (dragging) {
         var _map = this.getMap();
 
         this._mapDraggable = _map.options['draggable'];
@@ -19687,22 +20322,36 @@
     _proto._clickHandler = function _clickHandler(event) {
       var registerMode = this._getRegisterMode();
 
+      if (this._clickCoords && this._clickCoords.length) {
+        var len = this._clickCoords.length;
+
+        var prjCoord = this.getMap()._pointToPrj(event['point2d']);
+
+        if (this._clickCoords[len - 1].equals(prjCoord)) {
+          return;
+        }
+      }
+
       if (!this._geometry) {
         this._createGeometry(event);
       } else {
-        var prjCoord = this.getMap()._pointToPrj(event['point2d']);
+        var _prjCoord = this.getMap()._pointToPrj(event['point2d']);
 
         if (!isNil(this._historyPointer)) {
           this._clickCoords = this._clickCoords.slice(0, this._historyPointer);
         }
 
-        this._clickCoords.push(prjCoord);
+        this._clickCoords.push(_prjCoord);
 
         this._historyPointer = this._clickCoords.length;
         event.drawTool = this;
         registerMode['update'](this.getMap().getProjection(), this._clickCoords, this._geometry, event);
 
-        this._fireEvent('drawvertex', event);
+        if (this._clickCoords.length <= 1) {
+          this._fireEvent('drawstart', event);
+        } else {
+          this._fireEvent('drawvertex', event);
+        }
 
         if (registerMode['clickLimit'] && registerMode['clickLimit'] === this._historyPointer) {
           this.endDraw(event);
@@ -19794,6 +20443,12 @@
         return;
       }
 
+      var mode = this.getMode();
+
+      if (mode && mode.indexOf('polygon') > -1 && clickCoords.length < 3) {
+        return;
+      }
+
       var projection = this.getMap().getProjection();
       var path = [clickCoords[0]];
 
@@ -19854,7 +20509,7 @@
     _proto._getMouseContainerPoint = function _getMouseContainerPoint(event) {
       var action = this._getRegisterMode()['action'];
 
-      if (action === 'mousedown') {
+      if (action[0].indexOf('mousedown') >= 0 || action[0].indexOf('touchstart') >= 0) {
         stopPropagation(event['domEvent']);
       }
 
@@ -20207,6 +20862,209 @@
       delete this._isInternalAnimation;
       return this._mapAnimPlayer;
     },
+    flyTo: function flyTo(view, options, step) {
+      var _this2 = this;
+
+      if (options === void 0) {
+        options = {};
+      }
+
+      if (this._animPlayer) {
+        if (this._isInternalAnimation) {
+          if (this._animPlayer.playState === 'running') {
+            this._animPlayer.pause();
+
+            this._prevAnimPlayer = this._animPlayer;
+          }
+        } else {
+          delete this._prevAnimPlayer;
+
+          this._stopAnim(this._animPlayer);
+        }
+      }
+
+      if (isFunction(options)) {
+        step = options;
+        options = {};
+      }
+
+      options = extend({
+        curve: 1.42
+      }, options);
+      var map = this;
+
+      function zoomScale(z0, z1) {
+        return map.getResolution(z1) / map.getResolution(z0);
+      }
+
+      var zoomOrigin = view['around'] || new Point(this.width / 2, this.height / 2);
+      var minZoom = this.getMinZoom();
+      var maxZoom = this.getMaxZoom();
+      var projection = this.getProjection();
+      var currView = this.getView();
+      var startZoom = currView.zoom;
+      var startBearing = currView.bearing;
+      var startPitch = currView.pitch;
+      var zoom = 'zoom' in view ? clamp(+view.zoom, minZoom, maxZoom) : startZoom;
+      var bearing = 'bearing' in view ? +view.bearing : startBearing;
+      var pitch = 'pitch' in view ? +view.pitch : startPitch;
+      var center = projection.project(view.center && new Coordinate(view.center) || this.getCenter());
+      var scale = zoomScale(zoom, startZoom);
+      var from = projection.project(this.getCenter());
+      var delta = center.sub(from);
+      var rho = options.curve;
+      var w0 = Math.max(this.width, this.height),
+          w1 = w0 / scale,
+          u1 = delta.mag();
+
+      if ('minZoom' in options) {
+        var animMinZoom = clamp(Math.min(options.minZoom, startZoom, zoom), minZoom, maxZoom);
+        var wMax = w0 / zoomScale(animMinZoom, startZoom);
+        rho = Math.sqrt(wMax / u1 * 2);
+      }
+
+      var rho2 = rho * rho;
+
+      function r(i) {
+        var b = (w1 * w1 - w0 * w0 + (i ? -1 : 1) * rho2 * rho2 * u1 * u1) / (2 * (i ? w1 : w0) * rho2 * u1);
+        return Math.log(Math.sqrt(b * b + 1) - b);
+      }
+
+      function sinh(n) {
+        return (Math.exp(n) - Math.exp(-n)) / 2;
+      }
+
+      function cosh(n) {
+        return (Math.exp(n) + Math.exp(-n)) / 2;
+      }
+
+      function tanh(n) {
+        return sinh(n) / cosh(n);
+      }
+
+      var r0 = r(0);
+
+      var w = function w(s) {
+        return cosh(r0) / cosh(r0 + rho * s);
+      };
+
+      var u = function u(s) {
+        return w0 * ((cosh(r0) * tanh(r0 + rho * s) - sinh(r0)) / rho2) / u1;
+      };
+
+      var S = (r(1) - r0) / rho;
+
+      if (Math.abs(u1) < 0.000001 || !isFinite(S)) {
+        if (Math.abs(w0 - w1) < 0.000001) return this.animateTo(view, options, step);
+        var k = w1 < w0 ? -1 : 1;
+        S = Math.abs(Math.log(w1 / w0)) / rho;
+
+        u = function u() {
+          return 0;
+        };
+
+        w = function w(s) {
+          return Math.exp(k * rho * s);
+        };
+      }
+
+      var renderer = this._getRenderer();
+
+      var framer = function framer(fn) {
+        renderer.callInNextFrame(fn);
+      };
+
+      var player = this._animPlayer = Animation.animate({
+        k: [0, 1]
+      }, {
+        'easing': options['easing'] || 'out',
+        'duration': options['duration'] || 8,
+        'framer': framer
+      }, function (frame) {
+        if (_this2.isRemoved()) {
+          player.finish();
+          return;
+        }
+
+        var k = frame.styles.k;
+        var s = k * S;
+        var scale = 1 / w(s);
+        var props = {};
+
+        if (view.center) {
+          var newCenter = k === 1 ? center : from.add(delta.multi(u(s)));
+          props.prjCenter = [center, newCenter];
+        }
+
+        if (startZoom !== zoom) {
+          var newZoom = k === 1 ? zoom : _this2.getZoomForScale(scale, startZoom, true);
+          props.zoom = [startZoom, newZoom];
+        }
+
+        if (startPitch !== pitch) {
+          var newPitch = interpolate$2(startPitch, pitch, k);
+          props.pitch = [pitch, newPitch];
+        }
+
+        if (startBearing !== bearing) {
+          var newBearing = interpolate$2(startBearing, bearing, k);
+          props.bearing = [bearing, newBearing];
+        }
+
+        if (player.playState === 'running') {
+          if (props['prjCenter']) {
+            var _center2 = props['prjCenter'];
+
+            _this2._setPrjCenter(_center2[1]);
+
+            _this2.onMoving(_this2._parseEventFromCoord(_this2.getCenter()));
+          }
+
+          if (props['zoom']) {
+            _this2.onZooming(props['zoom'][1], zoomOrigin);
+          }
+
+          if (props['pitch']) {
+            _this2.setPitch(props['pitch'][1]);
+          }
+
+          if (props['bearing']) {
+            _this2.setBearing(props['bearing'][1]);
+          }
+
+          _this2._fireEvent('animating');
+        } else if (player.playState !== 'paused' || player === _this2._mapAnimPlayer) {
+          if (!player._interupted) {
+            if (props['prjCenter']) {
+              _this2._setPrjCenter(props['prjCenter'][1]);
+            }
+
+            if (props['pitch']) {
+              _this2.setPitch(props['pitch'][1]);
+            }
+
+            if (props['bearing']) {
+              _this2.setBearing(props['bearing'][1]);
+            }
+          }
+
+          _this2._endAnim(player, props, zoomOrigin, options);
+        }
+
+        if (step) {
+          step(frame);
+        }
+      });
+
+      this._startAnim({
+        center: view.center,
+        zoom: view.zoom !== startZoom,
+        pitch: pitch !== startPitch,
+        bearing: bearing !== startBearing
+      }, zoomOrigin);
+
+      return this;
+    },
     isAnimating: function isAnimating() {
       return !!this._animPlayer;
     },
@@ -20329,6 +21187,10 @@
     }
   });
 
+  function interpolate$2(a, b, t) {
+    return a * (1 - t) + b * t;
+  }
+
   var events = 'mousedown ' + 'mouseup ' + 'mouseover ' + 'mouseout ' + 'mouseenter ' + 'mouseleave ' + 'mousemove ' + 'click ' + 'dblclick ' + 'contextmenu ' + 'keypress ' + 'touchstart ' + 'touchmove ' + 'touchend ';
   Map$1.include({
     _registerDomEvents: function _registerDomEvents() {
@@ -20346,13 +21208,15 @@
         preventDefault(e);
       }
 
+      this._fireDOMEvent(this, e, 'dom:' + e.type);
+
       if (this._ignoreEvent(e)) {
         return;
       }
 
       var mimicClick = false;
 
-      if (type === 'mousedown' || type === 'touchstart' && e.touches.length === 1) {
+      if (type === 'mousedown' || type === 'touchstart' && (!e.touches || e.touches.length === 1)) {
         this._mouseDownTime = now();
       } else if (type === 'click' || type === 'touchend' || type === 'contextmenu') {
         if (!this._mouseDownTime) {
@@ -20439,11 +21303,16 @@
         if (actual) {
           var containerPoint = getEventContainerPoint(actual, this._containerDOM);
           eventParam = extend(eventParam, {
-            'coordinate': this.containerPointToCoord(containerPoint),
             'containerPoint': containerPoint,
-            'viewPoint': this.containerPointToViewPoint(containerPoint),
-            'point2d': this._containerPointToPoint(containerPoint)
+            'viewPoint': this.containerPointToViewPoint(containerPoint)
           });
+
+          if (this.getContainerExtent().contains(containerPoint)) {
+            eventParam = extend(eventParam, {
+              'coordinate': this.containerPointToCoord(containerPoint),
+              'point2d': this._containerPointToPoint(containerPoint)
+            });
+          }
         }
       }
 
@@ -20496,8 +21365,8 @@
       return this;
     },
     _requestFullScreen: function _requestFullScreen(dom) {
-      if (dom.requestFullScreen) {
-        dom.requestFullScreen();
+      if (dom.requestFullscreen) {
+        dom.requestFullscreen();
       } else if (dom.mozRequestFullScreen) {
         dom.mozRequestFullScreen();
       } else if (dom.webkitRequestFullScreen) {
@@ -20515,8 +21384,8 @@
       }
     },
     _cancelFullScreen: function _cancelFullScreen() {
-      if (document.cancelFullScreen) {
-        document.cancelFullScreen();
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
       } else if (document.mozCancelFullScreen) {
         document.mozCancelFullScreen();
       } else if (document.webkitCancelFullScreen) {
@@ -21121,7 +21990,7 @@
 
     return out;
   }
-  function scale(out, a, v) {
+  function scale$1(out, a, v) {
     var x = v[0],
         y = v[1],
         z = v[2];
@@ -21353,230 +22222,9 @@
     return out;
   }
 
-  function set$2(out, x, y, z) {
-    out[0] = x;
-    out[1] = y;
-    out[2] = z;
-    return out;
-  }
-  function add(out, a, b) {
-    out[0] = a[0] + b[0];
-    out[1] = a[1] + b[1];
-    out[2] = a[2] + b[2];
-    return out;
-  }
-  function subtract(out, a, b) {
-    out[0] = a[0] - b[0];
-    out[1] = a[1] - b[1];
-    out[2] = a[2] - b[2];
-    return out;
-  }
-  function length(a) {
-    var x = a[0],
-        y = a[1],
-        z = a[2];
-    return Math.sqrt(x * x + y * y + z * z);
-  }
-  function normalize(out, a) {
-    var x = a[0],
-        y = a[1],
-        z = a[2];
-    var len = x * x + y * y + z * z;
-
-    if (len > 0) {
-      len = 1 / Math.sqrt(len);
-      out[0] = a[0] * len;
-      out[1] = a[1] * len;
-      out[2] = a[2] * len;
-    }
-
-    return out;
-  }
-  function dot(a, b) {
-    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-  }
-  function scale$1(out, a, b) {
-    out[0] = a[0] * b;
-    out[1] = a[1] * b;
-    out[2] = a[2] * b;
-    return out;
-  }
-  function cross(out, a, b) {
-    var ax = a[0],
-        ay = a[1],
-        az = a[2],
-        bx = b[0],
-        by = b[1],
-        bz = b[2];
-    out[0] = ay * bz - az * by;
-    out[1] = az * bx - ax * bz;
-    out[2] = ax * by - ay * bx;
-    return out;
-  }
-  function distance(a, b) {
-    var x = b[0] - a[0];
-    var y = b[1] - a[1];
-    var z = b[2] - a[2];
-    return Math.hypot ? Math.hypot(x, y, z) : hypot(x, y, z);
-  }
-  function transformMat4(out, a, m) {
-    var x = a[0],
-        y = a[1],
-        z = a[2];
-    var w = m[3] * x + m[7] * y + m[11] * z + m[15];
-    w = w || 1.0;
-    out[0] = (m[0] * x + m[4] * y + m[8] * z + m[12]) / w;
-    out[1] = (m[1] * x + m[5] * y + m[9] * z + m[13]) / w;
-    out[2] = (m[2] * x + m[6] * y + m[10] * z + m[14]) / w;
-    return out;
-  }
-
-  function hypot() {
-    var y = 0;
-    var i = arguments.length;
-
-    while (i--) {
-      y += arguments[i] * arguments[i];
-    }
-
-    return Math.sqrt(y);
-  }
-
-  function applyMatrix(out, v, e) {
-    var x = v[0],
-        y = v[1],
-        z = v[2];
-    var w = 1 / (e[3] * x + e[7] * y + e[11] * z + e[15]);
-    out[0] = (e[0] * x + e[4] * y + e[8] * z + e[12]) * w;
-    out[1] = (e[1] * x + e[5] * y + e[9] * z + e[13]) * w;
-    out[2] = (e[2] * x + e[6] * y + e[10] * z + e[14]) * w;
-    return out;
-  }
-  function matrixToQuaternion(out, te) {
-    var m11 = te[0],
-        m12 = te[4],
-        m13 = te[8],
-        m21 = te[1],
-        m22 = te[5],
-        m23 = te[9],
-        m31 = te[2],
-        m32 = te[6],
-        m33 = te[10],
-        trace = m11 + m22 + m33;
-    var s;
-
-    if (trace > 0) {
-      s = 0.5 / Math.sqrt(trace + 1.0);
-      out.w = 0.25 / s;
-      out.x = (m32 - m23) * s;
-      out.y = (m13 - m31) * s;
-      out.z = (m21 - m12) * s;
-    } else if (m11 > m22 && m11 > m33) {
-      s = 2.0 * Math.sqrt(1.0 + m11 - m22 - m33);
-      out.w = (m32 - m23) / s;
-      out.x = 0.25 * s;
-      out.y = (m12 + m21) / s;
-      out.z = (m13 + m31) / s;
-    } else if (m22 > m33) {
-      s = 2.0 * Math.sqrt(1.0 + m22 - m11 - m33);
-      out.w = (m13 - m31) / s;
-      out.x = (m12 + m21) / s;
-      out.y = 0.25 * s;
-      out.z = (m23 + m32) / s;
-    } else {
-      s = 2.0 * Math.sqrt(1.0 + m33 - m11 - m22);
-      out.w = (m21 - m12) / s;
-      out.x = (m13 + m31) / s;
-      out.y = (m23 + m32) / s;
-      out.z = 0.25 * s;
-    }
-
-    return this;
-  }
-  function quaternionToMatrix(out, q) {
-    var te = out;
-    var x = q.x,
-        y = q.y,
-        z = q.z,
-        w = q.w;
-    var x2 = x + x,
-        y2 = y + y,
-        z2 = z + z;
-    var xx = x * x2,
-        xy = x * y2,
-        xz = x * z2;
-    var yy = y * y2,
-        yz = y * z2,
-        zz = z * z2;
-    var wx = w * x2,
-        wy = w * y2,
-        wz = w * z2;
-    te[0] = 1 - (yy + zz);
-    te[4] = xy - wz;
-    te[8] = xz + wy;
-    te[1] = xy + wz;
-    te[5] = 1 - (xx + zz);
-    te[9] = yz - wx;
-    te[2] = xz - wy;
-    te[6] = yz + wx;
-    te[10] = 1 - (xx + yy);
-    te[3] = 0;
-    te[7] = 0;
-    te[11] = 0;
-    te[12] = 0;
-    te[13] = 0;
-    te[14] = 0;
-    te[15] = 1;
-    return te;
-  }
-  function setPosition(out, v) {
-    var te = out;
-    te[12] = v[0];
-    te[13] = v[1];
-    te[14] = v[2];
-    return out;
-  }
-  function lookAt(te, eye, target, up) {
-    var x = [0, 0, 0];
-    var y = [0, 0, 0];
-    var z = [0, 0, 0];
-    subtract(z, eye, target);
-
-    if (length(z) === 0) {
-      z[2] = 1;
-    }
-
-    normalize(z, z);
-    cross(x, up, z);
-
-    if (length(z) === 0) {
-      if (Math.abs(up[2]) === 1) {
-        z[0] += 0.0001;
-      } else {
-        z[2] += 0.0001;
-      }
-
-      normalize(z, z);
-      cross(x, up, z);
-    }
-
-    normalize(x, x);
-    cross(y, z, x);
-    te[0] = x[0];
-    te[4] = y[0];
-    te[8] = z[0];
-    te[1] = x[1];
-    te[5] = y[1];
-    te[9] = z[1];
-    te[2] = x[2];
-    te[6] = y[2];
-    te[10] = z[2];
-    return te;
-  }
-
   var RADIAN$1 = Math.PI / 180;
   var DEFAULT_FOV = 0.6435011087932844;
-  var TEMP_COORD = new Coordinate(0, 0);
+  var TEMP_COORD$1 = new Coordinate(0, 0);
   Map$1.include({
     getFov: function getFov() {
       if (!this._fov) {
@@ -21735,7 +22383,7 @@
 
           return new Point(t[0], t[1]);
         } else {
-          var centerPoint = this._prjToPoint(this._getPrjCenter(), undefined, TEMP_COORD);
+          var centerPoint = this._prjToPoint(this._getPrjCenter(), undefined, TEMP_COORD$1);
 
           if (out) {
             out.x = point.x;
@@ -21751,6 +22399,56 @@
         }
       };
     }(),
+    _pointsToContainerPoints: function () {
+      var a = [0, 0, 0];
+      return function (points, zoom, altitudes) {
+        if (altitudes === void 0) {
+          altitudes = [];
+        }
+
+        var altitudeIsArray = Array.isArray(altitudes);
+        var isTransforming = this.isTransforming();
+
+        var res = this._getResolution(zoom) / this._getResolution();
+
+        var w2 = this.width / 2,
+            h2 = this.height / 2;
+
+        var centerPoint = this._prjToPoint(this._getPrjCenter(), undefined, TEMP_COORD$1);
+
+        var pts = [];
+
+        for (var i = 0, len = points.length; i < len; i++) {
+          var point = points[i].copy()._multi(res);
+
+          var altitude = altitudeIsArray ? altitudes[i] || 0 : altitudes;
+
+          if (isTransforming || altitude) {
+            altitude *= res;
+            var _scale2 = this._glScale;
+            set$2(a, point.x * _scale2, point.y * _scale2, altitude * _scale2);
+
+            var t = this._projIfBehindCamera(a, this.cameraPosition, this.cameraForward);
+
+            applyMatrix(t, t, this.projViewMatrix);
+            t[0] = t[0] * w2 + w2;
+            t[1] = -(t[1] * h2) + h2;
+            point.x = t[0];
+            point.y = t[1];
+            pts.push(point);
+          } else {
+            var out = point;
+
+            out._sub(centerPoint.x, centerPoint.y);
+
+            out.set(out.x, -out.y);
+            pts.push(out._add(w2, h2));
+          }
+        }
+
+        return pts;
+      };
+    }(),
     _projIfBehindCamera: function () {
       var vectorFromCam = new Array(3);
       var proj = new Array(3);
@@ -21760,7 +22458,7 @@
         var camNormDot = dot(camForward, vectorFromCam);
 
         if (camNormDot <= 0) {
-          scale$1(proj, camForward, camNormDot * 1.01);
+          scale(proj, camForward, camNormDot * 1.01);
           add(position, cameraPos, subtract(sub, vectorFromCam, proj));
         }
 
@@ -21814,8 +22512,7 @@
       };
     }(),
     _calcMatrices: function () {
-      var m0 = createMat4(),
-          m1 = createMat4();
+      var m1 = createMat4();
       return function () {
         delete this._mapRes;
         delete this._mapGlRes;
@@ -21825,7 +22522,6 @@
         var w = size.width || 1,
             h = size.height || 1;
         this._glScale = this.getGLScale();
-        var pitch = this.getPitch() * Math.PI / 180;
 
         var worldMatrix = this._getCameraWorldMatrix();
 
@@ -21834,11 +22530,11 @@
         var farZ = this._getCameraFar(fov, this.getPitch());
 
         this.cameraFar = farZ;
-        this.cameraNear = Math.max(this._glScale * this.getResolution(this.getGLZoom()) * Math.cos(pitch), 0.1);
+        this.cameraNear = Math.max(this.cameraCenterDistance / 10, 0.1);
         var projMatrix = this.projMatrix || createMat4();
         perspective(projMatrix, fov, w / h, this.cameraNear, farZ);
         this.projMatrix = projMatrix;
-        this.viewMatrix = invert(m0, worldMatrix);
+        this.viewMatrix = invert(this.viewMatrix || createMat4(), worldMatrix);
         this.projViewMatrix = multiply(this.projViewMatrix || createMat4(), projMatrix, this.viewMatrix);
 
         this._calcCascadeMatrixes();
@@ -21855,22 +22551,19 @@
     _getCameraFar: function _getCameraFar(fov, pitch) {
       var cameraCenterDistance = this.cameraCenterDistance = distance(this.cameraPosition, this.cameraLookAt);
       var farZ = cameraCenterDistance;
+      var y = 4 * cameraCenterDistance;
 
       if (pitch > 0) {
         pitch = pitch * Math.PI / 180;
-        var y;
 
-        if (2 / Math.PI - pitch <= fov / 2) {
-          y = 4 * cameraCenterDistance;
-        } else {
+        if (2 / Math.PI - pitch > fov / 2) {
           var tanFov = Math.tan(fov / 2);
           var tanP = Math.tan(pitch);
-          y = cameraCenterDistance * tanFov / (1 / tanP - tanFov);
+          y = Math.max(cameraCenterDistance * tanFov / (1 / tanP - tanFov), y);
         }
-
-        farZ += y;
       }
 
+      farZ += y;
       return farZ + 1.0;
     },
     _calcCascadeMatrixes: function () {
@@ -21919,7 +22612,7 @@
         var width = this.width || 1;
         var height = this.height || 1;
         var cameraToCenterDistance = 0.5 / Math.tan(this._fov / 2) * height;
-        scale(m, this.projMatrix, minusY);
+        scale$1(m, this.projMatrix, minusY);
         translate(m, m, set$2(arr, 0, 0, -cameraToCenterDistance));
 
         if (this._pitch) {
@@ -21931,7 +22624,7 @@
         }
 
         identity(m1);
-        scale(m1, m1, set$2(arr, width / 2, -height / 2, 1));
+        scale$1(m1, m1, set$2(arr, width / 2, -height / 2, 1));
         return multiply(this.domCssMatrix || createMat4(), m1, m);
       };
     }(),
@@ -22417,14 +23110,14 @@
         this._vertexes = [];
       }
 
+      if (this._historyPointer !== undefined && this._vertexes.length > this._historyPointer - 1) {
+        this._vertexes.length = this._historyPointer - 1;
+      }
+
       this._vertexes.push({
         label: vertexLabel,
         marker: marker
       });
-
-      if (this._historyPointer !== undefined) {
-        this._vertexes.length = this._historyPointer;
-      }
 
       this._measureMarkerLayer.addGeometry(marker);
 
@@ -22435,6 +23128,14 @@
 
     _proto._msOnDrawEnd = function _msOnDrawEnd(param) {
       this._clearTailMarker();
+
+      if (param['geometry']._getPrjCoordinates().length < 2) {
+        this._lastMeasure = 0;
+
+        this._clearMeasureLayers();
+
+        return;
+      }
 
       var size = this._lastVertex.getSize();
 
@@ -22500,6 +23201,12 @@
 
         delete this._tailLabel;
       }
+    };
+
+    _proto._clearMeasureLayers = function _clearMeasureLayers() {
+      this._measureLineLayer.remove();
+
+      this._measureMarkerLayer.remove();
     };
 
     return DistanceTool;
@@ -22597,11 +23304,33 @@
     _proto._msOnDrawEnd = function _msOnDrawEnd(param) {
       this._clearTailMarker();
 
-      var prjCoord = this.getMap()._pointToPrj(param['point2d']);
+      var prjCoord;
+
+      if (param['point2d']) {
+        prjCoord = this.getMap()._pointToPrj(param['point2d']);
+      } else {
+        var prjCoords = param['geometry']._getPrjCoordinates();
+
+        prjCoords = prjCoords.slice(0, prjCoords.length - 1);
+
+        param['geometry']._setPrjCoordinates(prjCoords);
+
+        prjCoord = prjCoords[prjCoords.length - 1];
+      }
+
+      if (param['geometry']._getPrjCoordinates().length < 3) {
+        this._lastMeasure = 0;
+
+        this._clearMeasureLayers();
+
+        return;
+      }
 
       var ms = this._measure(param['geometry']);
 
-      var endLabel = new Label(ms, param['coordinate'], this.options['labelOptions']).addTo(this._measureMarkerLayer);
+      var projection = this.getMap().getProjection();
+      var coord = projection.unproject(prjCoord);
+      var endLabel = new Label(ms, coord, this.options['labelOptions']).addTo(this._measureMarkerLayer);
 
       endLabel._setPrjCoordinates(prjCoord);
 
@@ -22611,7 +23340,7 @@
         size = new Size(10, 10);
       }
 
-      this._addClearMarker(param['coordinate'], prjCoord, size['width']);
+      this._addClearMarker(coord, prjCoord, size['width']);
 
       var geo = param['geometry'].copy();
 
@@ -22651,7 +23380,7 @@
     'action': ['click', 'mousemove', 'click']
   }, circleHooks));
   DrawTool.registerMode('freeHandCircle', extend({
-    'action': ['mousedown', 'mousemove', 'mouseup']
+    'action': ['mousedown touchstart', 'mousemove touchmove', 'mouseup touchend']
   }, circleHooks));
   var ellipseHooks = {
     'create': function create(projection, prjCoord) {
@@ -22687,7 +23416,7 @@
     'action': ['click', 'mousemove', 'click']
   }, ellipseHooks));
   DrawTool.registerMode('freeHandEllipse', extend({
-    'action': ['mousedown', 'mousemove', 'mouseup']
+    'action': ['mousedown touchstart', 'mousemove touchmove', 'mouseup touchend']
   }, ellipseHooks));
   var rectangleHooks = {
     'create': function create(projection, prjCoords) {
@@ -22719,7 +23448,7 @@
     'action': ['click', 'mousemove', 'click']
   }, rectangleHooks));
   DrawTool.registerMode('freeHandRectangle', extend({
-    'action': ['mousedown', 'mousemove', 'mouseup']
+    'action': ['mousedown touchstart', 'mousemove touchmove', 'mouseup touchend']
   }, rectangleHooks));
   DrawTool.registerMode('point', {
     'clickLimit': 1,
@@ -22805,7 +23534,7 @@
     'action': ['click', 'mousemove', 'dblclick']
   }, polygonHooks));
   DrawTool.registerMode('freeHandPolygon', extend({
-    'action': ['mousedown', 'mousemove', 'mouseup']
+    'action': ['mousedown touchstart', 'mousemove touchmove', 'mouseup touchend']
   }, polygonHooks));
   var lineStringHooks = {
     'create': function create(projection, prjPath) {
@@ -22843,7 +23572,7 @@
     'action': ['click', 'mousemove', 'dblclick']
   }, lineStringHooks));
   DrawTool.registerMode('freeHandLinestring', extend({
-    'action': ['mousedown', 'mousemove', 'mouseup']
+    'action': ['mousedown touchstart', 'mousemove touchmove', 'mouseup touchend']
   }, lineStringHooks));
   DrawTool.registerMode('arccurve', {
     'action': ['click', 'mousemove', 'dblclick'],
@@ -22974,6 +23703,241 @@
 
       var spatialRef = parse(url);
       cb(null, spatialRef);
+    }
+
+    return this;
+  };
+
+  function getProjection(projection) {
+    var prj = projection.indexOf('EPSG') > -1 ? projection : 'EPSG:' + projection;
+    prj = strReplace(prj, [['4490', '4326'], ['102100', '3857'], ['900913', '3857']]);
+    return prj;
+  }
+
+  function strReplace(str, repArray) {
+    if (repArray === void 0) {
+      repArray = [];
+    }
+
+    repArray.forEach(function (rep) {
+      var template = rep[0],
+          value = rep[1];
+      str = str.replace(template, value);
+    });
+    return str;
+  }
+
+  function parseWMTSXML(str, requestUrl, options) {
+    var parser = new DOMParser();
+    var xmlDoc = parser.parseFromString(str, 'text/xml');
+    var content = xmlDoc.querySelectorAll('Contents')[0];
+
+    if (!content) {
+      return [];
+    }
+
+    var layers = content.getElementsByTagName('Layer');
+
+    if (!layers.length) {
+      return [];
+    }
+
+    var TileMatrixSets = [];
+
+    for (var i = 0, len = content.childNodes.length; i < len; i++) {
+      if (content.childNodes[i].nodeName === 'TileMatrixSet') {
+        TileMatrixSets.push(content.childNodes[i]);
+      }
+    }
+
+    if (!TileMatrixSets.length) {
+      return [];
+    }
+
+    var result = [];
+
+    for (var _i = 0, _len = layers.length; _i < _len; _i++) {
+      var layer = layers[_i];
+      var style = layer.querySelectorAll('Style')[0];
+
+      if (style) {
+        style = style.getElementsByTagName('ows:Identifier')[0];
+
+        if (style) {
+          style = style.textContent;
+        }
+      }
+
+      var layerName = layer.getElementsByTagName('ows:Identifier')[0];
+
+      if (layerName) {
+        layerName = layerName.textContent;
+      }
+
+      var resourceURL = layer.querySelectorAll('ResourceURL')[0];
+      var url = '';
+
+      if (resourceURL) {
+        url = resourceURL.attributes.template.value;
+      }
+
+      var _parseTileMatrixSet = parseTileMatrixSet(TileMatrixSets, _i, options),
+          resolutions = _parseTileMatrixSet.resolutions,
+          tileSize = _parseTileMatrixSet.tileSize,
+          tileSystem = _parseTileMatrixSet.tileSystem,
+          projection = _parseTileMatrixSet.projection,
+          TileMatrixSet = _parseTileMatrixSet.TileMatrixSet;
+
+      if (!url.length) {
+        url = requestUrl.substr(0, requestUrl.lastIndexOf('?'));
+        url += '?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER={LAYER}&STYLE={Style}&TILEMATRIXSET={TileMatrixSet}&FORMAT=tiles&TILEMATRIX={TileMatrix}&TILEROW={TileRow}&TILECOL={TileCol}';
+      }
+
+      var urlTemplate = strReplace(url, [['{LAYER}', layerName], ['{Layer}', layerName], ['{layer}', layerName], ['{STYLE}', style], ['{Style}', style], ['{style}', style], ['{TileMatrixSet}', TileMatrixSet], ['{TileMatrix}', '{z}'], ['{TileRow}', '{y}'], ['{TileCol}', '{x}']]);
+      result.push({
+        tileSize: tileSize,
+        tileSystem: tileSystem,
+        spatialReference: {
+          resolutions: resolutions,
+          projection: projection
+        },
+        urlTemplate: urlTemplate,
+        info: {
+          layerName: layerName,
+          TileMatrixSet: TileMatrixSet,
+          style: style,
+          tileSize: tileSize,
+          tileSystem: tileSystem,
+          resolutions: resolutions,
+          projection: projection,
+          urlTemplate: urlTemplate
+        }
+      });
+    }
+
+    return result;
+  }
+
+  function parseTileMatrixSet(TileMatrixSets, index, options) {
+    if (options === void 0) {
+      options = {};
+    }
+
+    var TileMatrixSet = TileMatrixSets[index];
+    var TileMatrixs = TileMatrixSet.getElementsByTagName('TileMatrix');
+    var resolutions = [],
+        tileSystem = [],
+        tileSize = [];
+    var projection, tset;
+
+    if (!projection) {
+      var supportedCRS = TileMatrixSet.getElementsByTagName('ows:SupportedCRS')[0];
+
+      if (supportedCRS) {
+        projection = supportedCRS.textContent;
+        projection = projection.split('EPSG')[1];
+
+        while (projection.indexOf(':') > -1) {
+          projection = projection.replace(':', '');
+        }
+
+        projection = getProjection(projection);
+      }
+    }
+
+    if (!tset) {
+      tset = TileMatrixSet.getElementsByTagName('ows:Identifier')[0];
+
+      if (tset) {
+        tset = tset.textContent;
+      }
+    }
+
+    var transformValue = 0.0002645833333333333;
+
+    if (options.isArcgis) {
+      transformValue = 0.00028;
+    }
+
+    if (projection && projection.indexOf('4326') > -1) {
+      transformValue = 2.3767925226029154e-9;
+
+      if (options.isArcgis) {
+        transformValue = 2.518101729011901e-9;
+      }
+    }
+
+    var minLevel = Infinity;
+
+    for (var _index = 0; _index < TileMatrixs.length; _index++) {
+      var TileMatrix = TileMatrixs[_index];
+      var level = TileMatrix.getElementsByTagName('ows:Identifier')[0].textContent;
+      level = parseInt(level);
+      minLevel = Math.min(minLevel, level);
+      var ScaleDenominator = TileMatrix.getElementsByTagName('ScaleDenominator')[0].textContent;
+      var TopLeftCorner = TileMatrix.getElementsByTagName('TopLeftCorner')[0].textContent;
+      var TileWidth = TileMatrix.getElementsByTagName('TileWidth')[0].textContent;
+      var TileHeight = TileMatrix.getElementsByTagName('TileHeight')[0].textContent;
+
+      if (tileSize.length === 0) {
+        tileSize.push(parseInt(TileWidth), parseInt(TileHeight));
+      }
+
+      if (tileSystem.length === 0) {
+        var _TopLeftCorner$split$ = TopLeftCorner.split(' ').filter(function (s) {
+          return s !== '';
+        }).map(function (v) {
+          return parseFloat(v);
+        }),
+            x = _TopLeftCorner$split$[0],
+            y = _TopLeftCorner$split$[1];
+
+        if (x > 0) {
+          tileSystem.push(1, -1, y, x);
+        } else {
+          tileSystem.push(1, -1, x, y);
+        }
+      }
+
+      var res = parseFloat(ScaleDenominator) * transformValue;
+      resolutions.push(res);
+    }
+
+    if (minLevel > 0) {
+      var _res = resolutions[0];
+
+      for (var i = minLevel - 1; i >= 0; i--) {
+        _res = _res * 2;
+        resolutions.splice(0, 0, _res);
+      }
+    }
+
+    return {
+      resolutions: resolutions,
+      tileSize: tileSize,
+      tileSystem: tileSystem,
+      projection: projection,
+      TileMatrixSet: tset
+    };
+  }
+
+  SpatialReference.loadWMTS = function (url, cb, options) {
+    if (options === void 0) {
+      options = {
+        'jsonp': true
+      };
+    }
+
+    if (isString(url)) {
+      Ajax.get(url, function (err, xml) {
+        if (err) {
+          cb(err);
+          return;
+        }
+
+        var layers = parseWMTSXML(xml, url, options);
+        cb(null, layers);
+      }, options);
     }
 
     return this;
@@ -23282,32 +24246,42 @@
         return;
       }
 
-      var point = this._pos;
-      var mapSize = map.getSize(),
-          mapWidth = mapSize['width'],
-          mapHeight = mapSize['height'];
-      var containerPoint = map.viewPointToContainerPoint(point);
-      var clientWidth = parseInt(dom.clientWidth),
-          clientHeight = parseInt(dom.clientHeight);
+      var point = this._getViewPoint()._round();
+
+      var mapWidth = map.width;
+      var mapHeight = map.height;
+      var containerPoint0 = map.viewPointToContainerPoint(point);
+      var offset = this.getOffset();
+      var containerPoint = containerPoint0.add(offset);
+
+      var prjCoord = map._viewPointToPrj(point);
+
+      var domWidth = parseInt(dom.clientWidth);
+      var domHeight = parseInt(dom.clientHeight);
+      var margin = 50;
       var left = 0,
           top = 0;
 
       if (containerPoint.x < 0) {
-        left = -(containerPoint.x - clientWidth / 2);
-      } else if (containerPoint.x + clientWidth - 35 > mapWidth) {
-        left = mapWidth - (containerPoint.x + clientWidth * 3 / 2);
+        left = -containerPoint.x + margin;
+      } else if (containerPoint.x + domWidth > mapWidth) {
+        left = -(containerPoint.x + domWidth - mapWidth) - margin;
       }
 
-      if (containerPoint.y - clientHeight < 0) {
-        top = -(containerPoint.y - clientHeight) + 50;
-      } else if (containerPoint.y > mapHeight) {
-        top = mapHeight - containerPoint.y - clientHeight - 30;
+      if (containerPoint.y < 0) {
+        top = -containerPoint.y + margin;
+      } else if (containerPoint.y + domHeight > mapHeight) {
+        top = mapHeight - (containerPoint.y + domHeight) - margin;
       }
 
       if (top !== 0 || left !== 0) {
-        map.panBy(new Point(left, top), {
-          'duration': this.options['autoPanDuration']
-        });
+        var newContainerPoint = containerPoint0.add(left, top);
+
+        var t = map._containerPointToPoint(newContainerPoint)._sub(map._prjToPoint(map._getPrjCenter()));
+
+        var target = map._pointToPrj(map._prjToPoint(prjCoord).sub(t));
+
+        map._panAnimation(target);
       }
     };
 
@@ -23416,7 +24390,8 @@
       return {
         'zooming rotate pitch': this.onEvent,
         'zoomend': this.onZoomEnd,
-        'moving': this.onMoving
+        'moving': this.onMoving,
+        'resize': this.onResize
       };
     };
 
@@ -23453,6 +24428,12 @@
     };
 
     _proto.onZoomEnd = function onZoomEnd() {
+      if (this.isVisible()) {
+        this._setPosition();
+      }
+    };
+
+    _proto.onResize = function onResize() {
       if (this.isVisible()) {
         this._setPosition();
       }
@@ -23516,7 +24497,8 @@
     'eventsPropagation': true,
     'draggable': false,
     'single': false,
-    'content': null
+    'content': null,
+    'altitude': 0
   };
   var domEvents = 'mousedown ' + 'mouseup ' + 'mouseenter ' + 'mouseover ' + 'mouseout ' + 'mousemove ' + 'click ' + 'dblclick ' + 'contextmenu ' + 'keypress ' + 'touchstart ' + 'touchmove ' + 'touchend';
 
@@ -23552,6 +24534,14 @@
 
     _proto.getCoordinates = function getCoordinates() {
       return this._markerCoord;
+    };
+
+    _proto.getCenter = function getCenter() {
+      return this.getCoordinates();
+    };
+
+    _proto.getAltitude = function getAltitude() {
+      return this.options.altitude || 0;
     };
 
     _proto.setContent = function setContent(content) {
@@ -23649,6 +24639,20 @@
           height = size.height;
       var anchors = [map.containerPointToCoordinate(containerPoint.add(-width / 2, 0)), map.containerPointToCoordinate(containerPoint.add(width / 2, 0)), map.containerPointToCoordinate(containerPoint.add(0, height / 2)), map.containerPointToCoordinate(containerPoint.add(0, -height / 2))];
       return anchors;
+    };
+
+    _proto._getViewPoint = function _getViewPoint() {
+      var alt = 0;
+
+      if (this._owner) {
+        var altitude = this.getAltitude();
+
+        if (altitude > 0) {
+          alt = this._meterToPoint(this._coordinate, altitude);
+        }
+      }
+
+      return this.getMap().coordToViewPoint(this._coordinate, undefined, alt)._add(this.options['dx'], this.options['dy']);
     };
 
     return UIMarker;
@@ -23955,6 +24959,8 @@
           var fixExtent = painter.getFixedExtent();
 
           o._add(fixExtent.xmax - markerSize.width / 2, fixExtent.ymin);
+        } else {
+          o._add(0, -markerSize.height);
         }
       }
 
@@ -24017,10 +25023,112 @@
           _this.show(owner.getCoordinates());
         } else if (owner instanceof MultiPoint) {
           _this.show(owner.findClosest(e.coordinate));
+        } else if (owner instanceof LineString || owner instanceof MultiLineString) {
+          if (_this.getMap().getScale() >= 8) {
+            e.coordinate = _this._rectifyMouseCoordinte(owner, e.coordinate);
+          }
+
+          _this.show(e.coordinate);
         } else {
           _this.show(e.coordinate);
         }
       }, 1);
+    };
+
+    _proto._rectifyMouseCoordinte = function _rectifyMouseCoordinte(owner, mouseCoordinate) {
+      var _this2 = this;
+
+      if (owner instanceof LineString) {
+        return this._rectifyLineStringMouseCoordinate(owner, mouseCoordinate).coordinate;
+      } else if (owner instanceof MultiLineString) {
+        return owner.getGeometries().map(function (lineString) {
+          return _this2._rectifyLineStringMouseCoordinate(lineString, mouseCoordinate);
+        }).sort(function (a, b) {
+          return a.dis - b.dis;
+        })[0].coordinate;
+      }
+
+      return mouseCoordinate;
+    };
+
+    _proto._rectifyLineStringMouseCoordinate = function _rectifyLineStringMouseCoordinate(lineString, mouseCoordinate) {
+      var _this3 = this;
+
+      var pts = lineString.getCoordinates().map(function (coordinate) {
+        return _this3.getMap().coordToContainerPoint(coordinate);
+      });
+      var mousePt = this.getMap().coordToContainerPoint(mouseCoordinate);
+      var minDis = Infinity,
+          coordinateIndex = -1;
+
+      for (var i = 0, len = pts.length; i < len; i++) {
+        var pt = pts[i];
+        var dis = mousePt.distanceTo(pt);
+
+        if (dis < minDis) {
+          minDis = dis;
+          coordinateIndex = i;
+        }
+      }
+
+      var filterPts = [];
+
+      if (coordinateIndex === 0) {
+        filterPts.push(pts[0], pts[1]);
+      } else if (coordinateIndex === pts.length - 1) {
+        filterPts.push(pts[coordinateIndex - 1], pts[coordinateIndex]);
+      } else {
+        filterPts.push(pts[coordinateIndex - 1], pts[coordinateIndex], pts[coordinateIndex + 1]);
+      }
+
+      var xys = [];
+
+      var _this$getMap$getSize = this.getMap().getSize(),
+          width = _this$getMap$getSize.width,
+          height = _this$getMap$getSize.height;
+
+      for (var _i = 0, _len = filterPts.length - 1; _i < _len; _i++) {
+        var pt1 = filterPts[_i],
+            pt2 = filterPts[_i + 1];
+
+        if (pt1.x === pt2.x) {
+          var miny = Math.max(0, Math.min(pt1.y, pt2.y));
+          var maxy = Math.min(height, Math.max(pt1.y, pt2.y));
+
+          for (var y = miny; y <= maxy; y++) {
+            xys.push(new Point(pt1.x, y));
+          }
+        } else {
+          var k = (pt2.y - pt1.y) / (pt2.x - pt1.x);
+          var minx = Math.max(0, Math.min(pt1.x, pt2.x));
+          var maxx = Math.min(width, Math.max(pt1.x, pt2.x));
+
+          for (var x = minx; x <= maxx; x++) {
+            var _y = k * (x - pt1.x) + pt1.y;
+
+            xys.push(new Point(x, _y));
+          }
+        }
+      }
+
+      var minPtDis = Infinity,
+          ptIndex = -1;
+
+      for (var _i2 = 0, _len2 = xys.length; _i2 < _len2; _i2++) {
+        var _pt = xys[_i2];
+
+        var _dis = mousePt.distanceTo(_pt);
+
+        if (_dis < minPtDis) {
+          minPtDis = _dis;
+          ptIndex = _i2;
+        }
+      }
+
+      return {
+        dis: minPtDis,
+        coordinate: ptIndex < 0 ? mouseCoordinate : this.getMap().containerPointToCoord(xys[ptIndex])
+      };
     };
 
     _proto._getWindowWidth = function _getWindowWidth() {
@@ -24152,6 +25260,10 @@
 
         this._owner.off('mouseout', this.onMouseOut, this);
       }
+    };
+
+    _proto._getViewPoint = function _getViewPoint() {
+      return this.getMap().coordToViewPoint(this._coordinate, undefined, 0)._add(this.options['dx'], this.options['dy']);
     };
 
     return ToolTip;
@@ -26186,6 +27298,7 @@
   var options$u = {
     'urlTemplate': null,
     'subdomains': null,
+    'errorUrl': null,
     'repeatWorld': true,
     'background': true,
     'backgroundZoomDiff': 6,
@@ -26208,14 +27321,13 @@
     'cascadeTiles': true,
     'zoomOffset': 0
   };
-  var URL_PATTERN = /\{ *([\w_]+) *\}/g;
+  var URL_PATTERN$1 = /\{ *([\w_]+) *\}/g;
   var TEMP_POINT = new Point(0, 0);
   var TEMP_POINT0$3 = new Point(0, 0);
   var TEMP_POINT1$1 = new Point(0, 0);
-  var TEMP_POINT2 = new Point(0, 0);
-  var TEMP_POINT3 = new Point(0, 0);
+  var TEMP_POINT2$1 = new Point(0, 0);
+  var TEMP_POINT3$1 = new Point(0, 0);
   var TEMP_POINT4 = new Point(0, 0);
-  var TEMP_POINT5 = new Point(0, 0);
   var TEMP_POINT6 = new Point(0, 0);
   var TILE_BOX = [[0, 0, 0], [0, 0, 0]];
   var ARR3 = [];
@@ -26351,7 +27463,7 @@
         'z': z,
         's': domain
       };
-      return urlTemplate.replace(URL_PATTERN, function (str, key) {
+      return urlTemplate.replace(URL_PATTERN$1, function (str, key) {
         var value = data[key];
 
         if (value === undefined) {
@@ -26481,6 +27593,9 @@
         return emptyGrid;
       }
 
+      var tileOffsets = {
+        zoom: offset
+      };
       var sr = this.getSpatialReference();
       var mapSR = map.getSpatialReference();
       var res = sr.getResolution(zoom);
@@ -26531,14 +27646,14 @@
         c = this._project(prjCenter, TEMP_POINT1$1);
       }
 
-      TEMP_POINT2.x = extent2d.xmin;
-      TEMP_POINT2.y = extent2d.ymax;
-      TEMP_POINT3.x = extent2d.xmax;
-      TEMP_POINT3.y = extent2d.ymin;
+      TEMP_POINT2$1.x = extent2d.xmin;
+      TEMP_POINT2$1.y = extent2d.ymax;
+      TEMP_POINT3$1.x = extent2d.xmax;
+      TEMP_POINT3$1.y = extent2d.ymin;
 
-      var pmin = this._project(map._pointToPrj(TEMP_POINT2, undefined, TEMP_POINT2), TEMP_POINT2);
+      var pmin = this._project(map._pointToPrj(TEMP_POINT2$1, undefined, TEMP_POINT2$1), TEMP_POINT2$1);
 
-      var pmax = this._project(map._pointToPrj(TEMP_POINT3, undefined, TEMP_POINT3), TEMP_POINT3);
+      var pmax = this._project(map._pointToPrj(TEMP_POINT3$1, undefined, TEMP_POINT3$1), TEMP_POINT3$1);
 
       var centerTile = tileConfig.getTileIndex(c, res, repeatWorld);
       var ltTile = tileConfig.getTileIndex(pmin, res, repeatWorld);
@@ -26551,7 +27666,7 @@
       var tileSize = this.getTileSize();
 
       var renderer = this.getRenderer() || parentRenderer,
-          scale = this._getTileConfig().tileSystem.scale;
+          scale$$1 = this._getTileConfig().tileSystem.scale;
 
       var tiles = [],
           extent = new PointExtent();
@@ -26586,13 +27701,13 @@
 
           if (tileInfo) {
             var _tileInfo = tileInfo,
-                point0 = _tileInfo.point0;
-            p = tileInfo.point.set(point0.x, point0.y);
+                point = _tileInfo.point;
+            p = point;
           } else if (!this._hasOwnSR) {
             p = tileConfig.getTilePointNW(idx.x, idx.y, res);
           } else {
             var pnw = tileConfig.getTilePrjNW(idx.x, idx.y, res);
-            p = map._prjToPoint(this._unproject(pnw, TEMP_POINT3), z);
+            p = map._prjToPoint(this._unproject(pnw, TEMP_POINT3$1), z);
           }
 
           var width = void 0,
@@ -26608,25 +27723,27 @@
               pp = tileConfig.getTilePointSE(idx.x, idx.y, res);
             } else {
               var pse = tileConfig.getTilePrjSE(idx.x, idx.y, res);
-              pp = map._prjToPoint(this._unproject(pse, TEMP_POINT3), z, TEMP_POINT3);
+              pp = map._prjToPoint(this._unproject(pse, TEMP_POINT3$1), z, TEMP_POINT3$1);
             }
 
             width = Math.ceil(Math.abs(pp.x - p.x));
             height = Math.ceil(Math.abs(pp.y - p.y));
           }
 
-          var dx = scale.x * (idx.idx - idx.x) * width,
-              dy = scale.y * (idx.idy - idx.y) * height;
+          var dx = scale$$1.x * (idx.idx - idx.x) * width,
+              dy = scale$$1.y * (idx.idy - idx.y) * height;
 
-          if (dx || dy) {
+          if (!tileInfo && (dx || dy)) {
             p._add(dx, dy);
           }
 
-          if (hasOffset) {
-            p._sub(offset);
-          }
+          var tileExtent = tileInfo && tileInfo.extent2d || new PointExtent(p.x, p.y - height, p.x + width, p.y);
 
-          var tileExtent = tileInfo && tileInfo.extent2d || new PointExtent(p.x, p.y, p.x + width, p.y - height);
+          if (hasOffset) {
+            tileExtent.set(p.x, p.y - height, p.x + width, p.y);
+
+            tileExtent._sub(offset);
+          }
 
           if (allCount <= 4 || rightVisitEnd || this._isTileInExtent(frustumMatrix, tileExtent, glScale)) {
             if (this._visitedTiles && cascadeLevel === 0) {
@@ -26634,13 +27751,16 @@
             }
 
             if (cascadeLevel === 0) {
-              this._splitTiles(frustumMatrix, tiles, renderer, idx, z + 1, tileExtent, offset, dx, dy);
+              tileExtent._add(offset);
+
+              this._splitTiles(frustumMatrix, tiles, renderer, idx, z + 1, tileExtent, dx, dy, tileOffsets);
+
+              tileExtent._sub(offset);
 
               extent._combine(tileExtent);
             } else {
               if (!tileInfo) {
                 tileInfo = {
-                  'point0': p.add(offset)._sub(dx, dy),
                   'point': p,
                   'z': z,
                   'x': idx.x,
@@ -26649,17 +27769,9 @@
                   'mask': cascadeLevel,
                   'size': [width, height],
                   'id': tileId,
-                  'dupKey': tileId,
                   'layer': this.getId(),
                   'url': this.getTileUrl(idx.x, idx.y, zoom)
                 };
-              }
-
-              if (hasOffset) {
-                tileExtent.set(p.x, p.y, p.x + width, p.y - height);
-                tileInfo.point = p._add(offset);
-
-                tileExtent._add(offset);
               }
 
               tiles.push(tileInfo);
@@ -26693,14 +27805,11 @@
       };
     };
 
-    _proto2._splitTiles = function _splitTiles(frustumMatrix, tiles, renderer, tileIdx, z, tileExtent, offset, dx, dy) {
+    _proto2._splitTiles = function _splitTiles(frustumMatrix, tiles, renderer, tileIdx, z, tileExtent, dx, dy, tileOffsets) {
       var yOrder = this._getTileConfig().tileSystem.scale.y;
 
       var glScale = this.getMap().getGLScale(z);
       var corner = TEMP_POINT4.set(tileExtent.xmin * 2, yOrder < 0 ? tileExtent.ymax * 2 : tileExtent.ymin * 2);
-
-      var corner0 = TEMP_POINT5.set(tileExtent.xmin, yOrder < 0 ? tileExtent.ymax : tileExtent.ymin)._add(offset)._sub(dx, dy)._multi(2);
-
       var w = tileExtent.getWidth();
       var h = tileExtent.getHeight();
       var idx = tileIdx.idx * 2;
@@ -26708,38 +27817,46 @@
       var x = tileIdx.x * 2;
       var y = tileIdx.y * 2;
 
-      var tile = this._checkAndAddTile(frustumMatrix, renderer, idx, idy, x, y, z, 0, 0, w, h, corner, corner0, offset, glScale);
+      var tile = this._checkAndAddTile(frustumMatrix, renderer, idx, idy, x, y, z, 0, 0, w, h, corner, glScale, tileOffsets);
 
       if (tile) tiles.push(tile);
-      tile = this._checkAndAddTile(frustumMatrix, renderer, idx, idy, x, y, z, 0, 1, w, h, corner, corner0, offset, glScale);
+      tile = this._checkAndAddTile(frustumMatrix, renderer, idx, idy, x, y, z, 0, 1, w, h, corner, glScale, tileOffsets);
       if (tile) tiles.push(tile);
-      tile = this._checkAndAddTile(frustumMatrix, renderer, idx, idy, x, y, z, 1, 0, w, h, corner, corner0, offset, glScale);
+      tile = this._checkAndAddTile(frustumMatrix, renderer, idx, idy, x, y, z, 1, 0, w, h, corner, glScale, tileOffsets);
       if (tile) tiles.push(tile);
-      tile = this._checkAndAddTile(frustumMatrix, renderer, idx, idy, x, y, z, 1, 1, w, h, corner, corner0, offset, glScale);
+      tile = this._checkAndAddTile(frustumMatrix, renderer, idx, idy, x, y, z, 1, 1, w, h, corner, glScale, tileOffsets);
       if (tile) tiles.push(tile);
     };
 
-    _proto2._checkAndAddTile = function _checkAndAddTile(frustumMatrix, renderer, idx, idy, x, y, z, i, j, w, h, corner, corner0, offset, glScale) {
+    _proto2._checkAndAddTile = function _checkAndAddTile(frustumMatrix, renderer, idx, idy, x, y, z, i, j, w, h, corner, glScale, tileOffsets) {
       var tileId = this._getTileId(idx + i, idy + j, z);
 
       if (this._visitedTiles && this._visitedTiles.has(tileId)) {
         return null;
       }
 
+      var offset = tileOffsets[z];
+
+      if (!offset) {
+        offset = tileOffsets[z] = this._getTileOffset(z);
+      }
+
       var yOrder = this._getTileConfig().tileSystem.scale.y;
 
       var childExtent = new PointExtent(corner.x + i * w, corner.y + yOrder * j * h, corner.x + (i + 1) * w, corner.y + yOrder * (j + 1) * h);
+
+      childExtent._sub(offset);
 
       if (!this._isSplittedTileInExtent(frustumMatrix, childExtent, glScale)) {
         return null;
       }
 
-      var hasOffset = offset[0] || offset[1];
+      childExtent._add(offset);
+
       var tileInfo = renderer && renderer.isTileCachedOrLoading(tileId);
 
       if (!tileInfo) {
         tileInfo = {
-          'point0': corner0.add(i * w, Math.max(yOrder * j * h, yOrder * (j + 1) * h)),
           'point': new Point(childExtent.xmin, childExtent.ymax),
           'z': z,
           'x': x + i,
@@ -26747,7 +27864,6 @@
           'extent2d': childExtent,
           'size': [w, h],
           'id': tileId,
-          'dupKey': tileId,
           'layer': this.getId(),
           'url': this.getTileUrl(x + i, y + j, z + this.options['zoomOffset'])
         };
@@ -26755,30 +27871,16 @@
         tileInfo = tileInfo.info;
       }
 
-      if (hasOffset) {
-        tileInfo.extent2d = childExtent;
-
-        tileInfo.extent2d._add(offset);
-
-        tileInfo.point.set(childExtent.xmin, childExtent.ymax)._add(offset);
-      }
-
       return tileInfo;
     };
 
     _proto2._getTileOffset = function _getTileOffset(z) {
-      var map = this.getMap();
-
-      var scale = map._getResolution() / map._getResolution(z);
-
       var offset = this.options['offset'];
 
       if (isFunction(offset)) {
-        offset = offset(this);
+        offset = offset(z);
       }
 
-      offset[0] *= scale;
-      offset[1] *= scale;
       return offset;
     };
 
@@ -26819,12 +27921,6 @@
 
       if (this.options['tileSystem']) {
         this._tileConfig = new TileConfig(map, this.options['tileSystem'], fullExtent, tileSize);
-      }
-
-      if (map && !this._tileConfig && map.getSpatialReference() === sr && map.getBaseLayer() && map.getBaseLayer() !== this && map.getBaseLayer()._getTileConfig) {
-        var base = map.getBaseLayer()._getTileConfig();
-
-        this._tileConfig = new TileConfig(map, base.tileSystem, base.fullExtent, tileSize);
       }
 
       this._hasOwnSR = sr !== map.getSpatialReference();
@@ -26904,6 +28000,10 @@
 
   TileLayer.registerJSONType('TileLayer');
   TileLayer.mergeOptions(options$u);
+
+  var options$v = {
+    'maxCacheSize': 1024
+  };
 
   var GroupTileLayer = function (_TileLayer) {
     _inheritsLoose(GroupTileLayer, _TileLayer);
@@ -27072,8 +28172,9 @@
   }(TileLayer);
 
   GroupTileLayer.registerJSONType('GroupTileLayer');
+  GroupTileLayer.mergeOptions(options$v);
 
-  var options$v = {
+  var options$w = {
     crs: null,
     uppercase: false,
     detectRetina: false
@@ -27120,7 +28221,7 @@
 
     _proto.onAdd = function onAdd() {
       var dpr = this.getMap().getDevicePixelRatio();
-      var r = options$v.detectRetina ? dpr : 1;
+      var r = options$w.detectRetina ? dpr : 1;
       this.wmsParams.width *= r;
       this.wmsParams.height *= r;
       var crs = this.options.crs || this.getMap().getProjection().code;
@@ -27164,7 +28265,7 @@
   }(TileLayer);
 
   WMSTileLayer.registerJSONType('WMSTileLayer');
-  WMSTileLayer.mergeOptions(options$v);
+  WMSTileLayer.mergeOptions(options$w);
   function getParamString(obj, existingUrl, uppercase) {
     var params = [];
 
@@ -27323,7 +28424,7 @@
 
       var _proto = renderable.prototype;
 
-      _proto.drawGLImage = function drawGLImage(image, x, y, w, h, scale$$1, opacity, debug) {
+      _proto.drawGLImage = function drawGLImage(image, x, y, w, h, scale, opacity, debug) {
         if (this.gl.program !== this.program) {
           this.useProgram(this.program);
         }
@@ -27334,7 +28435,7 @@
         v3[1] = y || 0;
         var uMatrix = identity(arr16);
         translate(uMatrix, uMatrix, v3);
-        scale(uMatrix, uMatrix, [scale$$1, scale$$1, 1]);
+        scale$1(uMatrix, uMatrix, [scale, scale, 1]);
         multiply(uMatrix, this.getMap().projViewMatrix, uMatrix);
         gl.uniformMatrix4fv(this.program['u_matrix'], false, uMatrix);
         gl.uniform1f(this.program['u_opacity'], opacity);
@@ -27455,7 +28556,7 @@
         gl.enable(gl.STENCIL_TEST);
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-        this.program = this.createProgram(shaders['vertexShader'], this.layer.options['fragmentShader'] || shaders['fragmentShader'], ['u_matrix', 'u_image', 'u_opacity', 'u_debug_line']);
+        this.program = this.createProgram(shaders['vertexShader'], this.layer.options['fragmentShader'] || shaders['fragmentShader']);
         this._debugBuffer = this.createBuffer();
         this.useProgram(this.program);
         this.texBuffer = this.createBuffer();
@@ -27641,7 +28742,7 @@
         enableVertexAttrib(this.gl, this.gl.program, attributes);
       };
 
-      _proto.createProgram = function createProgram$$1(vert, frag, uniforms) {
+      _proto.createProgram = function createProgram$$1(vert, frag) {
         var gl = this.gl;
 
         var _createProgram2 = createProgram(gl, vert, frag),
@@ -27649,10 +28750,18 @@
             vertexShader = _createProgram2.vertexShader,
             fragmentShader = _createProgram2.fragmentShader;
 
+        var numUniforms = gl.getProgramParameter(program, 0x8B86);
+        var activeUniforms = [];
+
+        for (var i = 0; i < numUniforms; ++i) {
+          var info = gl.getActiveUniform(program, i);
+          activeUniforms.push(info.name);
+        }
+
         program.vertexShader = vertexShader;
         program.fragmentShader = fragmentShader;
 
-        this._initUniforms(program, uniforms);
+        this._initUniforms(program, activeUniforms);
 
         return program;
       };
@@ -27742,7 +28851,7 @@
     return renderable;
   };
 
-  var options$w = {
+  var options$x = {
     renderer: Browser$1.webgl ? 'gl' : 'canvas',
     crossOrigin: null
   };
@@ -27810,7 +28919,7 @@
     return ImageLayer;
   }(Layer);
 
-  ImageLayer.mergeOptions(options$w);
+  ImageLayer.mergeOptions(options$x);
   var EMPTY_ARRAY = [];
   var ImageLayerCanvasRenderer = function (_CanvasRenderer) {
     _inheritsLoose(ImageLayerCanvasRenderer, _CanvasRenderer);
@@ -28219,7 +29328,7 @@
     return params;
   }
 
-  var options$x = {
+  var options$y = {
     'doubleBuffer': false,
     'animation': false
   };
@@ -28313,11 +29422,11 @@
     return CanvasLayer;
   }(Layer);
 
-  CanvasLayer.mergeOptions(options$x);
+  CanvasLayer.mergeOptions(options$y);
   CanvasLayer.registerRenderer('canvas', CanvasLayerRenderer);
 
   var TEMP_POINT$2 = new Point(0, 0);
-  var options$y = {
+  var options$z = {
     'animation': true
   };
 
@@ -28393,7 +29502,7 @@
     return ParticleLayer;
   }(CanvasLayer);
 
-  ParticleLayer.mergeOptions(options$y);
+  ParticleLayer.mergeOptions(options$z);
   ParticleLayer.registerRenderer('canvas', function (_CanvasLayerRenderer) {
     _inheritsLoose(_class, _CanvasLayerRenderer);
 
@@ -28440,7 +29549,7 @@
     };
   }
 
-  var options$z = {
+  var options$A = {
     'fixAspectRatio': false,
     'symbol': null,
     'removeVertexOn': 'contextmenu',
@@ -29153,29 +30262,47 @@
       var verticeLimit = shadow instanceof Polygon ? 3 : 2;
       var propertyOfVertexRefreshFn = 'maptalks--editor-refresh-fn',
           propertyOfVertexIndex = 'maptalks--editor-vertex-index';
-      var vertexHandles = [],
-          newVertexHandles = [];
+      var vertexHandles = {
+        0: []
+      },
+          newVertexHandles = {
+        0: []
+      };
 
-      function getVertexCoordinates() {
+      function getVertexCoordinates(ringIndex) {
+        if (ringIndex === void 0) {
+          ringIndex = 0;
+        }
+
         if (shadow instanceof Polygon) {
-          var coordinates = shadow.getCoordinates()[0];
+          var coordinates = shadow.getCoordinates()[ringIndex] || [];
           return coordinates.slice(0, coordinates.length - 1);
         } else {
           return shadow.getCoordinates();
         }
       }
 
-      function getVertexPrjCoordinates() {
-        return shadow._getPrjCoordinates();
+      function getVertexPrjCoordinates(ringIndex) {
+        if (ringIndex === void 0) {
+          ringIndex = 0;
+        }
+
+        if (ringIndex === 0) {
+          return shadow._getPrjCoordinates();
+        }
+
+        return shadow._getPrjHoles()[ringIndex - 1];
       }
 
       function onVertexAddOrRemove() {
-        for (var i = vertexHandles.length - 1; i >= 0; i--) {
-          vertexHandles[i][propertyOfVertexIndex] = i;
-        }
+        for (var ringIndex in vertexHandles) {
+          for (var i = vertexHandles[ringIndex].length - 1; i >= 0; i--) {
+            vertexHandles[ringIndex][i][propertyOfVertexIndex] = i;
+          }
 
-        for (var _i = newVertexHandles.length - 1; _i >= 0; _i--) {
-          newVertexHandles[_i][propertyOfVertexIndex] = _i;
+          for (var _i = newVertexHandles[ringIndex].length - 1; _i >= 0; _i--) {
+            newVertexHandles[ringIndex][_i][propertyOfVertexIndex] = _i;
+          }
         }
 
         me._updateCoordFromShadow();
@@ -29184,7 +30311,8 @@
       function removeVertex(param) {
         var handle = param['target'],
             index = handle[propertyOfVertexIndex];
-        var prjCoordinates = getVertexPrjCoordinates();
+        var ringIndex = isNumber(handle._ringIndex) ? handle._ringIndex : 0;
+        var prjCoordinates = getVertexPrjCoordinates(ringIndex);
 
         if (prjCoordinates.length <= verticeLimit) {
           return;
@@ -29192,33 +30320,41 @@
 
         prjCoordinates.splice(index, 1);
 
-        shadow._setPrjCoordinates(prjCoordinates);
+        if (ringIndex > 0) {
+          shadow._prjHoles[ringIndex - 1] = prjCoordinates;
+        } else {
+          shadow._setPrjCoordinates(prjCoordinates);
+        }
 
         shadow._updateCache();
 
-        vertexHandles.splice(index, 1)[0].remove();
+        vertexHandles[ringIndex].splice(index, 1)[0].remove();
 
-        if (index < newVertexHandles.length) {
-          newVertexHandles.splice(index, 1)[0].remove();
+        if (index < newVertexHandles[ringIndex].length) {
+          newVertexHandles[ringIndex].splice(index, 1)[0].remove();
         }
 
         var nextIndex;
 
         if (index === 0) {
-          nextIndex = newVertexHandles.length - 1;
+          nextIndex = newVertexHandles[ringIndex].length - 1;
         } else {
           nextIndex = index - 1;
         }
 
-        newVertexHandles.splice(nextIndex, 1)[0].remove();
-        newVertexHandles.splice(nextIndex, 0, createNewVertexHandle.call(me, nextIndex));
+        newVertexHandles[ringIndex].splice(nextIndex, 1)[0].remove();
+        newVertexHandles[ringIndex].splice(nextIndex, 0, createNewVertexHandle.call(me, nextIndex, ringIndex));
         onVertexAddOrRemove();
 
         me._refresh();
       }
 
-      function moveVertexHandle(handleViewPoint, index) {
-        var vertice = getVertexPrjCoordinates();
+      function moveVertexHandle(handleViewPoint, index, ringIndex) {
+        if (ringIndex === void 0) {
+          ringIndex = 0;
+        }
+
+        var vertice = getVertexPrjCoordinates(ringIndex);
 
         var nVertex = map._viewPointToPrj(handleViewPoint);
 
@@ -29235,31 +30371,35 @@
         var nextIndex;
 
         if (index === 0) {
-          nextIndex = newVertexHandles.length - 1;
+          nextIndex = newVertexHandles[ringIndex].length - 1;
         } else {
           nextIndex = index - 1;
         }
 
-        if (newVertexHandles[index]) {
-          newVertexHandles[index][propertyOfVertexRefreshFn]();
+        if (newVertexHandles[ringIndex][index]) {
+          newVertexHandles[ringIndex][index][propertyOfVertexRefreshFn]();
         }
 
-        if (newVertexHandles[nextIndex]) {
-          newVertexHandles[nextIndex][propertyOfVertexRefreshFn]();
+        if (newVertexHandles[ringIndex][nextIndex]) {
+          newVertexHandles[ringIndex][nextIndex][propertyOfVertexRefreshFn]();
         }
       }
 
-      function createVertexHandle(index) {
-        var vertex = getVertexCoordinates()[index];
+      function createVertexHandle(index, ringIndex) {
+        if (ringIndex === void 0) {
+          ringIndex = 0;
+        }
+
+        var vertex = getVertexCoordinates(ringIndex)[index];
         var handle = me.createHandle(vertex, {
           'symbol': me.options['vertexHandleSymbol'],
           'cursor': 'pointer',
           'axis': null,
           onMove: function onMove(handleViewPoint) {
-            moveVertexHandle(handleViewPoint, handle[propertyOfVertexIndex]);
+            moveVertexHandle(handleViewPoint, handle[propertyOfVertexIndex], ringIndex);
           },
           onRefresh: function onRefresh() {
-            vertex = getVertexCoordinates()[handle[propertyOfVertexIndex]];
+            vertex = getVertexCoordinates(ringIndex)[handle[propertyOfVertexIndex]];
             handle.setCoordinates(vertex);
           },
           onUp: function onUp() {
@@ -29274,12 +30414,17 @@
           }
         });
         handle[propertyOfVertexIndex] = index;
+        handle._ringIndex = ringIndex;
         handle.on(me.options['removeVertexOn'], removeVertex);
         return handle;
       }
 
-      function createNewVertexHandle(index) {
-        var vertexCoordinates = getVertexCoordinates();
+      function createNewVertexHandle(index, ringIndex) {
+        if (ringIndex === void 0) {
+          ringIndex = 0;
+        }
+
+        var vertexCoordinates = getVertexCoordinates(ringIndex);
         var nextVertex;
 
         if (index + 1 >= vertexCoordinates.length) {
@@ -29298,22 +30443,26 @@
               return;
             }
 
-            var prjCoordinates = getVertexPrjCoordinates();
+            var prjCoordinates = getVertexPrjCoordinates(ringIndex);
             var vertexIndex = handle[propertyOfVertexIndex];
             var pVertex = projection.project(handle.getCoordinates());
             prjCoordinates.splice(vertexIndex + 1, 0, pVertex);
 
-            shadow._setPrjCoordinates(prjCoordinates);
+            if (ringIndex > 0) {
+              shadow._prjHoles[ringIndex - 1] = prjCoordinates;
+            } else {
+              shadow._setPrjCoordinates(prjCoordinates);
+            }
 
             shadow._updateCache();
 
             var symbol = handle.getSymbol();
             delete symbol['opacity'];
             handle.setSymbol(symbol);
-            newVertexHandles.splice(vertexIndex, 0, createNewVertexHandle.call(me, vertexIndex), createNewVertexHandle.call(me, vertexIndex + 1));
+            newVertexHandles[ringIndex].splice(vertexIndex, 0, createNewVertexHandle.call(me, vertexIndex, ringIndex), createNewVertexHandle.call(me, vertexIndex + 1, ringIndex));
           },
           onMove: function onMove(handleViewPoint) {
-            moveVertexHandle(handleViewPoint, handle[propertyOfVertexIndex] + 1);
+            moveVertexHandle(handleViewPoint, handle[propertyOfVertexIndex] + 1, ringIndex);
           },
           onUp: function onUp(e) {
             if (e && e.domEvent && e.domEvent.button === 2) {
@@ -29321,9 +30470,9 @@
             }
 
             var vertexIndex = handle[propertyOfVertexIndex];
-            removeFromArray(handle, newVertexHandles);
+            removeFromArray(handle, newVertexHandles[ringIndex]);
             handle.remove();
-            vertexHandles.splice(vertexIndex + 1, 0, createVertexHandle.call(me, vertexIndex + 1));
+            vertexHandles[ringIndex].splice(vertexIndex + 1, 0, createVertexHandle.call(me, vertexIndex + 1, ringIndex));
             onVertexAddOrRemove();
 
             me._updateCoordFromShadow();
@@ -29331,7 +30480,7 @@
             me._refresh();
           },
           onRefresh: function onRefresh() {
-            vertexCoordinates = getVertexCoordinates();
+            vertexCoordinates = getVertexCoordinates(ringIndex);
             var vertexIndex = handle[propertyOfVertexIndex];
             var nextIndex;
 
@@ -29349,27 +30498,49 @@
         return handle;
       }
 
-      var vertexCoordinates = getVertexCoordinates();
-
-      for (var i = 0, len = vertexCoordinates.length; i < len; i++) {
-        vertexHandles.push(createVertexHandle.call(this, i));
-
-        if (i < len - 1) {
-          newVertexHandles.push(createNewVertexHandle.call(this, i));
-        }
-      }
-
       if (shadow instanceof Polygon) {
-        newVertexHandles.push(createNewVertexHandle.call(this, vertexCoordinates.length - 1));
+        var rings = shadow.getHoles().length + 1;
+
+        for (var ringIndex = 0; ringIndex < rings; ringIndex++) {
+          vertexHandles[ringIndex] = [];
+          newVertexHandles[ringIndex] = [];
+          var vertexCoordinates = getVertexCoordinates(ringIndex);
+
+          for (var i = 0, len = vertexCoordinates.length; i < len; i++) {
+            vertexHandles[ringIndex].push(createVertexHandle.call(this, i, ringIndex));
+
+            if (i < len - 1) {
+              newVertexHandles[ringIndex].push(createNewVertexHandle.call(this, i, ringIndex));
+            }
+          }
+
+          newVertexHandles[ringIndex].push(createNewVertexHandle.call(this, vertexCoordinates.length - 1, ringIndex));
+        }
+      } else {
+        var _ringIndex = 0;
+
+        var _vertexCoordinates = getVertexCoordinates(_ringIndex);
+
+        for (var _i2 = 0, _len = _vertexCoordinates.length; _i2 < _len; _i2++) {
+          vertexHandles[_ringIndex].push(createVertexHandle.call(this, _i2, _ringIndex));
+
+          if (_i2 < _len - 1) {
+            newVertexHandles[_ringIndex].push(createNewVertexHandle.call(this, _i2, _ringIndex));
+          }
+        }
       }
 
       this._addRefreshHook(function () {
-        for (var _i2 = newVertexHandles.length - 1; _i2 >= 0; _i2--) {
-          newVertexHandles[_i2][propertyOfVertexRefreshFn]();
+        for (var _ringIndex2 in newVertexHandles) {
+          for (var _i3 = newVertexHandles[_ringIndex2].length - 1; _i3 >= 0; _i3--) {
+            newVertexHandles[_ringIndex2][_i3][propertyOfVertexRefreshFn](_ringIndex2);
+          }
         }
 
-        for (var _i3 = vertexHandles.length - 1; _i3 >= 0; _i3--) {
-          vertexHandles[_i3][propertyOfVertexRefreshFn]();
+        for (var _ringIndex3 in vertexHandles) {
+          for (var _i4 = vertexHandles[_ringIndex3].length - 1; _i4 >= 0; _i4--) {
+            vertexHandles[_ringIndex3][_i4][propertyOfVertexRefreshFn](_ringIndex3);
+          }
         }
       });
     };
@@ -29424,7 +30595,7 @@
     };
 
     _proto._update = function _update(method) {
-      for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+      for (var _len2 = arguments.length, args = new Array(_len2 > 1 ? _len2 - 1 : 0), _key = 1; _key < _len2; _key++) {
         args[_key - 1] = arguments[_key];
       }
 
@@ -29458,7 +30629,7 @@
         this._historyPointer = 0;
       }
 
-      for (var _len2 = arguments.length, args = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+      for (var _len3 = arguments.length, args = new Array(_len3 > 1 ? _len3 - 1 : 0), _key2 = 1; _key2 < _len3; _key2++) {
         args[_key2 - 1] = arguments[_key2];
       }
 
@@ -29565,7 +30736,7 @@
     return GeometryEditor;
   }(Eventable(Class));
 
-  GeometryEditor.mergeOptions(options$z);
+  GeometryEditor.mergeOptions(options$A);
 
   var TextEditable = {
     startEditText: function startEditText() {
@@ -30422,7 +31593,7 @@
 
   var TEMP_POINT$3 = new Point(0, 0);
   var TEMP_POINT1$2 = new Point(0, 0);
-  var TEMP_POINT2$1 = new Point(0, 0);
+  var TEMP_POINT2$2 = new Point(0, 0);
 
   var TileLayerCanvasRenderer = function (_CanvasRenderer) {
     _inheritsLoose(TileLayerCanvasRenderer, _CanvasRenderer);
@@ -30469,6 +31640,7 @@
         return;
       }
 
+      this._tileOffsets = {};
       var loadingCount = 0;
       var loading = false;
       var checkedTiles = {};
@@ -30486,7 +31658,6 @@
 
       var l = tileGrids.length;
       this._tileZoom = tileGrids[0]['zoom'];
-      this._tileOffset = tileGrids[0]['offset'];
 
       for (var i = 0; i < l; i++) {
         var tileGrid = tileGrids[i];
@@ -30497,6 +31668,9 @@
         for (var _i = 0, _l = allTiles.length; _i < _l; _i++) {
           var tile = allTiles[_i],
               tileId = tile['id'];
+
+          if (tile.y === 26771) ;
+
           var tileLoading = false;
 
           if (this._isLoadingTile(tileId)) {
@@ -30517,7 +31691,8 @@
 
               if (!hitLimit && (!map.isInteracting() || map.isMoving() || map.isRotating())) {
                 loadingCount++;
-                tileQueue[tileId + '@' + tile['point'].toArray().join()] = tile;
+                var key = tileId;
+                tileQueue[key] = tile;
               }
             }
           }
@@ -30674,19 +31849,12 @@
         return;
       }
 
-      var offset = this._tileOffset;
+      var offset = this._getTileOffset(info.z);
 
       if (!offset[0] && !offset[1]) {
         this.drawTile(info, image);
         return;
       }
-
-      var map = this.getMap();
-
-      var scale = map._getResolution(this._tileZoom) / map._getResolution(info.z);
-
-      offset[0] *= scale;
-      offset[1] *= scale;
 
       info.point._sub(offset);
 
@@ -30697,9 +31865,6 @@
       info.point._add(offset);
 
       info.extent2d._add(offset);
-
-      offset[0] /= scale;
-      offset[1] /= scale;
     };
 
     _proto._drawTileAndCache = function _drawTileAndCache(tile) {
@@ -30709,6 +31874,16 @@
       this._drawTileOffset(tile.info, tile.image);
 
       this.tileCache.add(tile.info.id, tile);
+    };
+
+    _proto._getTileOffset = function _getTileOffset(z) {
+      if (!this._tileOffsets[z]) {
+        var offset = this.layer._getTileOffset(z);
+
+        this._tileOffsets[z] = offset;
+      }
+
+      return this._tileOffsets[z];
     };
 
     _proto.drawOnInteracting = function drawOnInteracting() {
@@ -30885,6 +32060,13 @@
       }
 
       if (tileImage instanceof Image) {
+        var errorUrl = this.layer.options['errorUrl'];
+
+        if (errorUrl && tileImage.src !== errorUrl) {
+          tileImage.src = errorUrl;
+          return;
+        }
+
         this.abortTileLoading(tileImage, tileInfo);
       }
 
@@ -31003,7 +32185,7 @@
       var min = info.extent2d.getMin(),
           max = info.extent2d.getMax(),
           pmin = layer._project(map._pointToPrj(min, info.z, TEMP_POINT1$2), TEMP_POINT1$2),
-          pmax = layer._project(map._pointToPrj(max, info.z, TEMP_POINT2$1), TEMP_POINT2$1);
+          pmax = layer._project(map._pointToPrj(max, info.z, TEMP_POINT2$2), TEMP_POINT2$2);
 
       var zoomDiff = 2;
 
@@ -31782,6 +32964,12 @@
   }
 
   var TEMP_EXTENT$4 = new PointExtent();
+  var TEMP_VEC3 = [];
+  var TEMP_FIXEDEXTENT = new PointExtent();
+  var PLACEMENT_CENTER = 'center';
+  var TEMP_POINTS = [];
+  var TEMP_ALTITUDES = [];
+  var TEMP_GEOS = [];
 
   var VectorLayerRenderer = function (_OverlayLayerCanvasRe) {
     _inheritsLoose(VectorLayerRenderer, _OverlayLayerCanvasRe);
@@ -31861,26 +33049,40 @@
         return;
       }
 
+      this._updateMapStateCache();
+
       this._updateDisplayExtent();
 
       var map = this.getMap();
       var count = this.layer.getCount();
-      var res = this.getMap().getResolution();
+      var res = this.mapStateCache.resolution;
 
       if (map.isZooming() && map.options['seamlessZoom'] && this._drawnRes !== undefined && res > this._drawnRes * 1.5 && this._geosToDraw.length < count || map.isMoving() || map.isInteracting()) {
         this.prepareToDraw();
+
+        this._batchConversionMarkers(this.mapStateCache.glZoom);
+
         this.forEachGeo(this.checkGeo, this);
         this._drawnRes = res;
       }
 
+      this._sortByDistanceToCamera(map.cameraPosition);
+
       for (var i = 0, l = this._geosToDraw.length; i < l; i++) {
         var geo = this._geosToDraw[i];
 
-        if (!geo.isVisible()) {
-          continue;
+        if (!geo._isCheck) {
+          if (!geo.isVisible()) {
+            delete geo._cPoint;
+            delete geo._inCurrentView;
+            continue;
+          }
         }
 
         geo._paint(this._displayExtent);
+
+        delete this._geosToDraw[i]._cPoint;
+        delete this._geosToDraw[i]._inCurrentView;
       }
     };
 
@@ -31897,15 +33099,25 @@
     };
 
     _proto.drawGeos = function drawGeos() {
-      this._drawnRes = this.getMap().getResolution();
+      this._updateMapStateCache();
+
+      this._drawnRes = this.mapStateCache.resolution;
 
       this._updateDisplayExtent();
 
       this.prepareToDraw();
+
+      this._batchConversionMarkers(this.mapStateCache.glZoom);
+
       this.forEachGeo(this.checkGeo, this);
+
+      this._sortByDistanceToCamera(this.getMap().cameraPosition);
 
       for (var i = 0, len = this._geosToDraw.length; i < len; i++) {
         this._geosToDraw[i]._paint();
+
+        delete this._geosToDraw[i]._cPoint;
+        delete this._geosToDraw[i]._inCurrentView;
       }
     };
 
@@ -31915,21 +33127,37 @@
     };
 
     _proto.checkGeo = function checkGeo(geo) {
+      geo._isCheck = false;
+
       if (!geo || !geo.isVisible() || !geo.getMap() || !geo.getLayer() || !geo.getLayer().isCanvasRender()) {
         return;
       }
 
       var painter = geo._getPainter();
 
-      var extent2D = painter.get2DExtent(this.resources, TEMP_EXTENT$4);
+      var inCurrentView = true;
 
-      if (!extent2D || !extent2D.intersects(this._displayExtent)) {
+      if (geo._inCurrentView) {
+        inCurrentView = true;
+      } else if (geo._inCurrentView === false) {
+        inCurrentView = false;
+      } else {
+        var extent2D = painter.get2DExtent(this.resources, TEMP_EXTENT$4);
+
+        if (!extent2D || !extent2D.intersects(this._displayExtent)) {
+          inCurrentView = false;
+        }
+      }
+
+      if (!inCurrentView) {
         return;
       }
 
       if (painter.hasPoint()) {
         this._hasPoint = true;
       }
+
+      geo._isCheck = true;
 
       this._geosToDraw.push(geo);
     };
@@ -31982,6 +33210,151 @@
       }
 
       return this.layer._hitGeos(geometries, coordinate, options);
+    };
+
+    _proto._updateMapStateCache = function _updateMapStateCache() {
+      var map = this.getMap();
+
+      var offset = map._pointToContainerPoint(this.southWest)._add(0, -map.height);
+
+      var resolution = map.getResolution();
+      var pitch = map.getPitch();
+      var bearing = map.getBearing();
+      var glScale = map.getGLScale();
+      var glZoom = map.getGLZoom();
+      var containerExtent = map.getContainerExtent();
+
+      var _2DExtent = map._get2DExtent();
+
+      var glExtent = map._get2DExtent(glZoom);
+
+      this.mapStateCache = {
+        resolution: resolution,
+        pitch: pitch,
+        bearing: bearing,
+        glScale: glScale,
+        glZoom: glZoom,
+        _2DExtent: _2DExtent,
+        glExtent: glExtent,
+        containerExtent: containerExtent,
+        offset: offset
+      };
+      return this;
+    };
+
+    _proto._batchConversionMarkers = function _batchConversionMarkers(glZoom) {
+      TEMP_ALTITUDES.length = TEMP_GEOS.length = TEMP_POINTS.length = 0;
+      var altitudeCache = {};
+      var idx = 0;
+
+      for (var i = 0, len = this.layer._geoList.length; i < len; i++) {
+        var geo = this.layer._geoList[i];
+        var type = geo.getType();
+
+        if (type === 'Point') {
+          var painter = geo._painter;
+
+          if (!painter) {
+            continue;
+          }
+
+          var point = painter.getRenderPoints(PLACEMENT_CENTER)[0][0];
+          var altitude = geo.getAltitude();
+
+          if (altitudeCache[altitude] == null) {
+            altitudeCache[altitude] = painter.getAltitude();
+          }
+
+          TEMP_POINTS[idx] = point;
+          TEMP_ALTITUDES[idx] = altitudeCache[altitude];
+          TEMP_GEOS[idx] = geo;
+          idx++;
+        }
+      }
+
+      if (idx === 0) {
+        return [];
+      }
+
+      var map = this.getMap();
+
+      var pts = map._pointsToContainerPoints(TEMP_POINTS, glZoom, TEMP_ALTITUDES);
+
+      var containerExtent = map.getContainerExtent();
+      var xmax = containerExtent.xmax,
+          ymax = containerExtent.ymax,
+          xmin = containerExtent.xmin,
+          ymin = containerExtent.ymin;
+      var symbolkeyMap = {};
+
+      for (var _i = 0, _len = TEMP_GEOS.length; _i < _len; _i++) {
+        var _geo = TEMP_GEOS[_i];
+        _geo._cPoint = pts[_i];
+        var _pts$_i = pts[_i],
+            x = _pts$_i.x,
+            y = _pts$_i.y;
+        _geo._inCurrentView = x >= xmin && y >= ymin && x <= xmax && y <= ymax;
+
+        if (!_geo._inCurrentView) {
+          var symbolkey = _geo.__symbol;
+          var fixedExtent = void 0;
+
+          if (symbolkey) {
+            fixedExtent = symbolkeyMap[symbolkey] = symbolkeyMap[symbolkey] || _geo._painter.getFixedExtent();
+          } else {
+            fixedExtent = _geo._painter.getFixedExtent();
+          }
+
+          TEMP_FIXEDEXTENT.set(fixedExtent.xmin, fixedExtent.ymin, fixedExtent.xmax, fixedExtent.ymax);
+
+          TEMP_FIXEDEXTENT._add(pts[_i]);
+
+          _geo._inCurrentView = TEMP_FIXEDEXTENT.intersects(containerExtent);
+        }
+      }
+
+      return pts;
+    };
+
+    _proto._sortByDistanceToCamera = function _sortByDistanceToCamera(cameraPosition) {
+      if (!this.layer.options['sortByDistanceToCamera']) {
+        return;
+      }
+
+      if (!this._geosToDraw.length) {
+        return;
+      }
+
+      var map = this.getMap();
+      var p = map.distanceToPoint(1000, 0, map.getGLScale()).x;
+      var meterScale = p / 1000;
+      var placement = 'center';
+
+      this._geosToDraw.sort(function (a, b) {
+        var type0 = a.getType();
+        var type1 = b.getType();
+
+        if (type0 !== 'Point' || type1 !== 'Point') {
+          return 0;
+        }
+
+        var painter0 = a._painter;
+        var painter1 = b._painter;
+
+        if (!painter0 || !painter1) {
+          return 0;
+        }
+
+        var point0 = painter0.getRenderPoints(placement)[0][0];
+        var point1 = painter1.getRenderPoints(placement)[0][0];
+        var alt0 = painter0.getAltitude() * meterScale;
+        var alt1 = painter1.getAltitude() * meterScale;
+        set$2(TEMP_VEC3, point0.x, point0.y, alt0);
+        var dist0 = distance(TEMP_VEC3, cameraPosition);
+        set$2(TEMP_VEC3, point1.x, point1.y, alt1);
+        var dist1 = distance(TEMP_VEC3, cameraPosition);
+        return dist1 - dist0;
+      });
     };
 
     return VectorLayerRenderer;
@@ -32477,12 +33850,12 @@
       return null;
     };
 
-    _proto.toDataURL = function toDataURL(mimeType) {
+    _proto.toDataURL = function toDataURL(mimeType, quality) {
       if (!this.canvas) {
         return null;
       }
 
-      return this.canvas.toDataURL(mimeType);
+      return this.canvas.toDataURL(mimeType, quality);
     };
 
     _proto.remove = function remove() {
@@ -33121,6 +34494,36 @@
   LineString.include(PolyRenderer);
   Polygon.include(PolyRenderer);
 
+  var TEMP_WITHIN = {
+    within: false,
+    center: [0, 0]
+  };
+
+  function isWithinPixel(painter) {
+    if (!painter || !painter.__bbox) {
+      TEMP_WITHIN.within = false;
+    } else {
+      TEMP_WITHIN.within = false;
+      var _painter$__bbox = painter.__bbox,
+          minx = _painter$__bbox.minx,
+          miny = _painter$__bbox.miny,
+          maxx = _painter$__bbox.maxx,
+          maxy = _painter$__bbox.maxy;
+      var offsetx = Math.abs(maxx - minx);
+      var offsety = Math.abs(maxy - miny);
+
+      if (offsetx <= 1 && offsety <= 1) {
+        TEMP_WITHIN.within = true;
+        TEMP_WITHIN.center[0] = (minx + maxx) / 2;
+        TEMP_WITHIN.center[1] = (miny + maxy) / 2;
+      }
+
+      delete painter.__bbox;
+    }
+
+    return TEMP_WITHIN;
+  }
+
   Geometry.include({
     _redrawWhenPitch: function _redrawWhenPitch() {
       return false;
@@ -33138,9 +34541,7 @@
     },
     _paintAsPath: function _paintAsPath() {
       var map = this.getMap();
-
-      var altitude = this._getPainter().getAltitude();
-
+      var altitude = this.getAltitude();
       return altitude > 0 || map.getPitch() || this instanceof Ellipse && map.getBearing();
     },
     _getPaintParams: function _getPaintParams() {
@@ -33280,7 +34681,11 @@
       return [points];
     },
     _paintOn: function _paintOn(ctx, points, lineOpacity, fillOpacity, dasharray) {
-      if (this.options['smoothness']) {
+      var r = isWithinPixel(this._painter);
+
+      if (r.within) {
+        Canvas.pixelRect(ctx, r.center, lineOpacity, fillOpacity);
+      } else if (this.options['smoothness']) {
         Canvas.paintSmoothLine(ctx, points, lineOpacity, this.options['smoothness'], false, this._animIdx, this._animTailRatio);
       } else {
         Canvas.path(ctx, points, lineOpacity, null, dasharray);
@@ -33420,7 +34825,13 @@
       return [points];
     },
     _paintOn: function _paintOn(ctx, points, lineOpacity, fillOpacity, dasharray) {
-      Canvas.polygon(ctx, points, lineOpacity, fillOpacity, dasharray, this.options['smoothness']);
+      var r = isWithinPixel(this._painter);
+
+      if (r.within) {
+        Canvas.pixelRect(ctx, r.center, lineOpacity, fillOpacity);
+      } else {
+        Canvas.polygon(ctx, points, lineOpacity, fillOpacity, dasharray, this.options['smoothness']);
+      }
     }
   });
 
@@ -33727,6 +35138,6 @@
 
   Object.defineProperty(exports, '__esModule', { value: true });
 
-  typeof console !== 'undefined' && console.log && console.log('maptalks v1.0.0-alpha.9');
+  typeof console !== 'undefined' && console.log && console.log('maptalks v1.0.0-alpha.14');
 
 })));

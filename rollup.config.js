@@ -3,6 +3,7 @@ const babel = require('rollup-plugin-babel');
 const commonjs = require('rollup-plugin-commonjs');
 const uglify = require('rollup-plugin-uglify').uglify;
 const json = require('rollup-plugin-json');
+const typescript = require('rollup-plugin-typescript2');
 const pkg = require('./package.json');
 
 const banner = `/*!\n * ${pkg.name} v${pkg.version}\n * LICENSE : ${pkg.license}\n * (c) 2016-${new Date().getFullYear()} maptalks.org\n */`;
@@ -51,12 +52,17 @@ function removeGlobal() {
 
 const basePlugins = [
     json(),
+    typescript({
+
+    }),
+    //handle node_modules
     resolve({
         module: true,
         jsnext: true,
         main: true
     }),
     commonjs(),
+    //handle ES2015+
     babel({
         // exclude: 'node_modules/**'
     }),
@@ -91,26 +97,7 @@ module.exports = [
         // }
     },
     {
-        input: 'index.js',
-        plugins: basePlugins.concat([uglify()]),
-        external: ['maptalks', 'three'],
-        output: {
-            'sourcemap': false,
-            'format': 'umd',
-            'name': 'maptalks',
-            'banner': banner,
-            'outro': outro,
-            'intro': intro,
-            'extend': true,
-            'globals': {
-                'maptalks': 'maptalks',
-                'THREE': 'three'
-            },
-            'file': 'dist/maptalks.three.min.js'
-        }
-    },
-    {
-        input: 'index.js',
+        input: 'src/index.ts',
         plugins: basePlugins,
         external: ['maptalks', 'three'],
         output: {
@@ -123,22 +110,41 @@ module.exports = [
             'intro': intro,
             'globals': {
                 'maptalks': 'maptalks',
-                'THREE': 'three'
+                'three': 'THREE'
             },
             'file': 'dist/maptalks.three.js'
         }
     },
     {
-        input: 'index.js',
-        plugins: basePlugins,
+        input: 'src/index.ts',
+        plugins: basePlugins.concat([uglify()]),
         external: ['maptalks', 'three'],
         output: {
             'sourcemap': false,
-            'format': 'es',
+            'format': 'umd',
+            'name': 'maptalks',
             'banner': banner,
             'outro': outro,
             'intro': intro,
-            'file': pkg.module
+            'extend': true,
+            'globals': {
+                'maptalks': 'maptalks',
+                'three': 'THREE'
+            },
+            'file': 'dist/maptalks.three.min.js'
         }
-    }
+    },
+    // {
+    //     input: 'src/index.ts',
+    //     plugins: basePlugins,
+    //     external: ['maptalks', 'three'],
+    //     output: {
+    //         'sourcemap': false,
+    //         'format': 'es',
+    //         'banner': banner,
+    //         'outro': outro,
+    //         'intro': intro,
+    //         'file': pkg.module
+    //     }
+    // }
 ];
