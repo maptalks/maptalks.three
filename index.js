@@ -98,6 +98,14 @@ const EVENTS = [
  * @param {Object} options - options defined in [options]{@link maptalks.ThreeLayer#options}
  */
 class ThreeLayer extends maptalks.CanvasLayer {
+
+    isRendering() {
+        const map = this.getMap();
+        if (!map) {
+            return false;
+        }
+        return map.isInteracting() || map.isAnimating();
+    }
     /**
      * Draw method of ThreeLayer
      * In default, it calls renderScene, refresh the camera and the scene
@@ -1031,7 +1039,15 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
     }
 
     renderScene() {
-        this.layer._callbackBaseObjectAnimation();
+        if (!this._renderTime) {
+            this._renderTime = 0;
+        }
+        const time = maptalks.Util.now();
+        // Make sure to execute only once in a frame about layer._callbackBaseObjectAnimation
+        if (time - this._renderTime >= 16) {
+            this.layer._callbackBaseObjectAnimation();
+            this._renderTime = time;
+        }
         this._syncCamera();
         this.context.render(this.scene, this.camera);
         this.completeRender();
