@@ -72,32 +72,6 @@ const basePlugins = [
 
 module.exports = [
     {
-        input: 'src/worker/index.js',
-        plugins: [
-            json(),
-            resolve({
-                module: true,
-                jsnext: true,
-                main: true
-            }),
-            commonjs(),
-            babel()
-        ],
-        external: ['maptalks'],
-        output: {
-            format: 'amd',
-            name: 'maptalks',
-            globals: {
-                'maptalks': 'maptalks'
-            },
-            extend: true,
-            file: 'dist/worker.js'
-        },
-        // watch: {
-        //     include: 'src/worker/**'
-        // }
-    },
-    {
         input: 'src/index.ts',
         plugins: basePlugins,
         external: ['maptalks', 'three'],

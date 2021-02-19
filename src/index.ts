@@ -1,4 +1,3 @@
-import '../dist/worker';
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
@@ -34,7 +33,7 @@ import * as IdentifyUtil from './util/IdentifyUtil';
 import * as geometryExtrude from 'deyihu-geometry-extrude';
 import LineMaterial from './util/fatline/LineMaterial';
 import { BarOptionType, BaseLayerOptionType, BaseObjectOptionType, ExtrudeLineOptionType, ExtrudeLineTrailOptionType, ExtrudePolygonOptionType, FatLineMaterialType, getBaseObjectMaterialType, HeatMapOptionType, LineMaterialType, LineOptionType, LineStringType, PointOptionType, PolygonType, SingleLineStringType, TerrainOptionType } from './type/index';
-
+import { getWorkerCode, getWorkerName } from './../dist/worker/worker';
 
 
 const options = {
@@ -43,8 +42,7 @@ const options = {
     'glOptions': null,
     'geometryEvents': true,
     'identifyCountOnEvent': 0,
-    'forceRenderOnZooming': true,
-    'centerForDistance': null
+    'forceRenderOnZooming': true
 };
 
 const RADIAN = Math.PI / 180;
@@ -174,7 +172,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         }
         const map = this.getMap();
         const zoom = getTargetZoom(map);
-        let center = coord || this.options.centerForDistance || map.getCenter();
+        let center = coord || map.getCenter();
         if (!(center instanceof maptalks.Coordinate)) {
             center = new maptalks.Coordinate(center);
         }
@@ -1138,3 +1136,7 @@ export {
     IdentifyUtil, geometryExtrude,
     LineMaterial
 };
+
+if (maptalks.registerWorkerAdapter) {
+    maptalks.registerWorkerAdapter(getWorkerName(), getWorkerCode());
+}

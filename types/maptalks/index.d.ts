@@ -18,6 +18,8 @@ declare namespace Ajax {
 
 declare function Eventable(base: any): any;
 
+declare function registerWorkerAdapter(workerName: string, code: string | Function);
+
 declare namespace Util {
   function GUID(): string
   function isNumber(obj: any): boolean
@@ -199,6 +201,7 @@ export {
   Browser,
   Ajax,
   // ArcConnectorLine,
+  registerWorkerAdapter,
   Eventable,
   Util,
   worker,
