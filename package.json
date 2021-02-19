@@ -11,6 +11,7 @@
     "dist/**"
   ],
   "main": "dist/maptalks.three.js",
+  "types": "dist/index.d.ts",
   "module": "dist/index.js",
   "jsnext:main": "dist/index.js",
   "scripts": {

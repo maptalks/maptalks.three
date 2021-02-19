@@ -125,6 +125,10 @@ class ThreeLayer extends maptalks.CanvasLayer {
         }
         return map.isInteracting() || map.isAnimating();
     }
+
+    prepareToDraw(...args) {
+
+    }
     /**
      * Draw method of ThreeLayer
      * In default, it calls renderScene, refresh the camera and the scene
