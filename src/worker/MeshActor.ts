@@ -5,7 +5,8 @@ import { getPolygonPositions } from '../util/ExtrudeUtil';
 import { getLinePosition } from '../util/LineUtil';
 import { LineStringType, PolygonType, SingleLineStringType } from './../type/index';
 import { ThreeLayer } from './../index';
-const workerName = 'maptalks.three';
+import { getWorkerName } from './worker.js';
+
 let MeshActor;
 if (maptalks.worker) {
     MeshActor = class extends maptalks.worker.Actor {
@@ -48,7 +49,7 @@ export function getActor(): maptalks.worker.Actor {
         console.error('maptalks.worker is not defined,You can\'t use ThreeVectorTileLayer');
     }
     if (!actor) {
-        actor = new MeshActor(workerName);
+        actor = new MeshActor(getWorkerName());
     }
     return actor;
 }

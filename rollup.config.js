@@ -5,6 +5,7 @@ const uglify = require('rollup-plugin-uglify').uglify;
 const json = require('rollup-plugin-json');
 const typescript = require('rollup-plugin-typescript2');
 const pkg = require('./package.json');
+import { getWorkerName } from './src/worker/worker';
 
 const banner = `/*!\n * ${pkg.name} v${pkg.version}\n * LICENSE : ${pkg.license}\n * (c) 2016-${new Date().getFullYear()} maptalks.org\n */`;
 
@@ -24,7 +25,7 @@ const intro = `
     function define(_, chunk) {
     if (!workerLoaded) {
         if(maptalks&&maptalks.registerWorkerAdapter){
-            maptalks.registerWorkerAdapter('${pkg.name}', chunk);
+            maptalks.registerWorkerAdapter('${getWorkerName()}', chunk);
             workerLoaded = true;
         }else{
           console.warn('maptalks.registerWorkerAdapter is not defined,If you need to use ThreeVectorTileLayer,you can npm i maptalks@next,more https://github.com/maptalks/maptalks.js/tree/next');

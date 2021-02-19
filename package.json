@@ -8,12 +8,12 @@
     "url": "https://github.com/maptalks/maptalks.three.js.git"
   },
   "files": [
-    "dist/**"
+    "dist/"
   ],
   "main": "dist/maptalks.three.js",
   "types": "dist/index.d.ts",
-  "module": "dist/index.js",
-  "jsnext:main": "dist/index.js",
+  "module": "dist/maptalks.three.js",
+  "jsnext:main": "dist/maptalks.three.js",
   "scripts": {
     "tsc": "./node_modules/.bin/tsc",
     "dev": "rollup -w -c rollup.config.js",
