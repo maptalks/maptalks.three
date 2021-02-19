@@ -6,6 +6,7 @@ import BaseVectorTileLayer from './BaseVectorTileLayer';
 import { ThreeLayer } from './index';
 import BaseObject from './BaseObject';
 import { Queue } from './type';
+import { getBaseObjectMaterialType } from './type/Material';
 
 const OPTIONS = {
     worker: false
@@ -14,7 +15,7 @@ const OPTIONS = {
  *Provide a simple data loading layer with large amount of data
  */
 class ThreeVectorTileLayer extends BaseVectorTileLayer {
-    constructor(url: string, options: any = {}, getMaterial: Function, layer: ThreeLayer) {
+    constructor(url: string, options: any = {}, getMaterial: getBaseObjectMaterialType, layer: ThreeLayer) {
         super(maptalks.Util.GUID(), maptalks.Util.extend({ urlTemplate: url }, OPTIONS, options));
         this._opts = options;
         this._layer = layer;

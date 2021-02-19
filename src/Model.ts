@@ -13,7 +13,7 @@ const OPTIONS = {
  * Model container
  */
 class Model extends BaseObject {
-    constructor(model: THREE.Object3D, options: BaseObjectOptionType = ({} as any), layer: ThreeLayer) {
+    constructor(model: THREE.Object3D, options: BaseObjectOptionType = {}, layer: ThreeLayer) {
         if (!options.coordinate) {
             console.warn('coordinate is null,it is important to locate the model');
             options.coordinate = layer.getMap().getCenter();

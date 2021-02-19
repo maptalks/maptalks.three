@@ -153,7 +153,7 @@ declare class Map {
   getFov(): number
   locate(center: Coordinate, w: number, h: number): Coordinate
   coordToContainerPoint(coordinate: Coordinate): Point
-  getSize(): any
+  getSize(): Size
   getResolution(): number
   resetCursor(type: string): void
   setCursor(type: string): void

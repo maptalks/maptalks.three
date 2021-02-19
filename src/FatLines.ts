@@ -9,7 +9,7 @@ import LineGeometry from './util/fatline/LineGeometry';
 import Line2 from './util/fatline/Line2';
 import LineMaterial from './util/fatline/LineMaterial';
 import { getCenterOfPoints } from './util';
-import { LineOptionType, LineStringType } from './type';
+import { FatLineMaterialType, LineOptionType, LineStringType } from './type';
 import { ThreeLayer } from './index';
 import { getVertexColors } from './util/ThreeAdaptUtil';
 
@@ -22,7 +22,7 @@ const OPTIONS = {
  *
  */
 class FatLines extends MergedMixin(BaseObject) {
-    constructor(lineStrings: Array<LineStringType>, options: LineOptionType, material, layer: ThreeLayer) {
+    constructor(lineStrings: Array<LineStringType>, options: LineOptionType, material: FatLineMaterialType, layer: ThreeLayer) {
         if (!Array.isArray(lineStrings)) {
             lineStrings = [lineStrings];
         }

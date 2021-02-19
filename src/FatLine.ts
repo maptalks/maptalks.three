@@ -5,7 +5,7 @@ import { getLinePosition, LineStringSplit } from './util/LineUtil';
 import LineGeometry from './util/fatline/LineGeometry';
 import Line2 from './util/fatline/Line2';
 import LineMaterial from './util/fatline/LineMaterial';
-import { LineOptionType, LineStringType } from './type';
+import { FatLineMaterialType, LineOptionType, LineStringType } from './type';
 import { ThreeLayer } from './index';
 import { getVertexColors } from './util/ThreeAdaptUtil';
 
@@ -14,7 +14,7 @@ const OPTIONS = {
 };
 
 class FatLine extends BaseObject {
-    constructor(lineString: LineStringType, options: LineOptionType, material, layer: ThreeLayer) {
+    constructor(lineString: LineStringType, options: LineOptionType, material: FatLineMaterialType, layer: ThreeLayer) {
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, lineString });
         super();
         this._initOptions(options);

@@ -46,7 +46,7 @@ class Point extends BaseObject {
      *
      * @param {maptalks.Coordinate} coordinate
      */
-    identify(coordinate) {
+    identify(coordinate: maptalks.Coordinate) {
         const layer = this.getLayer(), size = this.getMap().getSize(),
             camera = this.getLayer().getCamera(), positions = (this.getOptions() as any).positions, altitude = this.getOptions().altitude;
         //Size of points
@@ -61,10 +61,7 @@ class Point extends BaseObject {
         const p = vector2Pixel(vector, size, camera);
         //Distance between two points
         const distance = Math.sqrt(Math.pow(pixel.x - p.x, 2) + Math.pow(pixel.y - p.y, 2));
-        if (distance <= pointSize / 2) {
-            return true;
-        }
-        return false;
+        return (distance <= pointSize / 2);
     }
 }
 

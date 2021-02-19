@@ -3,7 +3,7 @@ import Terrain from './Terrain';
 import BaseVectorTileLayer from './BaseVectorTileLayer';
 import { ThreeLayer } from './index';
 import BaseObject from './BaseObject';
-import { Queue } from './type';
+import { ImageType, Queue } from './type';
 
 const OPTIONS = {
     // worker: false
@@ -37,12 +37,12 @@ class TerrainVectorTileLayer extends BaseVectorTileLayer {
      * @param {*} index
      * @param {*} json
      */
-    formatBaseObjects(index: string, image): BaseObject[] {
+    formatBaseObjects(index: string, image: ImageType): BaseObject[] {
         const opts = this.options, baseobjects: BaseObject[] = [];
         const { scale, tileDivisor } = opts;
         const { x, y, z } = this._getXYZOfIndex(index);
         const zoom = this.getMap().getZoom();
-        const textUrl = this.getTileUrl(x, y, z);
+        const texture = this.getTileUrl(x, y, z);
         const [imageWidth, imageHeight] = this.options.tileSize;
 
         const extent = this._getTileLngLatExtent(x, y, z);
@@ -52,8 +52,8 @@ class TerrainVectorTileLayer extends BaseVectorTileLayer {
                 image,
                 imageWidth: imageWidth / tileDivisor,
                 imageHeight: imageHeight / tileDivisor,
-                texture: textUrl
-            } as any, material, this._layer);
+                texture
+            }, material, this._layer);
             terrain.getObject3d().scale.set(scale, scale, 1);
             baseobjects.push(terrain);
         }

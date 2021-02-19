@@ -1,5 +1,6 @@
 
 import * as THREE from 'three';
+import * as maptalks from 'maptalks';
 
 const color: THREE.Color = new THREE.Color();
 let colorIndex = 1;
@@ -67,7 +68,7 @@ class GPUPick {
         return true;
     }
 
-    pick(pixel) {
+    pick(pixel: maptalks.Point) {
         if (!pixel) {
             return;
         }

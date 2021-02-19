@@ -7,7 +7,7 @@ import Line from './Line';
 import { isGeoJSONLine } from './util/GeoJSONUtil';
 import { addAttribute, getVertexColors } from './util/ThreeAdaptUtil';
 import { getCenterOfPoints } from './util/index';
-import { LineOptionType, LineStringType } from './type/index';
+import { LineMaterialType, LineOptionType, LineStringType } from './type/index';
 import { ThreeLayer } from './index';
 
 const OPTIONS = {
@@ -19,7 +19,7 @@ const OPTIONS = {
  *
  */
 class Lines extends MergedMixin(BaseObject) {
-    constructor(lineStrings: Array<LineStringType>, options: LineOptionType, material: THREE.LineBasicMaterial | THREE.LineDashedMaterial, layer: ThreeLayer) {
+    constructor(lineStrings: Array<LineStringType>, options: LineOptionType, material: LineMaterialType, layer: ThreeLayer) {
         if (!Array.isArray(lineStrings)) {
             lineStrings = [lineStrings];
         }

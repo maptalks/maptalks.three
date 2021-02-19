@@ -148,7 +148,7 @@ class Points extends MergedMixin(BaseObject) {
    *
    * @param {maptalks.Coordinate} coordinate
    */
-    identify(coordinate) {
+    identify(coordinate: maptalks.Coordinate) {
         const layer = this.getLayer(), size = this.getMap().getSize(),
             camera = this.getLayer().getCamera(), altitude = this.getOptions().altitude, map = this.getMap();
         const z = layer.distanceToVector3(altitude, altitude).x;

@@ -2,7 +2,7 @@ import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
 import { ThreeLayer } from './index';
-import { LineOptionType, LineStringType } from './type/index';
+import { LineMaterialType, LineOptionType, LineStringType } from './type/index';
 import { getLinePosition, LineStringSplit } from './util/LineUtil';
 import { addAttribute, getVertexColors } from './util/ThreeAdaptUtil';
 
@@ -26,7 +26,7 @@ const OPTIONS = {
  *
  */
 class Line extends BaseObject {
-    constructor(lineString: LineStringType, options: LineOptionType, material: THREE.LineBasicMaterial | THREE.LineDashedMaterial, layer: ThreeLayer) {
+    constructor(lineString: LineStringType, options: LineOptionType, material: LineMaterialType, layer: ThreeLayer) {
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, lineString });
         super();
         this._initOptions(options);

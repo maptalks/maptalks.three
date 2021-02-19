@@ -32,7 +32,8 @@ import * as ExtrudeUtil from './util/ExtrudeUtil';
 import * as LineUtil from './util/LineUtil';
 import * as IdentifyUtil from './util/IdentifyUtil';
 import * as geometryExtrude from 'deyihu-geometry-extrude';
-import { BarOptionType, BaseLayerOptionType, BaseObjectOptionType, ExtrudeLineOptionType, ExtrudeLineTrailOptionType, ExtrudePolygonOptionType, HeatMapOptionType, LineOptionType, LineStringType, PointOptionType, PolygonType, SingleLineStringType, TerrainOptionType } from './type/index';
+import LineMaterial from './util/fatline/LineMaterial';
+import { BarOptionType, BaseLayerOptionType, BaseObjectOptionType, ExtrudeLineOptionType, ExtrudeLineTrailOptionType, ExtrudePolygonOptionType, FatLineMaterialType, getBaseObjectMaterialType, HeatMapOptionType, LineMaterialType, LineOptionType, LineStringType, PointOptionType, PolygonType, SingleLineStringType, TerrainOptionType } from './type/index';
 
 
 
@@ -108,7 +109,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
     _needsUpdate: boolean = true;
     _raycaster: THREE.Raycaster;
     _mouse: THREE.Vector2;
-    _containerPoint: any;
+    _containerPoint: maptalks.Point;
     _mousemoveTimeOut: number = 0;
     _baseObjects: Array<BaseObject> = [];
 
@@ -186,12 +187,12 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * @param  {maptalks.Polygon|maptalks.MultiPolygon} polygon - polygon or multipolygon
      * @return {THREE.Shape}
      */
-    toShape(polygon: maptalks.Polygon | maptalks.MultiPolygon): any {
+    toShape(polygon: maptalks.Polygon | maptalks.MultiPolygon): THREE.Shape | Array<THREE.Shape> {
         if (!polygon) {
             return null;
         }
         if (polygon instanceof maptalks.MultiPolygon) {
-            return polygon.getGeometries().map(c => this.toShape(c));
+            return polygon.getGeometries().map(c => this.toShape(c) as any);
         }
         const center = polygon.getCenter();
         const centerPt = this.coordinateToVector3(center);
@@ -224,12 +225,12 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * @param {*} material
      * @param {*} height
      */
-    toExtrudeMesh(polygon: maptalks.Polygon | maptalks.MultiPolygon, altitude: number, material: THREE.Material, height: number): any {
+    toExtrudeMesh(polygon: maptalks.Polygon | maptalks.MultiPolygon, altitude: number, material: THREE.Material, height: number): THREE.Mesh | Array<THREE.Mesh> {
         if (!polygon) {
             return null;
         }
         if (polygon instanceof maptalks.MultiPolygon) {
-            return polygon.getGeometries().map(c => this.toExtrudeMesh(c, altitude, material, height));
+            return polygon.getGeometries().map(c => this.toExtrudeMesh(c, altitude, material, height) as any);
         }
         const rings = polygon.getCoordinates();
         rings.forEach(ring => {
@@ -290,7 +291,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
     * @param {Object} options
     * @param {THREE.LineMaterial} material
     */
-    toLine(lineString: LineStringType, options: LineOptionType, material: THREE.LineBasicMaterial | THREE.LineDashedMaterial): Line {
+    toLine(lineString: LineStringType, options: LineOptionType, material: LineMaterialType): Line {
         return new Line(lineString, options, material, this);
     }
 
@@ -388,7 +389,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * @param {*} options
      * @param {*} material
      */
-    toLines(lineStrings: Array<LineStringType>, options: LineOptionType, material: THREE.LineBasicMaterial | THREE.LineDashedMaterial): Lines {
+    toLines(lineStrings: Array<LineStringType>, options: LineOptionType, material: LineMaterialType): Lines {
         return new Lines(lineStrings, options, material, this);
     }
 
@@ -400,7 +401,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * @param {*} getMaterial
      * @param {*} worker
      */
-    toThreeVectorTileLayer(url: string, options: any, getMaterial: Function): ThreeVectorTileLayer {
+    toThreeVectorTileLayer(url: string, options: any, getMaterial: getBaseObjectMaterialType): ThreeVectorTileLayer {
         return new ThreeVectorTileLayer(url, options, getMaterial, this);
     }
 
@@ -441,7 +442,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * @param {*} options
      * @param {*} material
      */
-    toFatLine(lineString: LineStringType, options: LineOptionType, material): FatLine {
+    toFatLine(lineString: LineStringType, options: LineOptionType, material: FatLineMaterialType): FatLine {
         return new FatLine(lineString, options, material, this);
     }
 
@@ -451,7 +452,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * @param {*} options
      * @param {*} material
      */
-    toFatLines(lineStrings: Array<LineStringType>, options, material): FatLines {
+    toFatLines(lineStrings: Array<LineStringType>, options, material: FatLineMaterialType): FatLines {
         return new FatLines(lineStrings, options, material, this);
     }
 
@@ -479,11 +480,11 @@ class ThreeLayer extends maptalks.CanvasLayer {
     getBaseObjects(): Array<BaseObject> {
         return this.getMeshes().filter((mesh => {
             return mesh instanceof BaseObject;
-        }));
+        })) as any;
     }
 
 
-    getMeshes(): Array<any> {
+    getMeshes(): Array<THREE.Object3D | BaseObject> {
         const scene = this.getScene();
         if (!scene) {
             return [];
@@ -508,7 +509,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         if (!scene) {
             return this;
         }
-        for (var i = scene.children.length - 1; i >= 0; i--) {
+        for (let i = scene.children.length - 1; i >= 0; i--) {
             const child = scene.children[i];
             if (child instanceof THREE.Object3D && !(child instanceof THREE.Camera)) {
                 scene.remove(child);
@@ -658,7 +659,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * @param {Object} options
      * @return {Array}
      */
-    identify(coordinate: maptalks.Coordinate, options: object): Array<BaseObject> {
+    identify(coordinate: maptalks.Coordinate, options: object): Array<BaseObject | THREE.Object3D> {
         if (!coordinate) {
             console.error('coordinate is null,it should be Coordinate');
             return [];
@@ -694,11 +695,12 @@ class ThreeLayer extends maptalks.CanvasLayer {
         scene.children.forEach(mesh => {
             const parent = mesh['__parent'];
             if (parent && parent.getOptions) {
-                const interactive = parent.getOptions().interactive;
-                if (interactive && parent.isVisible()) {
+                const baseObject = parent as BaseObject;
+                const interactive = baseObject.getOptions().interactive;
+                if (interactive && baseObject.isVisible()) {
                     //If baseobject has its own hit detection
-                    if (parent.identify && maptalks.Util.isFunction(parent.identify)) {
-                        hasidentifyChildren.push(parent);
+                    if (baseObject.identify && maptalks.Util.isFunction(baseObject.identify)) {
+                        hasidentifyChildren.push(baseObject);
                     } else {
                         children.push(mesh);
                     }
@@ -707,7 +709,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 children.push(mesh);
             }
         });
-        let baseObjects = [];
+        let baseObjects: Array<THREE.Object3D | BaseObject> = [];
         const intersects = raycaster.intersectObjects(children, true);
         if (intersects && Array.isArray(intersects) && intersects.length) {
             baseObjects = intersects.map(intersect => {
@@ -799,7 +801,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 const child = scene.children[i] || {};
                 const parent = child['__parent'];
                 if (parent) {
-                    parent.fire('empty', Object.assign({}, e, { target: parent }));
+                    (parent as BaseObject).fire('empty', Object.assign({}, e, { target: parent }));
                 }
             }
         }
@@ -854,7 +856,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                     baseObject.openToolTip(coordinate);
                 }
             });
-            this._baseObjects = baseObjects;
+            this._baseObjects = baseObjects as any;
         } else {
             baseObjects.forEach(baseObject => {
                 if (baseObject instanceof BaseObject) {
@@ -884,17 +886,18 @@ class ThreeLayer extends maptalks.CanvasLayer {
         scene.children.forEach(mesh => {
             const parent = mesh['__parent'];
             if (parent && parent.getOptions) {
-                const minZoom = parent.getMinZoom(), maxZoom = parent.getMaxZoom();
+                const baseObject = parent as BaseObject;
+                const minZoom = baseObject.getMinZoom(), maxZoom = baseObject.getMaxZoom();
                 if (zoom < minZoom || zoom > maxZoom) {
-                    if (parent.isVisible()) {
-                        parent.getObject3d().visible = false;
+                    if (baseObject.isVisible()) {
+                        baseObject.getObject3d().visible = false;
                     }
-                    parent._zoomVisible = false;
+                    baseObject._zoomVisible = false;
                 } else if (minZoom <= zoom && zoom <= maxZoom) {
-                    if (parent._visible) {
-                        parent.getObject3d().visible = true;
+                    if (baseObject._visible) {
+                        baseObject.getObject3d().visible = true;
                     }
-                    parent._zoomVisible = true;
+                    baseObject._zoomVisible = true;
                 }
             }
         });
@@ -1128,5 +1131,6 @@ export {
     ThreeLayer, ThreeRenderer, BaseObject,
     MergedMixin,
     GeoJSONUtil, MergeGeometryUtil, GeoUtil, ExtrudeUtil, LineUtil,
-    IdentifyUtil, geometryExtrude
+    IdentifyUtil, geometryExtrude,
+    LineMaterial
 };

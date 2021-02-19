@@ -180,7 +180,7 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
     }
 
     // eslint-disable-next-line no-unused-vars
-    identify(coordinate) {
+    identify(coordinate): boolean {
         return this.picked;
     }
 }

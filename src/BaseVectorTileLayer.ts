@@ -1,7 +1,7 @@
 import * as maptalks from 'maptalks';
 import BaseObject from './BaseObject';
 import { ThreeLayer } from './index';
-import { Queue } from './type';
+import { getBaseObjectMaterialType, Queue } from './type';
 import { generateImage } from './util/CanvasUtil';
 
 /**
@@ -11,7 +11,7 @@ class BaseVectorTileLayer extends maptalks.TileLayer {
     _opts: any;
     _layer: ThreeLayer;
     material: THREE.Material;
-    getMaterial: Function;
+    getMaterial: getBaseObjectMaterialType;
     _baseObjectKeys: { [key: string]: Array<BaseObject> };
     _loadTiles: { [key: string]: any };
     _add: boolean;
