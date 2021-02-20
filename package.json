@@ -15,9 +15,7 @@
   "module": "dist/index.js",
   "jsnext:main": "dist/index.js",
   "scripts": {
-    "worker-build": "rollup --environment BUILD:production -c rollup.worker.config.js",
-    "worker-init": "node workerinit.js",
-    "worker": "npm run worker-build && npm run worker-init",
+    "worker": "rollup --environment BUILD:production -c rollup.worker.config.js && node workerinit.js",
     "tsc": "./node_modules/.bin/tsc",
     "dev": "rollup -w -c rollup.config.js",
     "build": "npm run tsc && rollup --environment BUILD:production -c rollup.config.js",
@@ -32,6 +30,7 @@
     "@babel/preset-env": "^7.0.0",
     "@types/three": "^0.125.1",
     "babel-eslint": "^9.0.0",
+    "chalk": "^4.1.0",
     "eslint": "^4.19.1",
     "eslint-config-maptalks": "^0.3.0",
     "eslint-plugin-mocha": "^5.0.0",

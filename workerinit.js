@@ -1,11 +1,19 @@
 const fs = require('fs');
 const path = require('path');
-let code = fs.readFileSync(path.join(__dirname, './dist/worker.amd.js')).toString();
+const chalk = require('chalk');
+
+const bundlePath = path.join(__dirname, './dist/worker.amd.js');
+let code = fs.readFileSync(bundlePath).toString();
+console.log(chalk.greenBright(`read ${bundlePath} worker bundle success`));
 code = code.replace(`define(['exports'],`, '');
 code = code.replace(`define(["exports"],`, '');
 code = code.substring(0, code.length - 3);
 
-let worker = fs.readFileSync(path.join(__dirname, './src/worker/worker.ts')).toString();
+const workerTempPath = path.join(__dirname, './src/worker/worker.ts');
+let worker = fs.readFileSync(workerTempPath).toString();
 worker = worker.replace('{code}', code);
+console.log(chalk.greenBright(`read ${workerTempPath} workte template success`));
 
-fs.writeFileSync(path.join(__dirname, './src/worker/getworker.ts'), worker);
+const getWorkerPath = path.join(__dirname, './src/worker/getworker.ts');
+fs.writeFileSync(getWorkerPath, worker);
+console.log(chalk.greenBright(`write ${getWorkerPath} worker success`));
