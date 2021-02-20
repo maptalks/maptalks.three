@@ -59,7 +59,6 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
                         initVertexColors(bufferGeometry, bottomColor, topColor);
                         (material as any).vertexColors = getVertexColors();
                     }
-                    (this.getObject3d() as any).geometry.dispose();
                     (this.getObject3d() as any).geometry = bufferGeometry;
                     (this.getObject3d() as any).material.needsUpdate = true;
                     this._geometryCache = bufferGeometry.clone();

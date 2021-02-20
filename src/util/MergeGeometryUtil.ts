@@ -83,7 +83,12 @@ export function generateBufferGeometry(data: MergeAttributeType): THREE.BufferGe
     return bufferGeomertry;
 }
 
+let defaultBufferGeometry: THREE.BufferGeometry;
+
 export function getDefaultBufferGeometry(): THREE.BufferGeometry {
-    const SIZE = 0.000001;
-    return new THREE.BoxBufferGeometry(SIZE, SIZE, SIZE);
+    if (!defaultBufferGeometry) {
+        const SIZE = 0.000001;
+        defaultBufferGeometry = new THREE.BoxBufferGeometry(SIZE, SIZE, SIZE);
+    }
+    return defaultBufferGeometry;
 }

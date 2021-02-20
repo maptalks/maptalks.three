@@ -12,7 +12,7 @@
  * https://github.com/huiyan-fe/mapv/blob/master/src/utils/data-range/Intensity.js
  * @author kyle / http://nikai.us/
  */
-import { Canvas } from './../CanvasUtil';
+import { createCanvas } from './../CanvasUtil';
 
 /**
  * Category
@@ -55,7 +55,7 @@ Intensity.prototype.initPalette = function () {
 
     var gradient = this.gradient;
 
-    var canvas = Canvas(256, 1);
+    var canvas = createCanvas(256, 1);
 
     var paletteCtx = this.paletteCtx = canvas.getContext('2d');
 
@@ -141,7 +141,7 @@ Intensity.prototype.getLegend = function (options) {
     var width = options.width || 20;
     var height = options.height || 180;
 
-    var canvas = Canvas(width, height);
+    var canvas = createCanvas(width, height);
 
     var paletteCtx = canvas.getContext('2d');
 

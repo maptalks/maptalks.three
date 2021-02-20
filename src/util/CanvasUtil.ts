@@ -22,7 +22,7 @@ export function generateImage(key: string, debug: boolean = false): string {
 }
 
 
-export function Canvas(width: number = 1, height: number = 1): HTMLCanvasElement {
+export function createCanvas(width: number = 1, height: number = 1): HTMLCanvasElement {
     let canvas;
     if (typeof document === 'undefined') {
         // var Canvas = require('canvas');

@@ -8,7 +8,7 @@
 /**
  * https://github.com/huiyan-fe/mapv/blob/master/src/canvas/draw/heatmap.js
  */
-import { Canvas } from './../CanvasUtil';
+import { createCanvas } from './../CanvasUtil';
 import Intensity from './Intensity';
 
 function createCircle(size) {
@@ -16,7 +16,7 @@ function createCircle(size) {
     var r2 = size + shadowBlur;
     var offsetDistance = 10000;
 
-    var circle = Canvas(r2 * 2, r2 * 2);
+    var circle = createCanvas(r2 * 2, r2 * 2);
     var context = circle.getContext('2d');
 
     context.shadowBlur = shadowBlur;
@@ -129,7 +129,7 @@ function draw(context, data, options) {
     context.strokeStyle = 'rgba(0,0,0,' + strength + ')';
 
     // var shadowCanvas = new Canvas(context.canvas.width, context.canvas.height);
-    var shadowCanvas = Canvas(context.canvas.width, context.canvas.height);
+    var shadowCanvas = createCanvas(context.canvas.width, context.canvas.height);
     var shadowContext = shadowCanvas.getContext('2d');
     shadowContext.scale(devicePixelRatio, devicePixelRatio);
 

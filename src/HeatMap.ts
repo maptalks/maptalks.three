@@ -2,7 +2,7 @@ import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
 import HeatMapUitl from './util/heatmap/HeatMapUtil';
-import { Canvas } from './util/CanvasUtil';
+import { createCanvas } from './util/CanvasUtil';
 import Intensity from './util/heatmap/Intensity';
 import { addAttribute, getVertexColors } from './util/ThreeAdaptUtil';
 import { HeatMapOptionType } from './type';
@@ -73,7 +73,7 @@ class HeatMap extends BaseObject {
                 count: data[i].count
             });
         }
-        let shadowCanvas = Canvas(canvasWidth, canvasHeight);
+        let shadowCanvas = createCanvas(canvasWidth, canvasHeight);
         let shadowContext = shadowCanvas.getContext('2d');
         // shadowContext.scale(devicePixelRatio, devicePixelRatio);
         HeatMapUitl.drawGray(shadowContext, pixels, options);

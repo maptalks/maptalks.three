@@ -70,7 +70,6 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
                         (material as any).vertexColors = getVertexColors();
                     }
                     const object3d = this.getObject3d() as any;
-                    object3d.geometry.dispose();
                     object3d.geometry = bufferGeometry;
                     object3d.material.needsUpdate = true;
                     this._geometryCache = bufferGeometry.clone();
