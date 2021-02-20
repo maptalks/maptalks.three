@@ -32,8 +32,8 @@ import * as LineUtil from './util/LineUtil';
 import * as IdentifyUtil from './util/IdentifyUtil';
 import * as geometryExtrude from 'deyihu-geometry-extrude';
 import LineMaterial from './util/fatline/LineMaterial';
-import { BarOptionType, BaseLayerOptionType, BaseObjectOptionType, ExtrudeLineOptionType, ExtrudeLineTrailOptionType, ExtrudePolygonOptionType, FatLineMaterialType, getBaseObjectMaterialType, HeatMapOptionType, LineMaterialType, LineOptionType, LineStringType, PointOptionType, PolygonType, SingleLineStringType, TerrainOptionType } from './type/index';
-import { getWorkerCode, getWorkerName } from './worker/worker.js';
+import { BarOptionType, BaseLayerOptionType, BaseObjectOptionType, ExtrudeLineOptionType, ExtrudeLineTrailOptionType, ExtrudePolygonOptionType, FatLineMaterialType, getBaseObjectMaterialType, HeatMapDataType, HeatMapOptionType, LineMaterialType, LineOptionType, LineStringType, PointOptionType, PolygonType, SingleLineStringType, TerrainOptionType } from './type/index';
+import { getWorkerCode, getWorkerName } from './../dist/worker/worker.js';
 
 
 const options = {
@@ -434,7 +434,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * @param {*} options
      * @param {*} material
      */
-    toHeatMap(data: Array<any>, options: HeatMapOptionType, material: THREE.Material): HeatMap {
+    toHeatMap(data: Array<HeatMapDataType>, options: HeatMapOptionType, material: THREE.Material): HeatMap {
         return new HeatMap(data, options, material, this);
     }
 

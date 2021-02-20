@@ -69,6 +69,13 @@ export type PointOptionType = BaseObjectOptionType & {
     color?: string | THREE.Color
 }
 
+export type HeatMapDataType = {
+    coordinate: maptalks.Coordinate | number[],
+    count: number,
+    lnglat?: maptalks.Coordinate | number[],
+    xy?: maptalks.Coordinate | number[],
+}
+
 export type HeatMapOptionType = BaseObjectOptionType & {
     min?: number,
     max?: number,

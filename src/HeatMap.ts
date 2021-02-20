@@ -5,7 +5,7 @@ import HeatMapUitl from './util/heatmap/HeatMapUtil';
 import { createCanvas } from './util/CanvasUtil';
 import Intensity from './util/heatmap/Intensity';
 import { addAttribute, getVertexColors } from './util/ThreeAdaptUtil';
-import { HeatMapOptionType } from './type';
+import { HeatMapDataType, HeatMapOptionType } from './type';
 import { ThreeLayer } from './index';
 
 const OPTIONS = {
@@ -24,7 +24,7 @@ const CANVAS_MAX_SIZE = 2048;
  *
  */
 class HeatMap extends BaseObject {
-    constructor(data: Array<any>, options: HeatMapOptionType, material: THREE.Material, layer: ThreeLayer) {
+    constructor(data: Array<HeatMapDataType>, options: HeatMapOptionType, material: THREE.Material, layer: ThreeLayer) {
         if (!Array.isArray(data)) {
             data = [data];
         }
