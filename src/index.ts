@@ -33,7 +33,7 @@ import * as IdentifyUtil from './util/IdentifyUtil';
 import * as geometryExtrude from 'deyihu-geometry-extrude';
 import LineMaterial from './util/fatline/LineMaterial';
 import { BarOptionType, BaseLayerOptionType, BaseObjectOptionType, ExtrudeLineOptionType, ExtrudeLineTrailOptionType, ExtrudePolygonOptionType, FatLineMaterialType, getBaseObjectMaterialType, HeatMapDataType, HeatMapOptionType, LineMaterialType, LineOptionType, LineStringType, PointOptionType, PolygonType, SingleLineStringType, TerrainOptionType } from './type/index';
-import { getWorkerCode, getWorkerName } from './../dist/worker/worker.js';
+import { getWorkerCode, getWorkerName } from './worker/getworker';
 
 
 const options = {

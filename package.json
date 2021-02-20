@@ -20,7 +20,7 @@
     "worker": "npm run worker-build && npm run worker-init",
     "tsc": "./node_modules/.bin/tsc",
     "dev": "rollup -w -c rollup.config.js",
-    "build": "npm run worker && npm run tsc && rollup --environment BUILD:production -c rollup.config.js",
+    "build": "npm run tsc && rollup --environment BUILD:production -c rollup.config.js",
     "build-dev": "rollup -c rollup.config.js",
     "preversion": "npm run lint",
     "version": "npm run build && git add -A dist",

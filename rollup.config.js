@@ -5,7 +5,6 @@ const uglify = require('rollup-plugin-uglify').uglify;
 const json = require('rollup-plugin-json');
 const typescript = require('rollup-plugin-typescript2');
 const pkg = require('./package.json');
-import { getWorkerName } from './src/worker/worker';
 
 const banner = `/*!\n * ${pkg.name} v${pkg.version}\n * LICENSE : ${pkg.license}\n * (c) 2016-${new Date().getFullYear()} maptalks.org\n */`;
 
@@ -15,26 +14,8 @@ if (pkg.peerDependencies && pkg.peerDependencies['maptalks']) {
 }
 
 outro = `typeof console !== 'undefined' && console.log('${outro}');`;
-const intro = `
-    var IS_NODE = typeof exports === 'object' && typeof module !== 'undefined';
-    var maptalks = maptalks;
-    if (IS_NODE) {
-        maptalks = maptalks || require('maptalks');
-    }
-    var workerLoaded;
-    function define(_, chunk) {
-    if (!workerLoaded) {
-        if(maptalks&&maptalks.registerWorkerAdapter){
-            maptalks.registerWorkerAdapter('${getWorkerName()}', chunk);
-            workerLoaded = true;
-        }else{
-          console.warn('maptalks.registerWorkerAdapter is not defined,If you need to use ThreeVectorTileLayer,you can npm i maptalks@next,more https://github.com/maptalks/maptalks.js/tree/next');
-        }
-    } else {
-        var exports = IS_NODE ? module.exports : maptalks;
-        chunk(exports, maptalks);
-    }
-}`;
+
+const intro='';
 
 
 function removeGlobal() {
