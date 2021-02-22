@@ -97,6 +97,14 @@ const EVENTS = [
  * @param {Object} options - options defined in [options]{@link maptalks.ThreeLayer#options}
  */
 class ThreeLayer extends maptalks.CanvasLayer {
+
+    isRendering() {
+        const map = this.getMap();
+        if (!map) {
+            return false;
+        }
+        return map.isInteracting() || map.isAnimating();
+    }
     /**
      * Draw method of ThreeLayer
      * In default, it calls renderScene, refresh the camera and the scene
@@ -137,6 +145,9 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * @return {THREE.Vector3}
      */
     distanceToVector3(w, h, coord) {
+        if ((w === 0 && h === 0) || (!maptalks.Util.isNumber(w) || !maptalks.Util.isNumber(h))) {
+            return new THREE.Vector3(0, 0, 0);
+        }
         const map = this.getMap();
         const zoom = getTargetZoom(map);
         let center = coord || map.getCenter();
@@ -215,8 +226,12 @@ class ThreeLayer extends maptalks.CanvasLayer {
         const name = parseInt(THREE.REVISION) >= 93 ? 'depth' : 'amount';
         config[name] = height;
         const geom = new THREE.ExtrudeGeometry(shape, config);
-        const buffGeom = new THREE.BufferGeometry();
-        buffGeom.fromGeometry(geom);
+        let buffGeom = geom;
+        //fromGeometry  Remove from core. when three version>=125
+        if (THREE.BufferGeometry.prototype.fromGeometry) {
+            buffGeom = new THREE.BufferGeometry();
+            buffGeom.fromGeometry(geom);
+        }
         const mesh = new THREE.Mesh(buffGeom, material);
         mesh.position.set(center.x, center.y, amount - height);
         return mesh;
@@ -784,7 +799,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 });
             }
             outBaseObjects.forEach(baseObject => {
-                if (baseObject instanceof BaseObject) {
+                if (baseObject && baseObject instanceof BaseObject) {
                     // reset _mouseover status
                     // Deal with the mergedmesh
                     if (baseObject.getSelectMesh) {
@@ -815,6 +830,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                     baseObject.openToolTip(coordinate);
                 }
             });
+            this._baseObjects = baseObjects;
         } else {
             baseObjects.forEach(baseObject => {
                 if (baseObject instanceof BaseObject) {
@@ -829,7 +845,6 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 }
             });
         }
-        this._baseObjects = baseObjects;
         return this;
     }
 
@@ -1023,7 +1038,15 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
     }
 
     renderScene() {
-        this.layer._callbackBaseObjectAnimation();
+        if (!this._renderTime) {
+            this._renderTime = 0;
+        }
+        const time = maptalks.Util.now();
+        // Make sure to execute only once in a frame about layer._callbackBaseObjectAnimation
+        if (time - this._renderTime >= 16) {
+            this.layer._callbackBaseObjectAnimation();
+            this._renderTime = time;
+        }
         this._syncCamera();
         this.context.render(this.scene, this.camera);
         this.completeRender();
