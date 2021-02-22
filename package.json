@@ -8,17 +8,17 @@
     "url": "https://github.com/maptalks/maptalks.three.js.git"
   },
   "files": [
-    "dist/maptalks.three.js",
-    "dist/maptalks.three.min.js",
-    "dist/maptalks.three.es.js",
-    "dist/maptalks.three.js.map"
+    "dist/"
   ],
   "main": "dist/maptalks.three.js",
-  "module": "dist/maptalks.three.es.js",
-  "jsnext:main": "dist/maptalks.three.es.js",
+  "types": "dist/index.d.ts",
+  "module": "dist/index.js",
+  "jsnext:main": "dist/index.js",
   "scripts": {
+    "worker": "rollup --environment BUILD:production -c rollup.worker.config.js && node workerinit.js",
+    "tsc": "./node_modules/.bin/tsc",
     "dev": "rollup -w -c rollup.config.js",
-    "build": "rollup --environment BUILD:production -c rollup.config.js",
+    "build": "npm run tsc && rollup --environment BUILD:production -c rollup.config.js",
     "build-dev": "rollup -c rollup.config.js",
     "preversion": "npm run lint",
     "version": "npm run build && git add -A dist",
@@ -28,17 +28,22 @@
   "devDependencies": {
     "@babel/core": "^7.0.0",
     "@babel/preset-env": "^7.0.0",
+    "@types/three": "^0.125.1",
     "babel-eslint": "^9.0.0",
+    "chalk": "^4.1.0",
     "eslint": "^4.19.1",
     "eslint-config-maptalks": "^0.3.0",
     "eslint-plugin-mocha": "^5.0.0",
-    "rollup": "^0.66.1",
+    "rollup": "^1.28.0",
     "rollup-plugin-babel": "^4.1.0-0",
     "rollup-plugin-commonjs": "^9.1.0",
     "rollup-plugin-json": "^4.0.0",
     "rollup-plugin-node-resolve": "^3.3.0",
+    "rollup-plugin-typescript2": "^0.25.3",
     "rollup-plugin-uglify": "^6.0.0",
-    "three": "^0.97.0"
+    "three": "^0.125.1",
+    "tslib": "^2.1.0",
+    "typescript": "^4.1.5"
   },
   "peerDependencies": {
     "maptalks": ">=0.39.0"

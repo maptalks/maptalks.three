@@ -3,6 +3,7 @@ const babel = require('rollup-plugin-babel');
 const commonjs = require('rollup-plugin-commonjs');
 const uglify = require('rollup-plugin-uglify').uglify;
 const json = require('rollup-plugin-json');
+const typescript = require('rollup-plugin-typescript2');
 const pkg = require('./package.json');
 
 const banner = `/*!\n * ${pkg.name} v${pkg.version}\n * LICENSE : ${pkg.license}\n * (c) 2016-${new Date().getFullYear()} maptalks.org\n */`;
@@ -13,26 +14,8 @@ if (pkg.peerDependencies && pkg.peerDependencies['maptalks']) {
 }
 
 outro = `typeof console !== 'undefined' && console.log('${outro}');`;
-const intro = `
-    var IS_NODE = typeof exports === 'object' && typeof module !== 'undefined';
-    var maptalks = maptalks;
-    if (IS_NODE) {
-        maptalks = maptalks || require('maptalks');
-    }
-    var workerLoaded;
-    function define(_, chunk) {
-    if (!workerLoaded) {
-        if(maptalks&&maptalks.registerWorkerAdapter){
-            maptalks.registerWorkerAdapter('${pkg.name}', chunk);
-            workerLoaded = true;
-        }else{
-          console.warn('maptalks.registerWorkerAdapter is not defined,If you need to use ThreeVectorTileLayer,you can npm i maptalks@next,more https://github.com/maptalks/maptalks.js/tree/next');
-        }
-    } else {
-        var exports = IS_NODE ? module.exports : maptalks;
-        chunk(exports, maptalks);
-    }
-}`;
+
+const intro='';
 
 
 function removeGlobal() {
@@ -51,12 +34,17 @@ function removeGlobal() {
 
 const basePlugins = [
     json(),
+    typescript({
+
+    }),
+    //handle node_modules
     resolve({
         module: true,
         jsnext: true,
         main: true
     }),
     commonjs(),
+    //handle ES2015+
     babel({
         // exclude: 'node_modules/**'
     }),
@@ -65,52 +53,7 @@ const basePlugins = [
 
 module.exports = [
     {
-        input: 'src/worker/index.js',
-        plugins: [
-            json(),
-            resolve({
-                module: true,
-                jsnext: true,
-                main: true
-            }),
-            commonjs(),
-            babel()
-        ],
-        external: ['maptalks'],
-        output: {
-            format: 'amd',
-            name: 'maptalks',
-            globals: {
-                'maptalks': 'maptalks'
-            },
-            extend: true,
-            file: 'dist/worker.js'
-        },
-        // watch: {
-        //     include: 'src/worker/**'
-        // }
-    },
-    {
-        input: 'index.js',
-        plugins: basePlugins.concat([uglify()]),
-        external: ['maptalks', 'three'],
-        output: {
-            'sourcemap': false,
-            'format': 'umd',
-            'name': 'maptalks',
-            'banner': banner,
-            'outro': outro,
-            'intro': intro,
-            'extend': true,
-            'globals': {
-                'maptalks': 'maptalks',
-                'THREE': 'three'
-            },
-            'file': 'dist/maptalks.three.min.js'
-        }
-    },
-    {
-        input: 'index.js',
+        input: 'src/index.ts',
         plugins: basePlugins,
         external: ['maptalks', 'three'],
         output: {
@@ -123,22 +66,41 @@ module.exports = [
             'intro': intro,
             'globals': {
                 'maptalks': 'maptalks',
-                'THREE': 'three'
+                'three': 'THREE'
             },
             'file': 'dist/maptalks.three.js'
         }
     },
     {
-        input: 'index.js',
-        plugins: basePlugins,
+        input: 'src/index.ts',
+        plugins: basePlugins.concat([uglify()]),
         external: ['maptalks', 'three'],
         output: {
             'sourcemap': false,
-            'format': 'es',
+            'format': 'umd',
+            'name': 'maptalks',
             'banner': banner,
             'outro': outro,
             'intro': intro,
-            'file': pkg.module
+            'extend': true,
+            'globals': {
+                'maptalks': 'maptalks',
+                'three': 'THREE'
+            },
+            'file': 'dist/maptalks.three.min.js'
         }
-    }
+    },
+    // {
+    //     input: 'src/index.ts',
+    //     plugins: basePlugins,
+    //     external: ['maptalks', 'three'],
+    //     output: {
+    //         'sourcemap': false,
+    //         'format': 'es',
+    //         'banner': banner,
+    //         'outro': outro,
+    //         'intro': intro,
+    //         'file': pkg.module
+    //     }
+    // }
 ];
