@@ -7,6 +7,7 @@ import Intensity from './util/heatmap/Intensity';
 import { addAttribute } from './util/ThreeAdaptUtil';
 
 const OPTIONS = {
+    altitude: 0,
     interactive: false,
     min: 0,
     max: 100,
