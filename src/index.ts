@@ -42,7 +42,8 @@ const options = {
     'glOptions': null,
     'geometryEvents': true,
     'identifyCountOnEvent': 0,
-    'forceRenderOnZooming': true
+    'forceRenderOnZooming': true,
+    'loopRenderCount': 50
 };
 
 const RADIAN = Math.PI / 180;
@@ -110,6 +111,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
     _containerPoint: maptalks.Point;
     _mousemoveTimeOut: number = 0;
     _baseObjects: Array<BaseObject> = [];
+    _delayMeshes: Array<BaseObject> = [];
 
     constructor(id: string, options: BaseLayerOptionType) {
         super(id, options);
@@ -559,6 +561,23 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return this;
     }
 
+    loop(render: boolean = true) {
+        const delayMeshes = this._delayMeshes;
+        if (!delayMeshes.length) {
+            return;
+        }
+        const map = this.getMap();
+        if (!map || map.isAnimating() || map.isInteracting()) {
+            return;
+        }
+        const loopRenderCount = this.options.loopRenderCount || 50;
+        const meshes = delayMeshes.slice(0, loopRenderCount);
+        if (meshes) {
+            this.addMesh(meshes, render);
+        }
+        delayMeshes.splice(0, loopRenderCount);
+    }
+
     renderPickScene() {
         const renderer = this._getRenderer();
         if (renderer) {
@@ -584,6 +603,17 @@ class ThreeLayer extends maptalks.CanvasLayer {
             return renderer.pick;
         }
         return null;
+    }
+
+    delayAddMesh(meshes: Array<BaseObject>) {
+        if (!meshes) return this;
+        if (!Array.isArray(meshes)) {
+            meshes = [meshes];
+        }
+        for (let i = 0, len = meshes.length; i < len; i++) {
+            this._delayMeshes.push(meshes[i]);
+        }
+        return this;
     }
 
     /**
@@ -636,6 +666,15 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 }
                 if (mesh._animation && maptalks.Util.isFunction(mesh._animation)) {
                     delete this._animationBaseObjectMap[mesh.getObject3d().uuid];
+                }
+                const delayMeshes = this._delayMeshes;
+                if (delayMeshes.length) {
+                    for (let i = 0, len = delayMeshes.length; i < len; i++) {
+                        if (delayMeshes[i] === mesh) {
+                            delayMeshes.splice(i, 1);
+                            break;
+                        }
+                    }
                 }
             } else if (mesh instanceof THREE.Object3D) {
                 scene.remove(mesh);
