@@ -12,7 +12,8 @@ export type BaseLayerOptionType = {
     forceRenderOnMoving?: boolean,
     forceRenderOnRotating?: boolean,
     forceRenderOnZooming?: boolean,
-    centerForDistance?: maptalks.Coordinate
+    centerForDistance?: maptalks.Coordinate,
+    loopRenderCount?: number
 
 };
 
