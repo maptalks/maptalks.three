@@ -9,7 +9,8 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.104.0/build/three.min.js"></script>
     <script type="text/javascript"
         src="https://cdn.jsdelivr.net/npm/three@0.104.0/examples/js/libs/stats.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/maptalks.three@latest/dist/maptalks.three.js"></script>
     <script type="text/javascript" src="js/geoutil.js"></script>
     <script type="text/javascript" src="./js/THREE.MeshLine.js"></script>
     <style>
@@ -96,7 +97,9 @@
                         return len > 800;
                     }).map(lineString => {
                         const len = lineLength(lineString)
-                        return new ArcLine(lineString, { altitude: 0, height: len / 3, speed: len / 100000 }, material, threeLayer);
+                        const line = new ArcLine(lineString, { altitude: 0, height: len / 3, speed: len / 100000 }, material, threeLayer);
+                        line.setToolTip(len);
+                        return line;
                     });
                     threeLayer.addMesh(lines);
                     meshes = meshes.concat(lines);
@@ -173,17 +176,64 @@
 
                 material.uniforms.resolution.value.set(size.width, size.height);
 
-                const line = new THREE.Mesh(meshLine.geometry, material);
-                this._createGroup();
-                this.getObject3d().add(line);
+                this._createMesh(meshLine.geometry, material);
 
                 const z = layer.distanceToVector3(altitude, altitude).x;
                 const center = lineString.getCenter();
                 const v = layer.coordinateToVector3(center, z);
                 this.getObject3d().position.copy(v);
+
+                this._setPickObject3d();
+                this._init();
             }
             _animation() {
                 this.options.offset.x -= this.options.speed * this.options.clock.getDelta();
+            }
+
+            _init() {
+                const pick = this.getLayer().getPick();
+                this.on('add', () => {
+                    pick.add(this.pickObject3d);
+                });
+                this.on('remove', () => {
+                    pick.remove(this.pickObject3d);
+                });
+            }
+
+
+            _setPickObject3d(ps, linewidth) {
+                const geometry = this.getObject3d().geometry.clone();
+                const pick = this.getLayer().getPick();
+                const color = pick.getColor();
+                const {
+                    lineWidth,
+                    sizeAttenuation,
+                    transparent,
+                    near,
+                    far
+                } = this.getObject3d().material;
+                const material = new MeshLineMaterial({
+                    lineWidth,
+                    sizeAttenuation,
+                    transparent,
+                    near,
+                    far,
+                    color
+                });
+                const map = this.getMap();
+                const size = map.getSize();
+
+                material.uniforms.resolution.value.set(size.width, size.height);
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.copy(this.getObject3d().position);
+
+                const colorIndex = color.getHex();
+                mesh._colorIndex = colorIndex;
+                this.setPickObject3d(mesh);
+            }
+
+            identify(coordinate) {
+                return this.picked;
             }
         }
 
