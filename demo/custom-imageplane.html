@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>redar test</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="./accesstoken.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.104.0/build/three.min.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <script type="text/javascript" src="https://deyihu.github.io/city-build/js/tile-cover.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.109.0/examples/js/libs/stats.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            /* background-color: #000; */
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var baseLayer = new maptalks.TileLayer('tile', {
+            urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+            subdomains: ['a', 'b', 'c', 'd'],
+            attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+        });
+
+        var map = new maptalks.Map("map", {
+            "center": [116.58391685814183, 34.11626352872136], "zoom": 7.58265798930098, "pitch": 17.60000000000018, "bearing": -1.2000000000000455,
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: baseLayer
+        });
+
+        const layer = new maptalks.VectorLayer('layer').addTo(map);
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true,
+            forceRenderOnZooming: true,
+        });
+
+        const material = new THREE.MeshBasicMaterial({ wireframe: false, color: "#FFF" });
+        const lines = [];
+
+
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            // data from https://antv-l7.gitee.io/zh/examples/raster/basic#radar
+            const image = new ImagePlane([113.1277263548, 32.3464238863, 118.1365790452, 36.4786759137], {
+                texture: 'https://gw.alipayobjects.com/mdn/antv_site/afts/img/A*8SUaRr7bxNsAAAAAAAAAAABkARQnAQ'
+            }, material, threeLayer);
+            threeLayer.addMesh(image);
+            lines.push(image);
+            animation();
+            initGui();
+        }
+        threeLayer.addTo(map);
+
+
+
+
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate && !threeLayer.isRendering()) {
+                threeLayer.renderScene();
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+
+        }
+
+
+        function initGui() {
+            var params = {
+                add: true,
+                color: material.color.getStyle(),
+                wireframe: material.wireframe,
+                show: true,
+                opacity: 1,
+                altitude: 0,
+            };
+            var gui = new dat.GUI();
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    threeLayer.addMesh(lines);
+                } else {
+                    threeLayer.removeMesh(lines);
+                }
+            });
+            gui.addColor(params, 'color').name('color').onChange(function () {
+                material.color.set(params.color);
+                material.needsUpdate = true;
+                // lines.forEach(function (mesh) {
+                //     mesh.setSymbol(material);
+                // });
+            });
+            gui.add(params, 'opacity', 0, 1).onChange(function () {
+                material.opacity = params.opacity;
+                // lines.forEach(function (mesh) {
+                //     mesh.setSymbol(material);
+                // });
+            });
+            gui.add(params, 'show').onChange(function () {
+                lines.forEach(function (mesh) {
+                    if (params.show) {
+                        mesh.show();
+                    } else {
+                        mesh.hide();
+                    }
+                });
+            });
+            gui.add(params, 'wireframe').onChange(function () {
+                material.wireframe = params.wireframe;
+            });
+        }
+
+
+
+        const textureLoader = new THREE.TextureLoader();
+
+        function generateImage(image) {
+            if (!image) {
+                return null;
+            }
+            let img;
+            if (typeof image === 'string') {
+                img = new Image();
+                img.src = image;
+            } else if (image instanceof HTMLCanvasElement) {
+                img = new Image();
+                img.src = image.toDataURL();
+            } else if (image instanceof Image) {
+                img = new Image();
+                img.src = image.src;
+                img.crossOrigin = image.crossOrigin;
+            }
+            if (img && !img.crossOrigin) {
+                img.crossOrigin = 'Anonymous';
+            }
+            return img;
+        }
+
+
+        const OPTIONS = {
+            interactive: false,
+            altitude: 0,
+            imageWidth: 512,
+            imageHeight: 512,
+            texture: null,
+        };
+
+        /**
+         *
+         */
+        class ImagePlane extends maptalks.BaseObject {
+            constructor(extent, options, material, layer) {
+                options = maptalks.Util.extend({}, OPTIONS, options, { layer, extent });
+                const { texture, altitude, imageHeight, imageWidth, factor, filterIndex } = options;
+                if (!(extent instanceof maptalks.Extent)) {
+                    extent = new maptalks.Extent(extent);
+                }
+                const { xmin, ymin, xmax, ymax } = extent;
+                const coords = [
+                    [xmin, ymin],
+                    [xmin, ymax],
+                    [xmax, ymax],
+                    [xmax, ymin]
+                ];
+                let vxmin = Infinity, vymin = Infinity, vxmax = -Infinity, vymax = -Infinity;
+                coords.forEach(coord => {
+                    const v = layer.coordinateToVector3(coord);
+                    const { x, y } = v;
+                    vxmin = Math.min(x, vxmin);
+                    vymin = Math.min(y, vymin);
+                    vxmax = Math.max(x, vxmax);
+                    vymax = Math.max(y, vymax);
+                });
+                const w = Math.abs(vxmax - vxmin), h = Math.abs(vymax - vymin);
+                const img = generateImage(texture);
+                const geometry = new THREE.PlaneBufferGeometry(w, h, imageWidth - 1, imageHeight - 1);
+                super();
+                this._initOptions(options);
+                this._createMesh(geometry, material);
+                const z = layer.distanceToVector3(altitude, altitude).x;
+                const v = layer.coordinateToVector3(extent.getCenter(), z);
+                this.getObject3d().position.copy(v);
+                material.transparent = true;
+                if (img) {
+                    textureLoader.load(img.src, (texture) => {
+                        material.map = texture;
+                        material.opacity = 1;
+                        material.needsUpdate = true;
+                        this.fire('load');
+                    });
+                } else {
+                    material.opacity = 1;
+                }
+            }
+        }
+
+    </script>
+</body>
+
+</html>
