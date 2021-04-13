@@ -36,7 +36,7 @@ import { BarOptionType, BaseLayerOptionType, BaseObjectOptionType, ExtrudeLineOp
 import { getWorkerCode, getWorkerName } from './worker/getworker';
 
 
-const options = {
+const options: BaseLayerOptionType = {
     'renderer': 'gl',
     'doubleBuffer': false,
     'glOptions': null,
@@ -928,6 +928,9 @@ class ThreeLayer extends maptalks.CanvasLayer {
             const parent = mesh['__parent'];
             if (parent && parent.getOptions) {
                 const baseObject = parent as BaseObject;
+                if (baseObject.zoomChange && maptalks.Util.isFunction(baseObject.zoomChange)) {
+                    baseObject.zoomChange(zoom);
+                }
                 const minZoom = baseObject.getMinZoom(), maxZoom = baseObject.getMaxZoom();
                 if (zoom < minZoom || zoom > maxZoom) {
                     if (baseObject.isVisible()) {
