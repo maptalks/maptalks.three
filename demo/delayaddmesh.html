@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>delayaddmesh</title>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/gcoord@0.2.3/dist/gcoord.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.104.0/build/three.min.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.104.0/examples/js/libs/stats.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #b2c2d2
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            "center": [113.9372143267326, 22.5410267207279], "zoom": 14.245140607107972, "pitch": 61.20000000000008, "bearing": 60.22251749999976,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            // baseLayer: new maptalks.TileLayer('tile', {
+            //     urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+            //     subdomains: ['a', 'b', 'c', 'd'],
+            //     attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            // })
+        });
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true,
+            forceRenderOnZooming: true,
+            identifyCountOnEvent: 1
+            // animation: true
+        });
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+            addBar(scene);
+
+        };
+        threeLayer.addTo(map);
+
+
+        var bars = [], selectMesh = [];
+        var material = new THREE.MeshLambertMaterial({ color: '#fff', transparent: true, opacity: 1 });
+        var highlightmaterial = new THREE.MeshBasicMaterial({ color: 'red', transparent: true });
+        var barCache;
+
+        function addBar(scene) {
+            fetch('https://gw.alipayobjects.com/os/basement_prod/513add53-dcb2-4295-8860-9e7aa5236699.json').then((function (res) {
+                return res.json();
+            })).then(function (json) {
+                const data = json.features.slice(0, 20000).map(function (dataItem) {
+                    dataItem = gcoord.transform(dataItem, gcoord.AMap, gcoord.WGS84);
+                    return {
+                        coordinate: dataItem.geometry.coordinates,
+                        height: Math.random() * 200,
+                        value: Math.random() * 10000,
+                        radius: 5 + 5 * Math.random(),
+                        topColor: '#fff',
+                        interactive: false
+                    }
+                });
+                const time = 'time';
+                console.time(time);
+                barCache = threeLayer.toBox(data[0].coordinate, data[0], material);
+                bars.push(barCache);
+                data.forEach(d => {
+                    const bar = getBar(d);
+                    //event test
+                    ['click', 'mousemove', 'mouseout', 'mouseover', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].forEach(function (eventType) {
+                        bar.on(eventType, function (e) {
+                            console.log(e.type, e);
+                            // console.log(this);
+                            if (e.type === 'mouseout') {
+                                this.setSymbol(material);
+                            }
+                            if (e.type === 'mouseover') {
+                                this.setSymbol(highlightmaterial);
+                            }
+                        });
+                    });
+                    bars.push(bar);
+                });
+
+                console.timeEnd(time);
+                if (threeLayer.delayAddMesh)
+                    threeLayer.delayAddMesh(bars);
+                else {
+                    threeLayer.addMesh(bars);
+                }
+            });
+            animation();
+            initGui();
+        }
+
+        function getBar(options) {
+            const { radius, height } = barCache.getOptions();
+            const geometry = barCache.getObject3d().geometry;
+            const scaleR = options.radius / radius, scaleH = options.height / height;
+            const bar = new maptalks.BaseObject();
+            bar._initOptions(Object.assign({}, barCache.getOptions(), options));
+            bar._createMesh(geometry, material);
+            bar.getObject3d().scale.set(scaleR, scaleR, scaleH);
+            const { altitude, coordinate } = options;
+            const layer = barCache.getLayer();
+            const z = layer.distanceToVector3(altitude, altitude).x;
+            const position = layer.coordinateToVector3(coordinate, z);
+            bar.getObject3d().position.copy(position);
+            return bar;
+
+        }
+
+
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate && !threeLayer.isRendering()) {
+                threeLayer.renderScene();
+            }
+            threeLayer.loop && threeLayer.loop(false);
+            stats.update();
+            requestAnimationFrame(animation);
+        }
+
+        function initGui() {
+            var params = {
+                add: true,
+                color: material.color.getStyle(),
+                show: true,
+                opacity: material.opacity,
+                altitude: 0,
+                interactive: false
+            };
+
+            var gui = new dat.GUI();
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    threeLayer.addMesh(bars);
+                } else {
+                    threeLayer.removeMesh(bars);
+                }
+            });
+            gui.addColor(params, 'color').name('bar color').onChange(function () {
+                material.color.set(params.color);
+            });
+            gui.add(params, 'opacity', 0, 1).onChange(function () {
+                material.opacity = params.opacity;
+            });
+            gui.add(params, 'show').onChange(function () {
+                bars.forEach(function (mesh) {
+                    if (params.show) {
+                        mesh.show();
+                    } else {
+                        mesh.hide();
+                    }
+                });
+            });
+            gui.add(params, 'altitude', 0, 300).onChange(function () {
+                bars.forEach(function (mesh) {
+                    mesh.setAltitude(params.altitude);
+                });
+            });
+            gui.add(params, 'interactive').onChange(function () {
+                bars.forEach(function (mesh) {
+                    mesh.options.interactive = params.interactive;
+                });
+            });
+
+        }
+
+    </script>
+</body>
+
+</html>
