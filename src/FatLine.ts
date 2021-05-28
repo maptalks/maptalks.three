@@ -8,8 +8,10 @@ import LineMaterial from './util/fatline/LineMaterial';
 import { FatLineMaterialType, LineOptionType, LineStringType } from './type';
 import { ThreeLayer } from './index';
 import { getVertexColors } from './util/ThreeAdaptUtil';
+import { setBottomHeight } from './util';
 
 const OPTIONS = {
+    bottomHeight: 0,
     altitude: 0
 };
 
@@ -22,6 +24,7 @@ class FatLine extends BaseObject {
         const ps = [];
         for (let m = 0, le = lineStrings.length; m < le; m++) {
             const positionsV = getLinePosition(lineStrings[m], layer, center).positionsV;
+            setBottomHeight(positionsV, options.bottomHeight, layer);
             for (let i = 0, len = positionsV.length; i < len; i++) {
                 const v = positionsV[i];
                 if (i > 0 && i < len - 1) {

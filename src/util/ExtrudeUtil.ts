@@ -80,7 +80,10 @@ export function getExtrudeGeometryParams(polygon: PolygonType, height: number, l
  * @param {*} color
  * @param {*} _topColor
  */
-export function initVertexColors(geometry: THREE.BufferGeometry, color: string, _topColor: string): Array<number> {
+export function initVertexColors(geometry: THREE.BufferGeometry, color: string, _topColor: string, minZ: number): Array<number> {
+    if (minZ === undefined) {
+        minZ = 0;
+    }
     const position = geometry.attributes.position.array;
     const len = position.length;
     bottomColor.setStyle(color);
@@ -88,7 +91,7 @@ export function initVertexColors(geometry: THREE.BufferGeometry, color: string, 
     const colors = [];
     for (let i = 0; i < len; i += 3) {
         const z = position[i + 2];
-        if (z > 0) {
+        if (z > minZ) {
             colors.push(topColor.r, topColor.g, topColor.b);
         } else {
             colors.push(bottomColor.r, bottomColor.g, bottomColor.b);

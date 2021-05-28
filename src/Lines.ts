@@ -6,7 +6,7 @@ import MergedMixin from './MergedMixin';
 import Line from './Line';
 import { isGeoJSONLine } from './util/GeoJSONUtil';
 import { addAttribute, getVertexColors } from './util/ThreeAdaptUtil';
-import { getCenterOfPoints } from './util/index';
+import { getCenterOfPoints, setBottomHeight } from './util/index';
 import { LineMaterialType, LineOptionType, LineStringType } from './type/index';
 import { ThreeLayer } from './index';
 
@@ -43,7 +43,9 @@ class Lines extends MergedMixin(BaseObject) {
             const lls = lineStringList[i];
             let psCount = 0;
             for (let m = 0, le = lls.length; m < le; m++) {
+                const properties = (isGeoJSONLine(lls[m] as any) ? lls[m]['properties'] : (lls[m] as any).getProperties() || {});
                 const { positionsV } = getLinePosition(lls[m], layer, center);
+                setBottomHeight(positionsV, properties.bottomHeight, layer);
                 psCount += (positionsV.length * 2 - 2);
                 for (let j = 0, len1 = positionsV.length; j < len1; j++) {
                     const v = positionsV[j];

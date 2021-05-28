@@ -7,7 +7,7 @@ import { getExtrudeLineParams, LineStringSplit } from './util/LineUtil';
 import ExtrudeLine from './ExtrudeLine';
 import { isGeoJSON, isGeoJSONLine } from './util/GeoJSONUtil';
 import { generateBufferGeometry, getDefaultBufferGeometry, mergeBufferGeometries, mergeBufferGeometriesAttribute } from './util/MergeGeometryUtil';
-import { distanceToVector3, getCenterOfPoints } from './util/index';
+import { distanceToVector3, getCenterOfPoints, setBottomHeight } from './util/index';
 import { getActor } from './worker/MeshActor';
 import { ExtrudeLineOptionType, LineStringType, MergeAttributeType, SingleLineStringType } from './type/index';
 import { ThreeLayer } from './index';
@@ -51,12 +51,12 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
                 data: lineStringList,
                 lineStrings,
                 callback: (e) => {
-                    const { faceMap, geometriesAttributes } = e;
+                    const { faceMap, geometriesAttributes, minZ } = e;
                     this._faceMap = faceMap;
                     this._geometriesAttributes = geometriesAttributes;
                     const bufferGeometry = generateBufferGeometry(e);
                     if (topColor) {
-                        initVertexColors(bufferGeometry, bottomColor, topColor);
+                        initVertexColors(bufferGeometry, bottomColor, topColor, minZ);
                         (material as any).vertexColors = getVertexColors();
                     }
                     (this.getObject3d() as any).geometry = bufferGeometry;
@@ -76,16 +76,20 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
             let faceIndex = 0, faceMap = [],
                 psIndex = 0, normalIndex = 0;
             const cache = {};
+            let minZ = 0;
             for (let i = 0; i < len; i++) {
                 const lineString = lineStrings[i];
                 const opts = maptalks.Util.extend({}, OPTIONS, isGeoJSON(lineString as any) ? lineString['properties'] : (lineString as any).getProperties(), { index: i });
-                const { height, width } = opts;
+                const { height, width, bottomHeight } = opts;
                 const w = distanceToVector3(cache, width, layer);
                 const h = distanceToVector3(cache, height, layer);
                 const lls = lineStringList[i];
                 const extrudeParams: MergeAttributeType[] = [];
                 for (let m = 0, le = lls.length; m < le; m++) {
-                    extrudeParams.push(getExtrudeLineParams(lls[m], w, h, layer, center));
+                    const attribute = getExtrudeLineParams(lls[m], w, h, layer, center);
+                    const z = setBottomHeight(attribute, bottomHeight, layer);
+                    minZ = Math.min(minZ, z);
+                    extrudeParams.push(attribute);
                 }
                 const buffGeom = mergeBufferGeometriesAttribute(extrudeParams);
                 geometries.push(buffGeom);
@@ -131,7 +135,7 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
             bufferGeometry = mergeBufferGeometries(geometries);
 
             if (topColor) {
-                initVertexColors(bufferGeometry, bottomColor, topColor);
+                initVertexColors(bufferGeometry, bottomColor, topColor, minZ);
                 (material as any).vertexColors = getVertexColors();
             }
         }

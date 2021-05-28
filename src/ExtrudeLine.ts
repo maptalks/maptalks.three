@@ -3,12 +3,14 @@ import * as THREE from 'three';
 import BaseObject from './BaseObject';
 import { ThreeLayer } from './index';
 import { ExtrudeLineOptionType, LineStringType, MergeAttributeType } from './type/index';
+import { setBottomHeight } from './util';
 import { initVertexColors } from './util/ExtrudeUtil';
 import { LineStringSplit, getExtrudeLineParams } from './util/LineUtil';
 import { mergeBufferGeometries } from './util/MergeGeometryUtil';
 import { getVertexColors } from './util/ThreeAdaptUtil';
 
 const OPTIONS = {
+    bottomHeight: 0,
     width: 3,
     height: 1,
     altitude: 0,
@@ -26,17 +28,21 @@ class ExtrudeLine extends BaseObject {
         super();
         this._initOptions(options);
 
-        const { height, width, bottomColor, topColor } = options;
+        const { height, width, bottomColor, topColor, bottomHeight } = options;
         options.height = layer.distanceToVector3(height, height).x;
         options.width = layer.distanceToVector3(width, width).x;
         const { lineStrings, center } = LineStringSplit(lineString);
         const extrudeParams: MergeAttributeType[] = [];
+        let minZ = 0;
         for (let i = 0, len = lineStrings.length; i < len; i++) {
-            extrudeParams.push(getExtrudeLineParams(lineStrings[i], options.width, options.height, layer, center));
+            const attribute = getExtrudeLineParams(lineStrings[i], options.width, options.height, layer, center);
+            const h = setBottomHeight(attribute, bottomHeight, layer);
+            minZ = Math.min(minZ, h);
+            extrudeParams.push(attribute);
         }
         const geometry = mergeBufferGeometries(extrudeParams);
         if (topColor) {
-            initVertexColors(geometry, bottomColor, topColor);
+            initVertexColors(geometry, bottomColor, topColor, minZ);
             (material as any).vertexColors = getVertexColors();
         }
         this._createMesh(geometry, material);

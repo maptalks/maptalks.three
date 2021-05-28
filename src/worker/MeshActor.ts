@@ -72,14 +72,23 @@ function gengerateExtrudePolygons(polygons: PolygonType[] = [], center: maptalks
                 transfer.push(d[m]);
             }
         }
-        let height = (isGeoJSONPolygon(polygon as any) ? polygon['properties'] : (polygon as any).getProperties() || {}).height || 1;
+        const properties = (isGeoJSONPolygon(polygon as any) ? polygon['properties'] : (polygon as any).getProperties() || {});
+        let height = properties.height || 1;
+        let bottomHeight = properties.bottomHeight || 0;
+        if (bottomHeight !== undefined && typeof bottomHeight === 'number' && bottomHeight !== 0) {
+            if (altCache[bottomHeight] === undefined) {
+                altCache[bottomHeight] = layer.distanceToVector3(bottomHeight, bottomHeight).x;
+            }
+            bottomHeight = altCache[bottomHeight];
+        }
         if (altCache[height] == null) {
             altCache[height] = layer.distanceToVector3(height, height).x;
         }
         height = altCache[height];
         datas.push({
             data,
-            height
+            height,
+            bottomHeight
         });
     }
     return {
@@ -102,6 +111,12 @@ function gengerateExtrudeLines(lineStringList: Array<Array<SingleLineStringType>
         const properties = (isGeoJSONLine(lineStrings[i] as any) ? lineStrings[i]['properties'] : (lineStrings[i] as any).getProperties() || {});
         const width = properties.width || 1;
         const height = properties.height || 1;
+        let bottomHeight = properties.bottomHeight || 0;
+        if (bottomHeight !== undefined && typeof bottomHeight === 'number' && bottomHeight !== 0) {
+            if (altCache[bottomHeight] === undefined) {
+                altCache[bottomHeight] = layer.distanceToVector3(bottomHeight, bottomHeight).x;
+            }
+        }
         if (altCache[height] == null) {
             altCache[height] = layer.distanceToVector3(height, height).x;
         }
@@ -123,7 +138,8 @@ function gengerateExtrudeLines(lineStringList: Array<Array<SingleLineStringType>
         datas.push({
             data,
             height: altCache[height],
-            width: altCache[width]
+            width: altCache[width],
+            bottomHeight: altCache[bottomHeight]
         });
     }
     return {
