@@ -29,7 +29,8 @@ class ExtrudePolygon extends BaseObject {
         const center = (isGeoJSONPolygon(polygon as any) ? getGeoJSONCenter(polygon as any) : (polygon as any).getCenter());
         const h = setBottomHeight(geometry, bottomHeight, layer);
         if (topColor) {
-            initVertexColors(geometry, bottomColor, topColor, h);
+            const extrudeH = layer.distanceToVector3(height, height).x;
+            initVertexColors(geometry, bottomColor, topColor, h + extrudeH / 2);
             (material as any).vertexColors = getVertexColors();
         }
         this._createMesh(geometry, material);

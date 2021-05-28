@@ -54,10 +54,9 @@ function generateExtrude(datas, isLine = false) {
     const len = datas.length;
     const geometriesAttributes = [], geometries = [], faceMap = [];
     let faceIndex = 0, psIndex = 0, normalIndex = 0, uvIndex = 0;
-    let minZ = 0;
     for (let i = 0; i < len; i++) {
         const buffGeom = isLine ? extrudeLine(datas[i]) : extrudePolygons(datas[i]);
-        minZ = Math.min(minZ, datas[i].bottomHeight || 0);
+        const minZ = datas[i].bottomHeight || 0;
         const { position, normal, uv, indices } = buffGeom;
         geometries.push(buffGeom);
         const faceLen = indices.length / 3;
@@ -68,6 +67,7 @@ function generateExtrude(datas, isLine = false) {
             normalCount = normal.length / 3, uvCount = uv.length / 2;
         geometriesAttributes[i] = {
             position: {
+                middleZ: minZ + (datas[i].height || 0) / 2,
                 count: psCount,
                 start: psIndex,
                 end: psIndex + psCount * 3,
@@ -96,7 +96,7 @@ function generateExtrude(datas, isLine = false) {
     }
     const geometry = mergeBufferGeometries(geometries);
     const { position, normal, uv, indices } = geometry;
-    return { position: position.buffer, normal: normal.buffer, uv: uv.buffer, indices: indices.buffer, faceMap, geometriesAttributes, minZ };
+    return { position: position.buffer, normal: normal.buffer, uv: uv.buffer, indices: indices.buffer, faceMap, geometriesAttributes };
 
 }
 

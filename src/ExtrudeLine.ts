@@ -36,13 +36,13 @@ class ExtrudeLine extends BaseObject {
         let minZ = 0;
         for (let i = 0, len = lineStrings.length; i < len; i++) {
             const attribute = getExtrudeLineParams(lineStrings[i], options.width, options.height, layer, center);
-            const h = setBottomHeight(attribute, bottomHeight, layer);
-            minZ = Math.min(minZ, h);
+            minZ = setBottomHeight(attribute, bottomHeight, layer);
             extrudeParams.push(attribute);
         }
         const geometry = mergeBufferGeometries(extrudeParams);
         if (topColor) {
-            initVertexColors(geometry, bottomColor, topColor, minZ);
+            const extrudeH = layer.distanceToVector3(options.height, options.height).x;
+            initVertexColors(geometry, bottomColor, topColor, minZ + extrudeH / 2);
             (material as any).vertexColors = getVertexColors();
         }
         this._createMesh(geometry, material);
