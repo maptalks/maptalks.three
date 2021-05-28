@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Beijing Capital Airport</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/gcoord@0.2.3/dist/gcoord.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.104.0/build/three.min.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.104.0/examples/js/lines/LineMaterial.js"></script>
+    <script type="text/javascript" src="./../dist/maptalks.three.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            center: [116.60481573805612, 40.06720585953471], zoom: 16.378740584656995, pitch: 68.0000000000001, bearing: 111.03971999999987,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true,
+            identifyCountOnEvent: 1
+            // animation: true
+        });
+
+        var meshs = [];
+        var material = new THREE.MeshPhysicalMaterial({ color: 'rgb(101,160,180)', transparent: true });
+        var material1 = new THREE.MeshPhysicalMaterial({ color: '#5c57b8', transparent: true });
+        var highlightmaterial = new THREE.MeshPhysicalMaterial({ color: 'yellow', transparent: true });
+        // const lineMaterial = new THREE.LineBasicMaterial({ color: '#fff' });
+        const lineMaterial = new THREE.LineMaterial({
+            color: 0x00ffff,
+            transparent: true,
+            // vertexColors: THREE.VertexColors,
+            // side: THREE.BackSide,
+            linewidth: 3 // in pixels
+            // vertexColors: THREE.VertexColors,
+            // dashed: false
+
+        });
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            scene.add(new THREE.AmbientLight('#fff', 0.4));
+            camera.add(new THREE.PointLight('#fff', 0.5))
+            addBuildings();
+        };
+        threeLayer.addTo(map);
+
+        const extrudePolygons = [];
+        function addBuildings() {
+            fetch('./data/airport_floor.json').then(res => res.json()).then(json => {
+                console.log(json);
+                json.f1.bottomHeight = 0;
+                json.f2.bottomHeight = 100;
+                json.f3.bottomHeight = 200;
+                for (const key in json) {
+                    const { floor, shops, outline, bottomHeight } = json[key];
+                    const features = floor.features || [];
+                    features.forEach(f => {
+                        f = gcoord.transform(f, gcoord.AMap, gcoord.WGS84);
+                        f.properties = f.properties || {};
+                        f.properties.height = 0.2;
+                        f.properties.bottomHeight = bottomHeight;
+                        const extrudePolygon = threeLayer.toExtrudePolygon(f, Object.assign({}, f.properties, { topColor: '#fff', interactive: false }), material);
+                        extrudePolygons.push(extrudePolygon);
+                    });
+                    const features1 = shops.features || [];
+                    features1.forEach(f => {
+                        f = gcoord.transform(f, gcoord.AMap, gcoord.WGS84);
+                        f.properties = f.properties || {};
+                        f.properties.height = 8;
+                        f.properties.bottomHeight = bottomHeight;
+                        const extrudePolygon = threeLayer.toExtrudePolygon(f, Object.assign({}, f.properties, { topColor: '#fff' }), material1);
+                        extrudePolygons.push(extrudePolygon);
+                    });
+
+                    const features2 = outline.features || [];
+                    features2.forEach(f => {
+                        f = gcoord.transform(f, gcoord.AMap, gcoord.WGS84);
+                        f.properties = f.properties || {};
+                        f.properties.bottomHeight = bottomHeight;
+                        const extrudePolygon = threeLayer.toFatLine(f, Object.assign({}, f.properties, { topColor: '#fff' }), lineMaterial);
+                        extrudePolygons.push(extrudePolygon);
+                    });
+                }
+                threeLayer.addMesh(extrudePolygons);
+                extrudePolygons.forEach(mesh => {
+                    //event test
+                    if (mesh.getType() === 'Line') {
+                        return;
+                    }
+                    ['click', 'mousemove', 'mouseout', 'mouseover', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].forEach(function (eventType) {
+                        mesh.on(eventType, function (e) {
+                            if (!this._origineMaterial) {
+                                this._origineMaterial = this.getSymbol();
+                            }
+                            if (e.type === 'mouseout') {
+                                this.setSymbol(this._origineMaterial);
+                            }
+                            if (e.type === 'mouseover') {
+                                this.setSymbol(highlightmaterial);
+                            }
+                        });
+                    });
+                });
+                initGui();
+            });
+            animation();
+        }
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate && !threeLayer.isRendering()) {
+                threeLayer.renderScene();
+            }
+            requestAnimationFrame(animation);
+        }
+
+
+        function initGui() {
+            var params = {
+                add: true,
+                floorColor: material.color.getStyle(),
+                buildingColor: material1.color.getStyle(),
+                outlineColor: lineMaterial.color.getStyle(),
+                show: true,
+                opacity: 1,
+                altitude: 0
+            };
+            var gui = new dat.GUI();
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    threeLayer.addMesh(extrudePolygons);
+                } else {
+                    threeLayer.removeMesh(extrudePolygons);
+                }
+            });
+            gui.addColor(params, 'floorColor').onChange(function () {
+                material.color.set(params.floorColor);
+            });
+            gui.addColor(params, 'buildingColor').onChange(function () {
+                material1.color.set(params.buildingColor);
+            });
+            gui.addColor(params, 'outlineColor').onChange(function () {
+                lineMaterial.color.set(params.outlineColor);
+            });
+
+            gui.add(params, 'show').onChange(function () {
+                extrudePolygons.forEach(function (mesh) {
+                    if (params.show) {
+                        mesh.show();
+                    } else {
+                        mesh.hide();
+                    }
+                });
+            });
+            gui.add(params, 'altitude', 0, 300).onChange(function () {
+                extrudePolygons.forEach(function (mesh) {
+                    mesh.setAltitude(params.altitude);
+                });
+            });
+        }
+
+
+    </script>
+</body>
+
+</html>
