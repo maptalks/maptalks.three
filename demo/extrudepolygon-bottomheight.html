@@ -10,7 +10,8 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.104.0/build/three.min.js"></script>
     <script type="text/javascript"
         src="https://cdn.jsdelivr.net/npm/three@0.104.0/examples/js/lines/LineMaterial.js"></script>
-        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/maptalks.three@latest/dist/maptalks.three.js"></script>
     <style>
         html,
         body {
@@ -109,16 +110,13 @@
                         f = gcoord.transform(f, gcoord.AMap, gcoord.WGS84);
                         f.properties = f.properties || {};
                         f.properties.bottomHeight = bottomHeight;
-                        const extrudePolygon = threeLayer.toFatLine(f, Object.assign({}, f.properties, { topColor: '#fff' }), lineMaterial);
-                        extrudePolygons.push(extrudePolygon);
+                        const fatLine = threeLayer.toFatLine(f, Object.assign({}, f.properties, { topColor: '#fff', interactive: false }), lineMaterial);
+                        extrudePolygons.push(fatLine);
                     });
                 }
                 threeLayer.addMesh(extrudePolygons);
                 extrudePolygons.forEach(mesh => {
                     //event test
-                    if (mesh.getType() === 'Line') {
-                        return;
-                    }
                     ['click', 'mousemove', 'mouseout', 'mouseover', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].forEach(function (eventType) {
                         mesh.on(eventType, function (e) {
                             if (!this._origineMaterial) {
