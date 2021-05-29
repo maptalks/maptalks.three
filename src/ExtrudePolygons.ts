@@ -95,7 +95,7 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
                 const bottomHeight = properties.bottomHeight || 0;
                 const buffGeom = getExtrudeGeometryParams(polygon, height, layer, center, altCache);
                 geometries.push(buffGeom);
-                const minZ = setBottomHeight(buffGeom, bottomHeight, layer);
+                const minZ = setBottomHeight(buffGeom, bottomHeight, layer, altCache);
 
                 // const extrudePolygon = new ExtrudePolygon(polygon, Object.assign({}, options, { height, index: i }), material, layer);
                 // extrudePolygons.push(extrudePolygon);

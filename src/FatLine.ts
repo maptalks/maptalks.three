@@ -21,10 +21,10 @@ class FatLine extends BaseObject {
         super();
         this._initOptions(options);
         const { lineStrings, center } = LineStringSplit(lineString);
-        const ps = [];
+        const ps = [], cache = {};
         for (let m = 0, le = lineStrings.length; m < le; m++) {
             const positionsV = getLinePosition(lineStrings[m], layer, center).positionsV;
-            setBottomHeight(positionsV, options.bottomHeight, layer);
+            setBottomHeight(positionsV, options.bottomHeight, layer, cache);
             for (let i = 0, len = positionsV.length; i < len; i++) {
                 const v = positionsV[i];
                 if (i > 0 && i < len - 1) {

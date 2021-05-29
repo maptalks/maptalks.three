@@ -81,7 +81,7 @@ function gengerateExtrudePolygons(polygons: PolygonType[] = [], center: maptalks
             }
             bottomHeight = altCache[bottomHeight];
         }
-        if (altCache[height] == null) {
+        if (altCache[height] === undefined) {
             altCache[height] = layer.distanceToVector3(height, height).x;
         }
         height = altCache[height];
@@ -116,11 +116,12 @@ function gengerateExtrudeLines(lineStringList: Array<Array<SingleLineStringType>
             if (altCache[bottomHeight] === undefined) {
                 altCache[bottomHeight] = layer.distanceToVector3(bottomHeight, bottomHeight).x;
             }
+            bottomHeight = altCache[bottomHeight];
         }
-        if (altCache[height] == null) {
+        if (altCache[height] === undefined) {
             altCache[height] = layer.distanceToVector3(height, height).x;
         }
-        if (altCache[width] == null) {
+        if (altCache[width] === undefined) {
             altCache[width] = layer.distanceToVector3(width, width).x;
         }
         const data = [];
@@ -139,7 +140,7 @@ function gengerateExtrudeLines(lineStringList: Array<Array<SingleLineStringType>
             data,
             height: altCache[height],
             width: altCache[width],
-            bottomHeight: altCache[bottomHeight]
+            bottomHeight
         });
     }
     return {

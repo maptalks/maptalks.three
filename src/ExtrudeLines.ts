@@ -80,14 +80,14 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
                 const lineString = lineStrings[i];
                 const opts = maptalks.Util.extend({}, OPTIONS, isGeoJSON(lineString as any) ? lineString['properties'] : (lineString as any).getProperties(), { index: i });
                 const { height, width, bottomHeight } = opts;
-                const w = distanceToVector3(cache, width, layer);
-                const h = distanceToVector3(cache, height, layer);
+                const w = distanceToVector3(width, layer, cache);
+                const h = distanceToVector3(height, layer, cache);
                 const lls = lineStringList[i];
                 const extrudeParams: MergeAttributeType[] = [];
                 let minZ = 0;
                 for (let m = 0, le = lls.length; m < le; m++) {
                     const attribute = getExtrudeLineParams(lls[m], w, h, layer, center);
-                    minZ = setBottomHeight(attribute, bottomHeight, layer);
+                    minZ = setBottomHeight(attribute, bottomHeight, layer, cache);
                     extrudeParams.push(attribute);
                 }
                 const buffGeom = mergeBufferGeometriesAttribute(extrudeParams);
