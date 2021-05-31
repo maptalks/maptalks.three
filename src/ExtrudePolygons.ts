@@ -10,10 +10,12 @@ import { getActor } from './worker/MeshActor';
 import { ExtrudePolygonOptionType, PolygonType } from './type';
 import { ThreeLayer } from './index';
 import { getVertexColors } from './util/ThreeAdaptUtil';
+import { setBottomHeight } from './util';
 
 const OPTIONS = {
     altitude: 0,
     height: 1,
+    bottomHeight: 0,
     topColor: null,
     bottomColor: '#2d2f61',
 };
@@ -66,7 +68,7 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
                     this._geometriesAttributes = geometriesAttributes;
                     const bufferGeometry = generateBufferGeometry(e);
                     if (topColor) {
-                        initVertexColors(bufferGeometry, bottomColor, topColor);
+                        initVertexColors(bufferGeometry, bottomColor, topColor, geometriesAttributes);
                         (material as any).vertexColors = getVertexColors();
                     }
                     const object3d = this.getObject3d() as any;
@@ -88,9 +90,12 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
             const altCache = {};
             for (let i = 0; i < len; i++) {
                 const polygon = polygons[i];
-                const height = (isGeoJSONPolygon(polygon as any) ? polygon['properties'] : (polygon as any).getProperties() || {}).height || 1;
+                const properties = (isGeoJSONPolygon(polygon as any) ? polygon['properties'] : (polygon as any).getProperties() || {});
+                const height = properties.height || 1;
+                const bottomHeight = properties.bottomHeight || 0;
                 const buffGeom = getExtrudeGeometryParams(polygon, height, layer, center, altCache);
                 geometries.push(buffGeom);
+                const minZ = setBottomHeight(buffGeom, bottomHeight, layer, altCache);
 
                 // const extrudePolygon = new ExtrudePolygon(polygon, Object.assign({}, options, { height, index: i }), material, layer);
                 // extrudePolygons.push(extrudePolygon);
@@ -104,6 +109,7 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
                     normalCount = normal.length / 3, uvCount = uv.length / 2;
                 geometriesAttributes[i] = {
                     position: {
+                        middleZ: minZ + altCache[height] / 2,
                         count: psCount,
                         start: psIndex,
                         end: psIndex + psCount * 3,
@@ -132,7 +138,7 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
             }
             bufferGeometry = mergeBufferGeometries(geometries);
             if (topColor) {
-                initVertexColors(bufferGeometry, bottomColor, topColor);
+                initVertexColors(bufferGeometry, bottomColor, topColor, geometriesAttributes);
                 (material as any).vertexColors = getVertexColors();
             }
         }

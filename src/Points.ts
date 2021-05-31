@@ -53,7 +53,7 @@ class Points extends MergedMixin(BaseObject) {
                 color = (color instanceof THREE.Color ? color : new THREE.Color(color));
                 colors.push(color.r, color.g, color.b);
             }
-            const z = distanceToVector3(cache, height, layer);
+            const z = distanceToVector3(height, layer, cache);
             const v = layer.coordinateToVector3(coordinate, z);
             const v1 = v.clone().sub(centerPt);
             vs.push(v1.x, v1.y, v1.z);

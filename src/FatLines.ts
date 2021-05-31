@@ -8,7 +8,7 @@ import { isGeoJSONLine } from './util/GeoJSONUtil';
 import LineGeometry from './util/fatline/LineGeometry';
 import Line2 from './util/fatline/Line2';
 import LineMaterial from './util/fatline/LineMaterial';
-import { getCenterOfPoints } from './util';
+import { getCenterOfPoints, setBottomHeight } from './util';
 import { FatLineMaterialType, LineOptionType, LineStringType } from './type';
 import { ThreeLayer } from './index';
 import { getVertexColors } from './util/ThreeAdaptUtil';
@@ -39,7 +39,7 @@ class FatLines extends MergedMixin(BaseObject) {
         const center = getCenterOfPoints(centers);
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, lineStrings, coordinate: center });
 
-        const lines = [];
+        const lines = [], cache = {};
         let faceIndex = 0, faceMap = [], geometriesAttributes = [],
             psIndex = 0, ps = [];
         //LineSegmentsGeometry
@@ -47,7 +47,9 @@ class FatLines extends MergedMixin(BaseObject) {
             const lls = lineStringList[i];
             let psCount = 0;
             for (let m = 0, le = lls.length; m < le; m++) {
+                const properties = (isGeoJSONLine(lls[m] as any) ? lls[m]['properties'] : (lls[m] as any).getProperties() || {});
                 const { positionsV } = getLinePosition(lls[m], layer, center);
+                setBottomHeight(positionsV, properties.bottomHeight, layer, cache);
                 psCount += (positionsV.length * 2 - 2);
                 for (let j = 0, len1 = positionsV.length; j < len1; j++) {
                     const v = positionsV[j];

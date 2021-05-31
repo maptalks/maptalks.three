@@ -97,7 +97,7 @@ class Terrain extends BaseObject {
                 for (let i = 0, len = imgdata.length; i < len; i += 4) {
                     const R = imgdata[i], G = imgdata[i + 1], B = imgdata[i + 2];
                     const height = -10000 + ((R * 256 * 256 + G * 256 + B) * 0.1);
-                    const z = distanceToVector3(cache, height, layer);
+                    const z = distanceToVector3(height, layer, cache);
                     (geometry.attributes.position.array as any)[idx * 3 + 2] = z;
                     idx++;
                 }

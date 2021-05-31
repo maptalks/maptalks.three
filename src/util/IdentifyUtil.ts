@@ -9,7 +9,7 @@ function positionsConvert(worldPoints: Array<number>, altitude: number = 0, laye
     for (let i = 0, len = worldPoints.length; i < len; i += 3) {
         let x = worldPoints[i], y = worldPoints[i + 1], z = worldPoints[i + 2];
         if (altitude > 0) {
-            z += distanceToVector3(cache, altitude, layer);
+            z += distanceToVector3(altitude, layer, cache);
         }
         vectors.push(new THREE.Vector3(x, y, z));
     }

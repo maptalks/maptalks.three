@@ -80,18 +80,39 @@ export function getExtrudeGeometryParams(polygon: PolygonType, height: number, l
  * @param {*} color
  * @param {*} _topColor
  */
-export function initVertexColors(geometry: THREE.BufferGeometry, color: string, _topColor: string): Array<number> {
+export function initVertexColors(geometry: THREE.BufferGeometry, color: string, _topColor: string, minZ: number | Array<any>): Array<number> {
+    if (minZ === undefined) {
+        minZ = 0;
+    }
     const position = geometry.attributes.position.array;
     const len = position.length;
     bottomColor.setStyle(color);
     topColor.setStyle(_topColor);
     const colors = [];
-    for (let i = 0; i < len; i += 3) {
-        const z = position[i + 2];
-        if (z > 0) {
-            colors.push(topColor.r, topColor.g, topColor.b);
-        } else {
-            colors.push(bottomColor.r, bottomColor.g, bottomColor.b);
+    if (Array.isArray(minZ)) {
+        for (let i = 0, len = minZ.length; i < len; i++) {
+            const { middleZ, start, end } = minZ[i].position;
+            for (let j = start; j < end; j += 3) {
+                const z = position[j + 2];
+                if (z > middleZ) {
+                    colors[j] = topColor.r;
+                    colors[j + 1] = topColor.g;
+                    colors[j + 2] = topColor.b;
+                } else {
+                    colors[j] = bottomColor.r;
+                    colors[j + 1] = bottomColor.g;
+                    colors[j + 2] = bottomColor.b;
+                }
+            }
+        }
+    } else {
+        for (let i = 0; i < len; i += 3) {
+            const z = position[i + 2];
+            if (z > minZ) {
+                colors.push(topColor.r, topColor.g, topColor.b);
+            } else {
+                colors.push(bottomColor.r, bottomColor.g, bottomColor.b);
+            }
         }
     }
     addAttribute(geometry, 'color', new THREE.Float32BufferAttribute(colors, 3, true));
