@@ -87,6 +87,7 @@
         var selectMesh = [];
         var lines = [];
         var colors = ['#e5f5e0', '#c7e9c0', '#a1d99b', '#74c476', '#41ab5d', '#238b45', '#006d2c', '#00441b'].reverse();
+        // data from https://lbs.amap.com/demo/loca-v2/demos/cat-line/bj-bus
         function addLines() {
             fetch('https://a.amap.com/Loca/static/loca-v2/demos/mock_data/bj_bus.json').then(function (res) {
                 return res.json();

@@ -79,6 +79,7 @@
 
         const extrudePolygons = [];
         function addBuildings() {
+            // data from https://lbs.amap.com/demo/loca-v2/demos/cat-polygon/bj-airport
             fetch('./data/airport_floor.json').then(res => res.json()).then(json => {
                 console.log(json);
                 json.f1.bottomHeight = 0;
