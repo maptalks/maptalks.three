@@ -71,6 +71,7 @@ export type ExtrudeLineTrailOptionType = BaseObjectOptionType & {
 export type PointOptionType = BaseObjectOptionType & {
     height?: number,
     color?: string | THREE.Color
+    size?: number
 }
 
 export type HeatMapDataType = {
