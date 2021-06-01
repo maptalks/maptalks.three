@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>points-sizes</title>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/randomcolor@0.6.2/randomColor.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/gcoord@0.2.3/dist/gcoord.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.102.0/build/three.min.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.104.0/examples/js/libs/stats.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+    <script type="x-shader/x-vertex" id="vertexshader">
+        attribute float size;
+        varying vec3 vColor;
+        void main() {
+            vColor = color;
+            vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+            gl_PointSize = size * ( 1.0);
+            gl_Position = projectionMatrix * mvPosition;
+        }
+    </script>
+
+    <script type="x-shader/x-fragment" id="fragmentshader">
+        uniform sampler2D pointTexture;
+        varying vec3 vColor;
+        void main() {
+            gl_FragColor = vec4( vColor, 1.0 );
+            gl_FragColor = gl_FragColor * texture2D( pointTexture, gl_PointCoord );
+        }
+    </script>
+
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            "center": [0, 0], "zoom": 3, "pitch": 12.000000000000057, "bearing": 0.0000000000001137,
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+            // animation: true
+        });
+        var state;
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            addPoints(scene);
+
+        };
+        threeLayer.addTo(map);
+
+        var points = [], selectMesh = [];
+        var material = new THREE.ShaderMaterial({
+            uniforms: {
+                pointTexture: {
+                    value: new THREE.TextureLoader().load('./data/圆.png')
+                }
+            },
+            vertexShader: document.getElementById('vertexshader').textContent,
+            fragmentShader: document.getElementById('fragmentshader').textContent,
+            transparent: true,
+            vertexColors: true,
+            depthWrite: false,
+            // sizeAttenuation: false
+        });
+        var highlightmaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                pointTexture: {
+                    value: new THREE.TextureLoader().load('./data/圆 (1).png')
+                }
+            },
+            vertexShader: document.getElementById('vertexshader').textContent,
+            fragmentShader: document.getElementById('fragmentshader').textContent,
+            transparent: true,
+            // vertexColors: true,
+            depthWrite: false,
+        });
+
+        function getColor(v) {
+            if (v > 30) {
+                return 'red';
+            }
+            if (v > 27) {
+                return 'orange';
+            }
+            if (v > 20) {
+                return 'yellow';
+            }
+            if (v > 10) {
+                return 'blue';
+            }
+            return 'green';
+        }
+
+        function addPoints(scene) {
+            // data from https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson
+            fetch('./data/earthquake.json').then((function (res) {
+                return res.json();
+            })).then(function (json) {
+                console.log(json);
+                const color = new THREE.Color();
+                const data = json.slice(0, Infinity).map(function (dataItem) {
+                    const size = Math.max(dataItem.mag * 6 || 3, 3);
+                    return {
+                        coordinate: dataItem.c,
+                        height: 0,
+                        size,
+                        color: getColor(size),
+                        value: Math.random() * 10000
+                    }
+                });
+                const point = threeLayer.toPoints(data, {}, material)
+                points.push(point);
+
+                // tooltip test
+                point.setToolTip('hello', {
+                    showTimeout: 0,
+                    eventsPropagation: true,
+                    dx: 10
+                });
+                threeLayer.addMesh(points);
+
+                //infowindow test
+                point.setInfoWindow({
+                    content: 'hello world,height:',
+                    title: 'message',
+                    animationDuration: 0,
+                    autoOpenOn: false
+                });
+
+
+                ['click', 'empty', 'mousemove'].forEach(function (eventType) {
+                    point.on(eventType, function (e) {
+                        const select = e.selectMesh;
+                        if (e.type === 'empty' && selectMesh.length) {
+                            threeLayer.removeMesh(selectMesh);
+                            selectMesh = [];
+                        }
+                        let data, baseObject;
+                        if (select) {
+                            data = select.data;
+                            baseObject = select.baseObject;
+                            baseObject.getObject3d().geometry.addAttribute('color', new THREE.Float32BufferAttribute([1, 1, 1], 3));
+                            // baseObject.getObject3d().geometry.attributes.color.needsUpdate = true;
+                            if (baseObject && !baseObject.isAdd) {
+                                baseObject.setSymbol(highlightmaterial);
+                                threeLayer.addMesh(baseObject);
+                                selectMesh.push(baseObject);
+                            }
+                        }
+
+
+                        if (selectMesh.length > 20) {
+                            threeLayer.removeMesh(selectMesh);
+                            selectMesh = [];
+                        }
+                        // override tooltip
+                        if (e.type === 'mousemove' && data) {
+                            const size = data.size;
+                            const tooltip = this.getToolTip();
+                            tooltip._content = `size:${size}`;
+                        }
+                        //             //override infowindow
+                        if (e.type === 'click' && data) {
+                            const size = data.size;
+                            const infoWindow = this.getInfoWindow();
+                            infoWindow.setContent(`size:${size}`);
+                            if (infoWindow && (!infoWindow._owner)) {
+                                infoWindow.addTo(this);
+                            }
+                            this.openInfoWindow(e.coordinate);
+                        }
+                    });
+                });
+            });
+            animation();
+            // initGui();
+        }
+
+
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer.renderScene();
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+        }
+
+
+        function initGui() {
+            var params = {
+                blending: false,
+                size: material.size,
+
+                color: '#fff',
+                show: true,
+                opacity: 1,
+                altitude: 0,
+                // animateShow: animateShow
+            };
+
+            var gui = new dat.GUI();
+            gui.add(params, 'blending').onChange(function () {
+                if (params.blending) {
+                    material.blending = THREE.AdditiveBlending;
+                } else {
+                    material.blending = THREE.NoBlending;
+                }
+            });
+            gui.add(params, 'size', 2, 20).onChange(function () {
+                material.size = params.size;
+            });
+        }
+
+    </script>
+</body>
+
+</html>

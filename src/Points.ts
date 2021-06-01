@@ -45,13 +45,18 @@ class Points extends MergedMixin(BaseObject) {
         const grids = BBox.initGrids(minX, minY, maxX, maxY);
         const gridslen = grids.length;
 
-        const vs = [], vectors = [], colors = [], pointMeshes = [], geometriesAttributes = [];
+        const vs = [], vectors = [], colors = [], sizes = [], pointMeshes = [], geometriesAttributes = [];
         const cache = {};
+        let maxSize = 0;
         for (let i = 0, len = points.length; i < len; i++) {
-            let { coordinate, height, color } = points[i];
+            let { coordinate, height, color, size } = points[i];
             if (color) {
                 color = (color instanceof THREE.Color ? color : new THREE.Color(color));
                 colors.push(color.r, color.g, color.b);
+            }
+            if (size) {
+                sizes.push(size);
+                maxSize = Math.max(maxSize, size);
             }
             const z = distanceToVector3(height, layer, cache);
             const v = layer.coordinateToVector3(coordinate, z);
@@ -82,6 +87,9 @@ class Points extends MergedMixin(BaseObject) {
         if (colors.length) {
             addAttribute(geometry, 'color', new THREE.Float32BufferAttribute(colors, 3, true));
         }
+        if (sizes.length) {
+            addAttribute(geometry, 'size', new THREE.Float32BufferAttribute(sizes, 1, true));
+        }
 
         //for identify
         (options as any).positions = vectors;
@@ -104,6 +112,7 @@ class Points extends MergedMixin(BaseObject) {
         this._grids = grids;
         this._bindMapEvents();
         this.type = 'Points';
+        this.maxSize = maxSize;
     }
 
     _bindMapEvents() {
@@ -133,8 +142,8 @@ class Points extends MergedMixin(BaseObject) {
         if (index != null) {
             if (!this._baseObjects[index]) {
                 const data = this._datas[index];
-                const { coordinate, height, color } = data;
-                this._baseObjects[index] = new Point(coordinate, { height, index, color } as any, (this.getObject3d() as any).material, this.getLayer());
+                const { coordinate, height, color, size } = data;
+                this._baseObjects[index] = new Point(coordinate, { height, index, color, size } as any, (this.getObject3d() as any).material, this.getLayer());
                 this._proxyEvent(this._baseObjects[index]);
             }
             return {
@@ -152,12 +161,13 @@ class Points extends MergedMixin(BaseObject) {
         const layer = this.getLayer(), size = this.getMap().getSize(),
             camera = this.getLayer().getCamera(), altitude = this.getOptions().altitude, map = this.getMap();
         const z = layer.distanceToVector3(altitude, altitude).x;
-        const pointSize = (this.getObject3d() as any).material.size;
+        let pointSize = (this.getObject3d() as any).material.size;
+        const isDynamicSize = pointSize === undefined;
         const pixel = map.coordToContainerPoint(coordinate);
         const bs = [];
         this._grids.forEach(b => {
             if (b.indexs.length) {
-                if (b.isRecCross(pixel, pointSize)) {
+                if (b.isRecCross(pixel, isDynamicSize ? this.maxSize : pointSize)) {
                     bs.push(b);
                 }
             }
@@ -167,7 +177,10 @@ class Points extends MergedMixin(BaseObject) {
         }
 
         for (let i = 0, len = bs.length; i < len; i++) {
-            for (let j = 0, len1 = bs[i].positions.length; j < len1; j++) {
+            for (let len1 = bs[i].positions.length, j = len1 - 1; j >= 0; j--) {
+                if (isDynamicSize) {
+                    pointSize = this._datas[bs[i].indexs[j]].size || 1;
+                }
                 const v = bs[i].positions[j];
                 vector.x = v.x;
                 vector.y = v.y;

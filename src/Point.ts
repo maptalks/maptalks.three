@@ -18,7 +18,7 @@ class Point extends BaseObject {
     constructor(coordinate: maptalks.Coordinate, options: PointOptionType, material: THREE.PointsMaterial, layer: ThreeLayer) {
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, coordinate });
         super();
-        let { height, altitude, color } = options;
+        let { height, altitude, color, size } = options;
         const vs = [], colors = [];
         if (color) {
             color = (color instanceof THREE.Color ? color : new THREE.Color(color));
@@ -31,6 +31,9 @@ class Point extends BaseObject {
         addAttribute(geometry, 'position', new THREE.Float32BufferAttribute(vs, 3, true));
         if (colors.length) {
             addAttribute(geometry, 'color', new THREE.Float32BufferAttribute(colors, 3, true));
+        }
+        if (size !== undefined) {
+            addAttribute(geometry, 'size', new THREE.Float32BufferAttribute([size], 1, true));
         }
 
         (options as any).positions = v;
@@ -50,7 +53,10 @@ class Point extends BaseObject {
         const layer = this.getLayer(), size = this.getMap().getSize(),
             camera = this.getLayer().getCamera(), positions = (this.getOptions() as any).positions, altitude = this.getOptions().altitude;
         //Size of points
-        const pointSize = (this.getObject3d() as any).material.size;
+        let pointSize = (this.getObject3d() as any).material.size;
+        if (pointSize === undefined) {
+            pointSize = (this.options as any).size || 1;
+        }
         const pixel = this.getMap().coordToContainerPoint(coordinate);
 
         const z = layer.distanceToVector3(altitude, altitude).x;
