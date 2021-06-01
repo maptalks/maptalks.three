@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>points-icons</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.102.0/build/three.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.102.0/build/three.min.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/three@0.104.0/examples/js/libs/stats.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+    <script type="x-shader/x-vertex" id="vertexshader">
+        attribute float size;
+        attribute vec2 puv;
+        attribute vec2 wh;
+        varying vec3 vColor;
+        varying vec2 vPuv;
+        varying vec2 vWh;
+        void main() {
+            vColor = color;
+            vPuv = puv;
+            vWh = wh;
+            vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+            gl_PointSize = size * ( 1.0);
+            gl_Position = projectionMatrix * mvPosition;
+        }
+    </script>
+
+    <script type="x-shader/x-fragment" id="fragmentshader">
+        uniform sampler2D pointTexture;
+        uniform float textureSize;
+        varying vec3 vColor;
+        varying vec2 vPuv;
+        varying vec2 vWh;
+        void main() {
+            float width = gl_PointCoord.x / textureSize * vWh.x;
+            float height = gl_PointCoord.y / textureSize * vWh.y;
+            float x = vPuv.x;
+            float y =  1.0 - vPuv.y;
+            gl_FragColor = vec4( vColor, 1.0 );
+            gl_FragColor = gl_FragColor * texture2D( pointTexture, vec2(x + width, y -  height) );
+        }
+    </script>
+
+
+    <script type="x-shader/x-vertex" id="vertexshader1">
+        attribute float size;
+        varying vec3 vColor;
+        void main() {
+            vColor = color;
+            vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+            gl_PointSize = size * ( 1.0);
+            gl_Position = projectionMatrix * mvPosition;
+        }
+    </script>
+
+    <script type="x-shader/x-fragment" id="fragmentshader1">
+        uniform sampler2D pointTexture;
+        varying vec3 vColor;
+        void main() {
+            gl_FragColor = vec4( vColor, 1.0 );
+            gl_FragColor = gl_FragColor * texture2D( pointTexture, gl_PointCoord );
+        }
+    </script>
+
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        //随机颜色
+        function getColors() {
+            const colors = [];
+            while (colors.length < textureCount) {
+                const r = Math.round(255 * Math.random());
+                const g = Math.round(255 * Math.random());
+                const b = Math.round(255 * Math.random());
+                colors.push(`rgb(${r},${g},${b})`);
+            }
+            return colors;
+        }
+
+        //生成纹理，模拟多个图片生成纹理，这里是100个图片生成一个纹理图片
+        let num = 0;
+        function generateTexture(image) {
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = textureSize;
+            const ctx = canvas.getContext('2d');
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#fff';
+            const xys = [];
+            for (let i = 0; i < Math.sqrt(textureIcons); i++) {
+                const y = 5 * (i + 1) + i * markerHeight;
+                for (let j = 0; j < Math.sqrt(textureIcons); j++) {
+                    const x = 5 * (j + 1) + j * markerWidth;
+                    ctx.drawImage(image, x, y, image.width, image.height);
+                    ctx.fillText(num, x + image.width / 2, y + image.height / 2);
+                    xys.push([x, y]);
+                    num++;
+                }
+            }
+            return {
+                xys,
+                texture: new THREE.CanvasTexture(canvas)
+            };
+        }
+
+        const markerWidth = 40, markerHeight = 40, textureCount = 25, textureIcons = 400, textureSize = 1024;
+        const svg = `<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+                <svg t="1616464790152" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3742" xmlns:xlink="http://www.w3.org/1999/xlink" width="200" height="200"><defs><style type="text/css"></style></defs>
+                <path d="M515.2 339c-44.8 0-81 36.3-81 81 0 44.8 36.3 81 81 81s81-36.3 81-81-36.3-81-81-81z m0-243.1c-179 0-324.1 145.1-324.1 324.1 0 135.5 270.2 540.5 324.1 540.2 53 0.3 324.1-406.5 324.1-540.2 0-179-145.1-324.1-324.1-324.1z m0 459.2c-74.6 0-135.1-60.5-135.1-135.1s60.5-135.1 135.1-135.1S650.3 345.4 650.3 420c-0.1 74.6-60.5 135.1-135.1 135.1z" p-id="3743" fill="red">
+                </path>
+                </svg>
+                `;
+        const textures = [];
+        const colors = getColors(), images = [];
+        let idx = 0;
+        //加载textureCount个图片，用来生成textureCount个纹理，每一个图片进行 的生成纹理
+        function loadImages() {
+            const c = colors[idx];
+            const base64 = 'data:image/svg+xml;base64,' + btoa(svg.replace('red', c));
+            const image = new Image();
+            image.onload = function () {
+                idx++;
+                if (idx === colors.length) {
+                    addIcons();
+                } else {
+                    loadImages();
+                }
+            }
+            image.src = base64;
+            image.width = markerWidth;
+            image.height = markerHeight;
+            images.push(image);
+        }
+
+        function addIcons() {
+            images.forEach(image => {
+                textures.push(generateTexture(image));
+            });
+            const data = [];
+            for (let i = 0, len = textures.length; i < len; i++) {
+                const texture = textures[i];
+                texture.xys.forEach(xy => {
+                    const uvx = xy[0] / textureSize, uvy = xy[1] / textureSize;
+                    data.push({
+                        texture: texture.texture,
+                        xy,
+                        markerWidth,
+                        markerHeight,
+                        uvx,
+                        uvy
+                    })
+                });
+            }
+            addPoints(data);
+        }
+
+
+        var map = new maptalks.Map("map", {
+            "center": [0, 0], "zoom": 3, "pitch": 12.000000000000057, "bearing": 0.0000000000001137,
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+        });
+        var state;
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            //模拟纹理
+            loadImages();
+        };
+        threeLayer.addTo(map);
+
+        var points = [], selectMesh = [];
+        var highlightmaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                pointTexture: {
+                    value: new THREE.TextureLoader().load('./data/圆 (1).png')
+                },
+                textureSize: {
+                    type: 'f',
+                    value: 1024.0
+                }
+            },
+            vertexShader: document.getElementById('vertexshader1').textContent,
+            fragmentShader: document.getElementById('fragmentshader1').textContent,
+            transparent: true,
+            // vertexColors: true,
+            depthWrite: false,
+        });
+
+        function getMaterial(d) {
+            return new THREE.ShaderMaterial({
+                uniforms: {
+                    pointTexture: {
+                        value: d.texture
+                    },
+                    textureSize: {
+                        type: 'f',
+                        value: textureSize
+                    }
+                },
+                vertexShader: document.getElementById('vertexshader').textContent,
+                fragmentShader: document.getElementById('fragmentshader').textContent,
+                transparent: true,
+                vertexColors: true,
+                depthWrite: false,
+                // flipY: false
+                // sizeAttenuation: false
+            });
+        }
+
+        function addPoints(data) {
+            // data from https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson
+            fetch('./data/earthquake.json').then((function (res) {
+                return res.json();
+            })).then(function (json) {
+                const len = data.length;
+                for (let i = 0; i < len; i++) {
+                    data[i].coordinate = json[i].c;
+                    data[i].size = 40;
+                    data[i].color = '#fff';
+                    data[i].height = 0;
+                    data[i].value = Math.round(Math.random() * 10000);
+                }
+                const time = 'time';
+                console.time(time);
+                for (let i = 0; i < len; i += textureIcons) {
+                    const list = data.slice(i, i + textureIcons);
+                    const material = getMaterial(list[0]);
+                    const point = threeLayer.toPoints(list, { interactive: false }, material);
+                    const uvs = [], whs = [];
+                    list.forEach(d => {
+                        uvs.push(d.uvx, d.uvy);
+                        whs.push(d.markerWidth, markerHeight);
+                    });
+                    point.getObject3d().geometry.addAttribute('puv', new THREE.Float32BufferAttribute(uvs, 2));
+                    point.getObject3d().geometry.addAttribute('wh', new THREE.Float32BufferAttribute(whs, 2));
+                    threeLayer.addMesh(point);
+                    points.push(point);
+                }
+                console.timeEnd(time);
+                points.forEach(point => {
+                    // tooltip test
+                    point.setToolTip('hello', {
+                        showTimeout: 0,
+                        eventsPropagation: true,
+                        dx: 10
+                    });
+                    //infowindow test
+                    point.setInfoWindow({
+                        content: 'hello world,height:',
+                        title: 'message',
+                        animationDuration: 0,
+                        autoOpenOn: false
+                    });
+                    ['click', 'empty', 'mousemove'].forEach(function (eventType) {
+                        point.on(eventType, function (e) {
+                            const select = e.selectMesh;
+                            if (e.type === 'empty' && selectMesh.length) {
+                                threeLayer.removeMesh(selectMesh);
+                                selectMesh = [];
+                            }
+                            let data, baseObject;
+                            if (select) {
+                                data = select.data;
+                                baseObject = select.baseObject;
+                                // baseObject.getObject3d().geometry.attributes.color.needsUpdate = true;
+                                if (baseObject && !baseObject.isAdd) {
+                                    baseObject.setSymbol(highlightmaterial);
+                                    threeLayer.addMesh(baseObject);
+                                    selectMesh.push(baseObject);
+                                }
+                            }
+
+                            if (selectMesh.length > 20) {
+                                threeLayer.removeMesh(selectMesh);
+                                selectMesh = [];
+                            }
+                            // override tooltip
+                            if (e.type === 'mousemove' && data) {
+                                const value = data.value;
+                                const tooltip = this.getToolTip();
+                                tooltip._content = `value:${value}`;
+                            }
+                            //             //override infowindow
+                            if (e.type === 'click' && data) {
+                                const value = data.value;
+                                const infoWindow = this.getInfoWindow();
+                                infoWindow.setContent(`value:${value}`);
+                                if (infoWindow && (!infoWindow._owner)) {
+                                    infoWindow.addTo(this);
+                                }
+                                this.openInfoWindow(e.coordinate);
+                            }
+                        });
+                    });
+                });
+            });
+            animation();
+            initGui();
+        }
+
+
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate && !threeLayer.isRendering()) {
+                threeLayer.renderScene();
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+        }
+
+
+        function initGui() {
+            var params = {
+                blending: false,
+                color: '#fff',
+                show: true,
+                opacity: 1,
+                altitude: 0,
+                interactive: false,
+                add: true
+            };
+
+            var gui = new dat.GUI();
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    threeLayer.addMesh(points);
+                } else {
+                    threeLayer.removeMesh(points);
+                }
+            });
+            gui.add(params, 'show').onChange(function () {
+                points.forEach(point => {
+                    if (params.show) {
+                        point.show();
+                    } else {
+                        point.hide();
+                    }
+                });
+
+            });
+            gui.add(params, 'interactive').onChange(function () {
+                points.forEach(point => {
+                    point.getOptions().interactive = params.interactive;
+                });
+            });
+        }
+
+    </script>
+</body>
+
+</html>
