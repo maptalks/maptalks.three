@@ -15,11 +15,15 @@ const OPTIONS = {
 /**
  * a Class for Eventable
  */
-class Base {
-    constructor() {
-
-    }
+function Base() {
+    
 }
+
+// class Base {
+//     constructor() {
+
+//     }
+// }
 
 /**
  * EVENTS=[
