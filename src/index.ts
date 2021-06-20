@@ -561,7 +561,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return this;
     }
 
-    loop(render: boolean = true) {
+    loop(render: boolean = false) {
         const delayMeshes = this._delayMeshes;
         if (!delayMeshes.length) {
             return;

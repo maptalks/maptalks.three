@@ -37,7 +37,7 @@ const MergedMixin = <T extends Constructor<BaseObject>>(Base: T) => {
          *
          * @param {*} baseObjects
          */
-        _initBaseObjectsEvent(baseObjects: Array<BaseObject>): this {
+        _initBaseObjectsEvent(baseObjects: Array<BaseObject>) {
             if (baseObjects && Array.isArray(baseObjects) && baseObjects.length) {
                 for (let i = 0, len = baseObjects.length; i < len; i++) {
                     const baseObject = baseObjects[i];
@@ -93,7 +93,7 @@ const MergedMixin = <T extends Constructor<BaseObject>>(Base: T) => {
          * @param {*} bufferAttribute
          * @param {*} attribute
          */
-        _updateAttribute(bufferAttribute: THREE.BufferAttribute, attribute: string): this {
+        _updateAttribute(bufferAttribute: THREE.BufferAttribute, attribute: string) {
             const { indexs } = this._getHideGeometryIndex(attribute);
             const array = this._geometryCache.attributes[attribute].array;
             const len = array.length;
@@ -119,7 +119,7 @@ const MergedMixin = <T extends Constructor<BaseObject>>(Base: T) => {
          * @param {*} baseObject
          * @param {*} isHide
          */
-        _showGeometry(baseObject: BaseObject, isHide: boolean): this {
+        _showGeometry(baseObject: BaseObject, isHide: boolean){
             let index;
             if (baseObject) {
                 index = baseObject.getOptions().index;
