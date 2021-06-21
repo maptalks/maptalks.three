@@ -240,156 +240,150 @@ ShaderLib['line'] = {
 		`
 };
 
-const LineMaterial = function (parameters) {
+class LineMaterial extends THREE.ShaderMaterial {
+	dashed: boolean = true;
+	isLineMaterial: boolean = true;
+	type: string = 'LineMaterial';
+	constructor(parameters) {
+		super({
+			uniforms: THREE.UniformsUtils.clone(ShaderLib['line'].uniforms),
+			vertexShader: ShaderLib['line'].vertexShader,
+			fragmentShader: ShaderLib['line'].fragmentShader
+		})
 
-	THREE.ShaderMaterial.call(this, {
+		Object.defineProperties(this, {
 
-		type: 'LineMaterial',
+			color: {
 
-		uniforms: THREE.UniformsUtils.clone(ShaderLib['line'].uniforms),
+				enumerable: true,
 
-		vertexShader: ShaderLib['line'].vertexShader,
-		fragmentShader: ShaderLib['line'].fragmentShader
+				get: function () {
 
-	});
+					return this.uniforms.diffuse.value;
 
-	this.dashed = false;
+				},
 
-	Object.defineProperties(this, {
+				set: function (value) {
 
-		color: {
+					this.uniforms.diffuse.value = value;
 
-			enumerable: true,
-
-			get: function () {
-
-				return this.uniforms.diffuse.value;
-
-			},
-
-			set: function (value) {
-
-				this.uniforms.diffuse.value = value;
-
-			}
-
-		},
-
-		linewidth: {
-
-			enumerable: true,
-
-			get: function () {
-
-				return this.uniforms.linewidth.value;
+				}
 
 			},
 
-			set: function (value) {
+			linewidth: {
 
-				this.uniforms.linewidth.value = value;
+				enumerable: true,
 
-			}
+				get: function () {
 
-		},
+					return this.uniforms.linewidth.value;
 
-		dashScale: {
+				},
 
-			enumerable: true,
+				set: function (value) {
 
-			get: function () {
+					this.uniforms.linewidth.value = value;
 
-				return this.uniforms.dashScale.value;
-
-			},
-
-			set: function (value) {
-
-				this.uniforms.dashScale.value = value;
-
-			}
-
-		},
-
-		dashSize: {
-
-			enumerable: true,
-
-			get: function () {
-
-				return this.uniforms.dashSize.value;
+				}
 
 			},
 
-			set: function (value) {
+			dashScale: {
 
-				this.uniforms.dashSize.value = value;
+				enumerable: true,
 
-			}
+				get: function () {
 
-		},
+					return this.uniforms.dashScale.value;
 
-		gapSize: {
+				},
 
-			enumerable: true,
+				set: function (value) {
 
-			get: function () {
+					this.uniforms.dashScale.value = value;
 
-				return this.uniforms.gapSize.value;
-
-			},
-
-			set: function (value) {
-
-				this.uniforms.gapSize.value = value;
-
-			}
-
-		},
-
-		resolution: {
-
-			enumerable: true,
-
-			get: function () {
-
-				return this.uniforms.resolution.value;
+				}
 
 			},
 
-			set: function (value) {
+			dashSize: {
 
-				this.uniforms.resolution.value.copy(value);
+				enumerable: true,
+
+				get: function () {
+
+					return this.uniforms.dashSize.value;
+
+				},
+
+				set: function (value) {
+
+					this.uniforms.dashSize.value = value;
+
+				}
+
+			},
+
+			gapSize: {
+
+				enumerable: true,
+
+				get: function () {
+
+					return this.uniforms.gapSize.value;
+
+				},
+
+				set: function (value) {
+
+					this.uniforms.gapSize.value = value;
+
+				}
+
+			},
+
+			resolution: {
+
+				enumerable: true,
+
+				get: function () {
+
+					return this.uniforms.resolution.value;
+
+				},
+
+				set: function (value) {
+
+					this.uniforms.resolution.value.copy(value);
+
+				}
 
 			}
-
-		}
-
-	});
-
-	this.setValues(parameters);
-
+		});
+		this.setValues(parameters);
+	}
 };
 
-LineMaterial.prototype = Object.create(THREE.ShaderMaterial.prototype);
-LineMaterial.prototype.constructor = LineMaterial;
+// LineMaterial.prototype = Object.create(THREE.ShaderMaterial.prototype);
+// LineMaterial.prototype.constructor = LineMaterial;
 
-LineMaterial.prototype.isLineMaterial = true;
+// LineMaterial.prototype.isLineMaterial = true;
 
-LineMaterial.prototype.copy = function (source) {
+// LineMaterial.prototype.copy = function (source) {
 
-	THREE.ShaderMaterial.prototype.copy.call(this, source);
+// 	// THREE.ShaderMaterial.prototype.copy.call(this, source);
 
-	this.color.copy(source.color);
+// 	this.color.copy(source.color);
 
-	this.linewidth = source.linewidth;
+// 	this.linewidth = source.linewidth;
 
-	this.resolution = source.resolution;
+// 	this.resolution = source.resolution;
 
-	// todo
+// 	// todo
 
-	return this;
+// 	return this;
 
-};
+// };
 
 export default LineMaterial;
