@@ -791,7 +791,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
     * @param {*} mesh
     */
     _recursionMesh(mesh: THREE.Object3D): THREE.Object3D {
-        while (mesh && (!(mesh.parent instanceof THREE.Scene))) {
+        while (mesh && ((mesh.parent !== this.getScene()))) {
             mesh = mesh.parent;
         }
         return mesh;
@@ -818,7 +818,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         }
         const map = this.map || this.getMap();
         //When map interaction, do not carry out mouse movement detection, which can have better performance
-        if (map.isInteracting()) {
+        if (map.isInteracting() || !map.options.geometryEvents) {
             return this;
         }
         const { type, coordinate } = e;

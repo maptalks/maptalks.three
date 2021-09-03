@@ -142,6 +142,7 @@ declare class MultiLineString {
 
 
 declare class Map {
+  options: any;
   cameraWorldMatrix: any;
   projMatrix: any;
   width: number;
