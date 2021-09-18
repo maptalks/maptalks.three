@@ -152,6 +152,7 @@ declare class Map {
   constructor(container: string, options: Object)
   getCenter(): Coordinate
   coordinateToPoint(coordinate: Coordinate, zoom: number): any
+  coordToPointAtRes(coordinate: Coordinate, zoom: number): any
   getZoom(): number
   getFov(): number
   locate(center: Coordinate, w: number, h: number): Coordinate
@@ -164,6 +165,7 @@ declare class Map {
   off(eventType: string, handle: Function, context?: any): void
   getDevicePixelRatio(): number
   getGLZoom(): number
+  getGLRes(): number
   _getResolution(zoom: number): number
   getProjection(): any
   isInteracting(): boolean

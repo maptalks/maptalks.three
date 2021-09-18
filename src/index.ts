@@ -158,7 +158,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
         if (!(coordinate instanceof maptalks.Coordinate)) {
             coordinate = new maptalks.Coordinate(coordinate);
         }
-        const p = map.coordinateToPoint(coordinate, getTargetZoom(map));
+        const res = getGLRes(map);
+        const p = coordinateToPoint(map, coordinate, res);
         return new THREE.Vector3(p.x, p.y, z);
     }
 
@@ -173,14 +174,14 @@ class ThreeLayer extends maptalks.CanvasLayer {
             return new THREE.Vector3(0, 0, 0);
         }
         const map = this.getMap();
-        const zoom = getTargetZoom(map);
+        const res = getGLRes(map);
         let center = coord || map.getCenter();
         if (!(center instanceof maptalks.Coordinate)) {
             center = new maptalks.Coordinate(center);
         }
         const target = map.locate(center, w, h);
-        const p0 = map.coordinateToPoint(center, zoom),
-            p1 = map.coordinateToPoint(target, zoom);
+        const p0 = coordinateToPoint(map, center, res),
+            p1 = coordinateToPoint(map, target, res);
         const x = Math.abs(p1.x - p0.x) * maptalks.Util.sign(w);
         const y = Math.abs(p1.y - p0.y) * maptalks.Util.sign(h);
         return new THREE.Vector3(x, y, 0);
@@ -1167,8 +1168,15 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
 
 ThreeLayer.registerRenderer('gl', ThreeRenderer);
 
-function getTargetZoom(map: maptalks.Map) {
-    return map.getGLZoom();
+function getGLRes(map: maptalks.Map) {
+    return map.getGLRes ? map.getGLRes() : map.getGLZoom();
+}
+
+function coordinateToPoint(map, coordinate, res) {
+    if (map.coordToPointAtRes) {
+        return map.coordToPointAtRes(coordinate, res);
+    }
+    return map.coordinateToPoint(coordinate, res);
 }
 
 export {
