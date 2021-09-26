@@ -72,14 +72,22 @@ function mergeBufferAttributes(attributes: Array<TypedArray>, arrayLength: numbe
 export function generateBufferGeometry(data: MergeAttributeType): THREE.BufferGeometry {
     //arraybuffer data
     const { position, normal, uv, indices } = data;
-    const color = new Float32Array(position.length);
-    color.fill(1, 0, position.length);
+    // const color = new Float32Array(position.length);
+    // color.fill(1, 0, position.length);
     const bufferGeomertry = new THREE.BufferGeometry();
-    addAttribute(bufferGeomertry, 'color', new THREE.BufferAttribute(color, 3));
+    // addAttribute(bufferGeomertry, 'color', new THREE.BufferAttribute(color, 3));
     addAttribute(bufferGeomertry, 'normal', new THREE.BufferAttribute(new Float32Array(normal), 3));
     addAttribute(bufferGeomertry, 'position', new THREE.BufferAttribute(new Float32Array(position), 3));
     addAttribute(bufferGeomertry, 'uv', new THREE.BufferAttribute(new Float32Array(uv), 2));
     bufferGeomertry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
+    return bufferGeomertry;
+}
+
+export function generatePickBufferGeometry(geometry: THREE.BufferGeometry): THREE.BufferGeometry {
+    const bufferGeomertry = new THREE.BufferGeometry();
+    addAttribute(bufferGeomertry, 'normal', geometry.getAttribute('normal'));
+    addAttribute(bufferGeomertry, 'position', geometry.getAttribute('position').clone());
+    bufferGeomertry.setIndex(geometry.getIndex());
     return bufferGeomertry;
 }
 

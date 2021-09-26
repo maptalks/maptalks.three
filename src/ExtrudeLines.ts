@@ -6,7 +6,7 @@ import { initVertexColors } from './util/ExtrudeUtil';
 import { getExtrudeLineParams, LineStringSplit } from './util/LineUtil';
 import ExtrudeLine from './ExtrudeLine';
 import { isGeoJSON, isGeoJSONLine } from './util/GeoJSONUtil';
-import { generateBufferGeometry, getDefaultBufferGeometry, mergeBufferGeometries, mergeBufferGeometriesAttribute } from './util/MergeGeometryUtil';
+import { generateBufferGeometry, generatePickBufferGeometry, getDefaultBufferGeometry, mergeBufferGeometries, mergeBufferGeometriesAttribute } from './util/MergeGeometryUtil';
 import { distanceToVector3, getCenterOfPoints, setBottomHeight } from './util/index';
 import { getActor } from './worker/MeshActor';
 import { ExtrudeLineOptionType, LineStringType, MergeAttributeType, SingleLineStringType } from './type/index';
@@ -55,13 +55,13 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
                     this._faceMap = faceMap;
                     this._geometriesAttributes = geometriesAttributes;
                     const bufferGeometry = generateBufferGeometry(e);
+                    this._geometryCache = generatePickBufferGeometry(bufferGeometry);
                     if (topColor) {
                         initVertexColors(bufferGeometry, bottomColor, topColor, geometriesAttributes);
                         (material as any).vertexColors = getVertexColors();
                     }
                     (this.getObject3d() as any).geometry = bufferGeometry;
                     (this.getObject3d() as any).material.needsUpdate = true;
-                    this._geometryCache = bufferGeometry.clone();
                     this._setPickObject3d();
                     this._init();
                     if (this.isAdd) {
