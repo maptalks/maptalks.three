@@ -73,6 +73,8 @@ const EVENTS = [
     'touchmove',
     'touchend'
 ];
+const TEMP_COORD = new maptalks.Coordinate(0, 0);
+const TEMP_POINT = new maptalks.Point(0, 0);
 
 
 // const MATRIX4 = new THREE.Matrix4();
@@ -155,11 +157,18 @@ class ThreeLayer extends maptalks.CanvasLayer {
         if (!map) {
             return null;
         }
-        if (!(coordinate instanceof maptalks.Coordinate)) {
-            coordinate = new maptalks.Coordinate(coordinate);
+        const isArray = Array.isArray(coordinate);
+        if (isArray) {
+            TEMP_COORD.x = coordinate[0];
+            TEMP_COORD.y = coordinate[1];
+        }
+        if (!isArray) {
+            if (!(coordinate instanceof maptalks.Coordinate)) {
+                coordinate = new maptalks.Coordinate(coordinate);
+            }
         }
         const res = getGLRes(map);
-        const p = coordinateToPoint(map, coordinate, res);
+        const p = coordinateToPoint(map, isArray ? TEMP_COORD : coordinate, res, TEMP_POINT);
         return new THREE.Vector3(p.x, p.y, z);
     }
 
@@ -1172,11 +1181,11 @@ function getGLRes(map: maptalks.Map) {
     return map.getGLRes ? map.getGLRes() : map.getGLZoom();
 }
 
-function coordinateToPoint(map, coordinate, res) {
+function coordinateToPoint(map, coordinate, res, out?: any) {
     if (map.coordToPointAtRes) {
-        return map.coordToPointAtRes(coordinate, res);
+        return map.coordToPointAtRes(coordinate, res, out);
     }
-    return map.coordinateToPoint(coordinate, res);
+    return map.coordinateToPoint(coordinate, res, out);
 }
 
 export {
