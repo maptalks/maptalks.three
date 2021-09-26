@@ -5,7 +5,7 @@ import { initVertexColors, getExtrudeGeometryParams } from './util/ExtrudeUtil';
 import ExtrudePolygon from './ExtrudePolygon';
 import MergedMixin from './MergedMixin';
 import { getGeoJSONCenter, isGeoJSONPolygon } from './util/GeoJSONUtil';
-import { generateBufferGeometry, getDefaultBufferGeometry, mergeBufferGeometries } from './util/MergeGeometryUtil';
+import { generateBufferGeometry, generatePickBufferGeometry, getDefaultBufferGeometry, mergeBufferGeometries } from './util/MergeGeometryUtil';
 import { getActor } from './worker/MeshActor';
 import { ExtrudePolygonOptionType, PolygonType } from './type';
 import { ThreeLayer } from './index';
@@ -67,6 +67,7 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
                     this._faceMap = faceMap;
                     this._geometriesAttributes = geometriesAttributes;
                     const bufferGeometry = generateBufferGeometry(e);
+                    this._geometryCache = generatePickBufferGeometry(bufferGeometry);
                     if (topColor) {
                         initVertexColors(bufferGeometry, bottomColor, topColor, geometriesAttributes);
                         (material as any).vertexColors = getVertexColors();
@@ -74,7 +75,6 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
                     const object3d = this.getObject3d() as any;
                     object3d.geometry = bufferGeometry;
                     object3d.material.needsUpdate = true;
-                    this._geometryCache = bufferGeometry.clone();
                     this._setPickObject3d();
                     this._init();
                     if (this.isAdd) {
