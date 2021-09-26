@@ -63,7 +63,7 @@ declare class Extent {
 declare class Point {
   x: number;
   y: number;
-  constructor(parameters: any)
+  constructor(x: any, y?: any)
 }
 
 declare class PointExtent {
