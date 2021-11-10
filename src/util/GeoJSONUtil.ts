@@ -63,7 +63,7 @@ export function getGeoJSONCoordinates(feature: GeoJSONFeature):
 }
 
 
-export function getGeoJSONCenter(feature: GeoJSONFeature): maptalks.Coordinate {
+export function getGeoJSONCenter(feature: GeoJSONFeature, out?: maptalks.Coordinate): maptalks.Coordinate {
     const type = getGeoJSONType(feature);
     if (!type || !feature.geometry) {
         return null;
@@ -73,16 +73,23 @@ export function getGeoJSONCenter(feature: GeoJSONFeature): maptalks.Coordinate {
     if (!coordinates) {
         return null;
     }
-    const coords: Array<Array<number>> = [];
+    // const coords: Array<Array<number>> = [];
+    let sumX = 0, sumY = 0, coordLen = 0;
     switch (type) {
         case 'Point': {
-            coords.push(coordinates as Array<number>);
+            sumX = (coordinates as Array<number>)[0];
+            sumY = (coordinates as Array<number>)[1];
+            // coords.push(coordinates as Array<number>);
+            coordLen++;
             break;
         }
         case 'MultiPoint':
         case 'LineString': {
             for (let i = 0, len = coordinates.length; i < len; i++) {
-                coords.push(coordinates[i] as Array<number>);
+                sumX += (coordinates[i] as Array<number>)[0];
+                sumY += (coordinates[i] as Array<number>)[1];
+                coordLen++;
+                // coords.push(coordinates[i] as Array<number>);
             }
             break;
         }
@@ -90,7 +97,10 @@ export function getGeoJSONCenter(feature: GeoJSONFeature): maptalks.Coordinate {
         case 'Polygon': {
             for (let i = 0, len = coordinates.length; i < len; i++) {
                 for (let j = 0, len1 = (coordinates[i] as Array<Array<number>>).length; j < len1; j++) {
-                    coords.push((coordinates[i] as Array<Array<number>>)[j]);
+                    // coords.push((coordinates[i] as Array<Array<number>>)[j]);
+                    sumX += (coordinates[i] as Array<Array<number>>)[j][0];
+                    sumY += (coordinates[i] as Array<Array<number>>)[j][1];
+                    coordLen++;
                 }
             }
             break;
@@ -99,24 +109,23 @@ export function getGeoJSONCenter(feature: GeoJSONFeature): maptalks.Coordinate {
             for (let i = 0, len = coordinates.length; i < len; i++) {
                 for (let j = 0, len1 = (coordinates[i] as Array<Array<Array<number>>>).length; j < len1; j++) {
                     for (let m = 0, len2 = (coordinates[i] as Array<Array<Array<number>>>)[j].length; m < len2; m++) {
-                        coords.push(((coordinates[i] as Array<Array<Array<number>>>)[j])[m]);
+                        // coords.push(((coordinates[i] as Array<Array<Array<number>>>)[j])[m]);
+                        sumX += (coordinates[i] as Array<Array<Array<number>>>)[j][m][0];
+                        sumY += (coordinates[i] as Array<Array<Array<number>>>)[j][m][1];
+                        coordLen++;
                     }
                 }
             }
             break;
         }
     }
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (let i = 0, len = coords.length; i < len; i++) {
-        const c = coords[i];
-        const x = c[0], y = c[1];
-
-        minX = Math.min(minX, x);
-        minY = Math.min(minY, y);
-        maxX = Math.max(maxX, x);
-        maxY = Math.max(maxY, y);
+    const x = sumX / coordLen, y = sumY / coordLen;
+    if (out) {
+        out.x = x;
+        out.y = y;
+        return out;
     }
-    return new maptalks.Coordinate((minX + maxX) / 2, (minY + maxY) / 2);
+    return new maptalks.Coordinate(x, y);
 }
 
 
