@@ -52,8 +52,8 @@ export function getExtrudeGeometry(polygon: PolygonType, height: number, layer: 
 }
 
 
-export function getExtrudeGeometryParams(polygon: PolygonType, height: number, layer: ThreeLayer, center: maptalks.Coordinate, altCache?: any): MergeAttributeType {
-    const datas = getPolygonPositions(polygon, layer, center);
+export function getExtrudeGeometryParams(polygon: PolygonType, height: number, layer: ThreeLayer, center: maptalks.Coordinate, centerPt?: THREE.Vector3, altCache?: any): MergeAttributeType {
+    const datas = getPolygonPositions(polygon, layer, center, centerPt, false);
     const shapes = datas;
     //Possible later use of geojson
     if (!shapes) return null;
@@ -125,27 +125,27 @@ export function initVertexColors(geometry: THREE.BufferGeometry, color: string, 
  * @param {*} layer
  * @param {*} center
  */
-export function getPolygonPositions(polygon: PolygonType, layer: ThreeLayer, center: maptalks.Coordinate, isArrayBuff = false): Array<Array<Array<Array<number>> | ArrayBufferLike>> {
+export function getPolygonPositions(polygon: PolygonType, layer: ThreeLayer, center: maptalks.Coordinate, centerPt: THREE.Vector3, isArrayBuff = false): Array<Array<Array<Array<number>> | ArrayBufferLike>> {
     if (!polygon) {
         return null;
     }
     let datas = [];
     if (polygon instanceof maptalks.MultiPolygon) {
         datas = polygon.getGeometries().map(p => {
-            return getSinglePolygonPositions(p, layer, center || polygon.getCenter(), isArrayBuff);
+            return getSinglePolygonPositions(p, layer, center || polygon.getCenter(), centerPt, isArrayBuff);
         });
     } else if (polygon instanceof maptalks.Polygon) {
-        const data = getSinglePolygonPositions(polygon, layer, center || polygon.getCenter(), isArrayBuff);
+        const data = getSinglePolygonPositions(polygon, layer, center || polygon.getCenter(), centerPt, isArrayBuff);
         datas.push(data);
     } else if (isGeoJSONPolygon(polygon)) {
-        const cent = getGeoJSONCenter(polygon);
+        // const cent = getGeoJSONCenter(polygon);
         if (!isGeoJSONMulti(polygon)) {
-            const data = getSinglePolygonPositions(polygon as any, layer, center || cent, isArrayBuff);
+            const data = getSinglePolygonPositions(polygon as any, layer, center || getGeoJSONCenter(polygon), centerPt, isArrayBuff);
             datas.push(data);
         } else {
             const fs = spliteGeoJSONMulti(polygon);
             for (let i = 0, len = fs.length; i < len; i++) {
-                datas.push(getSinglePolygonPositions(fs[i] as any, layer, center || cent, isArrayBuff));
+                datas.push(getSinglePolygonPositions(fs[i] as any, layer, center || getGeoJSONCenter(polygon), centerPt, isArrayBuff));
             }
         }
     }
@@ -153,7 +153,7 @@ export function getPolygonPositions(polygon: PolygonType, layer: ThreeLayer, cen
 }
 
 export function getSinglePolygonPositions(polygon: SinglePolygonType, layer: ThreeLayer,
-    center: maptalks.Coordinate, isArrayBuff = false): Array<Array<Array<number>> | ArrayBufferLike> {
+    center: maptalks.Coordinate, centerPt: THREE.Vector3, isArrayBuff = false): Array<Array<Array<number>> | ArrayBufferLike> {
     let shell: Array<any>, holes: Array<any>;
     //it is pre for geojson,Possible later use of geojson
     if (isGeoJSONPolygon(polygon as any)) {
@@ -166,7 +166,7 @@ export function getSinglePolygonPositions(polygon: SinglePolygonType, layer: Thr
         holes = polygon.getHoles();
         center = center || polygon.getCenter();
     }
-    const centerPt = layer.coordinateToVector3(center);
+    centerPt = centerPt || layer.coordinateToVector3(center);
     let outer: Array<Array<number>> | Float32Array;
     if (isArrayBuff) {
         outer = new Float32Array(shell.length * 2);
