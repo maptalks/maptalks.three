@@ -16,8 +16,9 @@ export function distanceToVector3(distance: number, layer: ThreeLayer, cache: { 
  * @param {*} coordinates
  */
 export function getCenterOfPoints(coordinates: Array<any> = []): maptalks.Coordinate {
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (let i = 0, len = coordinates.length; i < len; i++) {
+    let sumX = 0, sumY = 0;
+    const len = coordinates.length;
+    for (let i = 0; i < len; i++) {
         const { coordinate, lnglat, lnglats, xy, xys } = coordinates[i];
         const c = coordinate || lnglat || lnglats || xy || xys || coordinates[i];
         let x, y;
@@ -28,12 +29,10 @@ export function getCenterOfPoints(coordinates: Array<any> = []): maptalks.Coordi
             x = c.x;
             y = c.y;
         }
-        minX = Math.min(minX, x);
-        minY = Math.min(minY, y);
-        maxX = Math.max(maxX, x);
-        maxY = Math.max(maxY, y);
+        sumX += x;
+        sumY += y;
     }
-    return new maptalks.Coordinate((minX + maxX) / 2, (minY + maxY) / 2);
+    return new maptalks.Coordinate(sumX / len, sumY / len);
 }
 
 export function setBottomHeight(geometry: THREE.BufferGeometry | MergeAttributeType | THREE.Vector3[], bottomHeight: number, layer: ThreeLayer,
