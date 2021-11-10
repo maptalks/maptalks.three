@@ -60,11 +60,12 @@ export function getActor(): maptalks.worker.Actor {
  * @param {*} layer
  */
 function gengerateExtrudePolygons(polygons: PolygonType[] = [], center: maptalks.Coordinate, layer: ThreeLayer) {
+    const centerPt = layer.coordinateToVector3(center);
     const len = polygons.length;
     const datas = [], transfer = [], altCache = {};
     for (let i = 0; i < len; i++) {
         const polygon = polygons[i];
-        const data = getPolygonPositions(polygon, layer, center, true);
+        const data = getPolygonPositions(polygon, layer, center, centerPt, true);
         for (let j = 0, len1 = data.length; j < len1; j++) {
             const d = data[j];
             for (let m = 0, len2 = d.length; m < len2; m++) {

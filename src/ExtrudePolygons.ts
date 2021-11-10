@@ -19,6 +19,7 @@ const OPTIONS = {
     topColor: null,
     bottomColor: '#2d2f61',
 };
+const TEMP_COORD = new maptalks.Coordinate(0, 0);
 
 class ExtrudePolygons extends MergedMixin(BaseObject) {
     constructor(polygons: Array<PolygonType>, options: ExtrudePolygonOptionType, material: THREE.Material, layer: ThreeLayer) {
@@ -33,7 +34,7 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         for (let i = 0; i < len; i++) {
             const polygon = polygons[i];
-            const center = ((polygon as any).getCenter ? (polygon as any).getCenter() : getGeoJSONCenter((polygon as any)));
+            const center = ((polygon as any).getCenter ? (polygon as any).getCenter() : getGeoJSONCenter((polygon as any), TEMP_COORD));
             let x, y;
             if (Array.isArray(center)) {
                 x = center[0];
@@ -85,6 +86,7 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
                 }
             });
         } else {
+            const centerPt = layer.coordinateToVector3(center);
             const geometries = [];
             let faceIndex = 0, psIndex = 0, normalIndex = 0, uvIndex = 0;
             const altCache = {};
@@ -93,7 +95,7 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
                 const properties = (isGeoJSONPolygon(polygon as any) ? polygon['properties'] : (polygon as any).getProperties() || {});
                 const height = properties.height || 1;
                 const bottomHeight = properties.bottomHeight || 0;
-                const buffGeom = getExtrudeGeometryParams(polygon, height, layer, center, altCache);
+                const buffGeom = getExtrudeGeometryParams(polygon, height, layer, center, centerPt, altCache);
                 geometries.push(buffGeom);
                 const minZ = setBottomHeight(buffGeom, bottomHeight, layer, altCache);
 
