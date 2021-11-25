@@ -16,7 +16,7 @@ const OPTIONS = {
  * a Class for Eventable
  */
 function Base() {
-    
+
 }
 
 // class Base {
@@ -345,7 +345,7 @@ class BaseObject extends maptalks.Eventable(Base) {
         }, frame => {
             const scale = frame.styles.scale;
             if (scale > 0) {
-                this.getObject3d().scale.set(1, 1, scale);
+                this.getObject3d().scale.z = scale;
             }
             if (cb) {
                 cb(frame, scale);
