@@ -46,7 +46,6 @@
     "typescript": "^4.1.5"
   },
   "peerDependencies": {
-    "maptalks": ">=0.39.0"
   },
   "dependencies": {
     "deyihu-geometry-extrude": "^0.1.3"
