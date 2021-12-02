@@ -47,7 +47,7 @@ export function getGeometry(property: any): THREE.BufferGeometry {
  * @param {*} color
  * @param {*} _topColor
  */
-export function initVertexColors(geometry: THREE.BufferGeometry, color: string, _topColor: string, key: string = 'y', v: number = 0): Array<number> {
+export function initVertexColors(geometry: THREE.BufferGeometry, color: string, _topColor: string, key: string = 'y', v: number = 0): Float32Array {
     let offset = 0;
     if (key === 'y') {
         offset = 1;
@@ -58,29 +58,47 @@ export function initVertexColors(geometry: THREE.BufferGeometry, color: string, 
     const len = position.length;
     bottomColor.setStyle(color);
     topColor.setStyle(_topColor);
-    const colors: Array<number> = [];
+    const colors = new Float32Array(len);
     for (let i = 0; i < len; i += 3) {
         const y = position[i + offset];
         if (y > v) {
-            colors.push(topColor.r, topColor.g, topColor.b);
+            colors[i] = topColor.r;
+            colors[i + 1] = topColor.g;
+            colors[i + 2] = topColor.b;
+            // colors.push(topColor.r, topColor.g, topColor.b);
         } else {
-            colors.push(bottomColor.r, bottomColor.g, bottomColor.b);
+            colors[i] = bottomColor.r;
+            colors[i + 1] = bottomColor.g;
+            colors[i + 2] = bottomColor.b;
+            // colors.push(bottomColor.r, bottomColor.g, bottomColor.b);
         }
     }
-    addAttribute(geometry, 'color', new THREE.Float32BufferAttribute(colors, 3, true));
+    addAttribute(geometry, 'color', new THREE.BufferAttribute(colors, 3, true));
     return colors;
 }
 
 
 export function mergeBarGeometry(geometries: Array<THREE.BufferGeometry>): THREE.BufferGeometry {
-    const attributes: MergeAttributeType[] = [], colors = [];
+    const attributes: MergeAttributeType[] = [];
+    const len = geometries.length;
+    let colorLen = 0;
+    for (let i = 0; i < len; i++) {
+        const { color } = geometries[i].attributes;
+        if (color) {
+            colorLen += color.array.length;
+        }
+    }
+    const colors = new Float32Array(colorLen);
+    let offset = 0;
     for (let i = 0, len = geometries.length; i < len; i++) {
         const { color, normal, position, uv } = geometries[i].attributes;
         const index = geometries[i].index;
         if (color) {
-            for (let j = 0, len1 = color.array.length; j < len1; j++) {
-                colors.push(color.array[j]);
-            }
+            colors.set(color.array, offset);
+            offset += color.array.length;
+            // for (let j = 0, len1 = color.array.length; j < len1; j++) {
+            //     colors.push(color.array[j]);
+            // }
         }
         attributes.push({
             // color: color.array,
@@ -92,7 +110,7 @@ export function mergeBarGeometry(geometries: Array<THREE.BufferGeometry>): THREE
     }
     const bufferGeometry = mergeBufferGeometries(attributes);
     if (colors.length) {
-        addAttribute(bufferGeometry, 'color', new THREE.Float32BufferAttribute(colors, 3, true));
+        addAttribute(bufferGeometry, 'color', new THREE.BufferAttribute(colors, 3, true));
         // for (let i = 0, len = colors.length; i < len; i++) {
         //     bufferGeometry.attributes.color.array[i] = colors[i];
         // }

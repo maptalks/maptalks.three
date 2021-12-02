@@ -119,7 +119,7 @@ const MergedMixin = <T extends Constructor<BaseObject>>(Base: T) => {
          * @param {*} baseObject
          * @param {*} isHide
          */
-        _showGeometry(baseObject: BaseObject, isHide: boolean){
+        _showGeometry(baseObject: BaseObject, isHide: boolean) {
             let index;
             if (baseObject) {
                 index = baseObject.getOptions().index;
@@ -186,18 +186,28 @@ const MergedMixin = <T extends Constructor<BaseObject>>(Base: T) => {
             const geometry = this._geometryCache || (this.getObject3d() as any).geometry.clone();
             const pick = this.getLayer().getPick();
             const { _geometriesAttributes } = this;
-            const colors = [];
-            for (let i = 0, len = _geometriesAttributes.length; i < len; i++) {
+            const len = _geometriesAttributes.length;
+            let colorsLen = 0;
+            for (let i = 0; i < len; i++) {
+                const { count } = _geometriesAttributes[i].position;
+                colorsLen += count;
+            }
+            const colors = new Float32Array(colorsLen * 3);
+            let cIndex = 0;
+            for (let i = 0; i < len; i++) {
                 const color = pick.getColor();
                 const colorIndex = color.getHex();
                 this._colorMap[colorIndex] = i;
                 const { count } = _geometriesAttributes[i].position;
                 this._datas[i].colorIndex = colorIndex;
                 for (let j = 0; j < count; j++) {
-                    colors.push(color.r, color.g, color.b);
+                    colors[cIndex] = color.r;
+                    colors[cIndex + 1] = color.g;
+                    colors[cIndex + 2] = color.b;
+                    cIndex += 3;
                 }
             }
-            addAttribute(geometry, 'color', new THREE.Float32BufferAttribute(colors, 3, true));
+            addAttribute(geometry, 'color', new THREE.BufferAttribute(colors, 3, true));
             // const material = new THREE.MeshBasicMaterial();
             // material.vertexColors = THREE.VertexColors;
             const color = pick.getColor();

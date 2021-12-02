@@ -80,7 +80,7 @@ export function getExtrudeGeometryParams(polygon: PolygonType, height: number, l
  * @param {*} color
  * @param {*} _topColor
  */
-export function initVertexColors(geometry: THREE.BufferGeometry, color: string, _topColor: string, minZ: number | Array<any>): Array<number> {
+export function initVertexColors(geometry: THREE.BufferGeometry, color: string, _topColor: string, minZ: number | Array<any>): Float32Array {
     if (minZ === undefined) {
         minZ = 0;
     }
@@ -88,7 +88,17 @@ export function initVertexColors(geometry: THREE.BufferGeometry, color: string, 
     const len = position.length;
     bottomColor.setStyle(color);
     topColor.setStyle(_topColor);
-    const colors = [];
+    let colors: Float32Array;
+    if (Array.isArray(minZ)) {
+        let colorLen = 0;
+        for (let i = 0, len = minZ.length; i < len; i++) {
+            const { count } = minZ[i].position;
+            colorLen += count * 3;
+        }
+        colors = new Float32Array(colorLen);
+    } else {
+        colors = new Float32Array(position.length);
+    }
     if (Array.isArray(minZ)) {
         for (let i = 0, len = minZ.length; i < len; i++) {
             const { middleZ, start, end } = minZ[i].position;
@@ -109,13 +119,17 @@ export function initVertexColors(geometry: THREE.BufferGeometry, color: string, 
         for (let i = 0; i < len; i += 3) {
             const z = position[i + 2];
             if (z > minZ) {
-                colors.push(topColor.r, topColor.g, topColor.b);
+                colors[i] = topColor.r;
+                colors[i + 1] = topColor.g;
+                colors[i + 2] = topColor.b;
             } else {
-                colors.push(bottomColor.r, bottomColor.g, bottomColor.b);
+                colors[i] = bottomColor.r;
+                colors[i + 1] = bottomColor.g;
+                colors[i + 2] = bottomColor.b;
             }
         }
     }
-    addAttribute(geometry, 'color', new THREE.Float32BufferAttribute(colors, 3, true));
+    addAttribute(geometry, 'color', new THREE.BufferAttribute(colors, 3, true));
     return colors;
 }
 
