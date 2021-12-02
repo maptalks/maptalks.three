@@ -7,6 +7,7 @@ import Intensity from './util/heatmap/Intensity';
 import { addAttribute, getVertexColors } from './util/ThreeAdaptUtil';
 import { HeatMapDataType, HeatMapOptionType } from './type';
 import { ThreeLayer } from './index';
+import { getPlaneGeometry } from './util/GeometryUtil';
 
 const OPTIONS = {
     altitude: 0,
@@ -80,11 +81,11 @@ class HeatMap extends BaseObject {
         const colored = shadowContext.getImageData(0, 0, shadowContext.canvas.width, shadowContext.canvas.height);
 
         let maxAlpha = -Infinity;
-        const blackps = {}, alphas = [];
+        const blackps = new Float32Array(colored.data.length / 4), alphas = new Float32Array(colored.data.length / 4);
         for (let i = 3, len = colored.data.length, j = 0; i < len; i += 4) {
             const alpha = colored.data[i];
             maxAlpha = Math.max(maxAlpha, alpha);
-            alphas.push(alpha);
+            alphas[j] = alpha;
             //Points that do not need to be drawn
             if (alpha <= 0) {
                 blackps[j] = 1;
@@ -98,13 +99,15 @@ class HeatMap extends BaseObject {
         shadowCanvas = null;
         shadowContext = null;
 
-        const geometry = new THREE.PlaneBufferGeometry(offsetX, offsetY, canvasWidth - 1, canvasHeight - 1);
+        // const geometry = new THREE.PlaneBufferGeometry(offsetX, offsetY, canvasWidth - 1, canvasHeight - 1);
+        const geometry = getPlaneGeometry(offsetX, offsetY, canvasWidth - 1, canvasHeight - 1);
         const index = geometry.getIndex().array;
         const position = geometry.attributes.position.array as any;
         // Index of the points that really need to be drawn
-        const filterIndex = [];
-        const colors = [];
+        const colors = new Float32Array(position.length);
+        const tempIndex = new Uint32Array(position.length * 6);
         const color = new THREE.Color();
+        let iIndex = 0;
         for (let i = 0, len = position.length, j = 0, len1 = index.length, m = 0, len2 = colored.data.length, n = 0; i < Math.max(len, len1, len2); i += 3) {
             if (i < len) {
                 const alpha = alphas[n];
@@ -115,21 +118,30 @@ class HeatMap extends BaseObject {
             if (j < len1) {
                 const a = index[j], b = index[j + 1], c = index[j + 2];
                 if ((!blackps[a]) || (!blackps[b]) || (!blackps[c])) {
-                    filterIndex.push(a, b, c);
+                    tempIndex[iIndex] = a;
+                    tempIndex[iIndex + 1] = b;
+                    tempIndex[iIndex + 2] = c;
+                    iIndex += 3;
                 }
             }
             if (m < len2) {
                 const r = colored.data[m], g = colored.data[m + 1], b = colored.data[m + 2];// a = colored.data[i + 3];
                 const rgb = `rgb(${r},${g},${b})`;
                 color.setStyle(rgb);
-                colors.push(color.r, color.g, color.b);
+                colors[j] = color.r;
+                colors[j + 1] = color.g;
+                colors[j + 2] = color.b;
             }
             j += 3;
             m += 4;
             n++;
         }
-        geometry.setIndex(new THREE.Uint32BufferAttribute(filterIndex, 1));
-        addAttribute(geometry, 'color', new THREE.Float32BufferAttribute(colors, 3, true));
+        const filterIndex = new Uint32Array(iIndex);
+        for (let i = 0; i < iIndex; i++) {
+            filterIndex[i] = tempIndex[i];
+        }
+        geometry.setIndex(new THREE.BufferAttribute(filterIndex, 1));
+        addAttribute(geometry, 'color', new THREE.BufferAttribute(colors, 3, true));
         (material as any).vertexColors = getVertexColors();
         super();
         this._initOptions(options);

@@ -1,5 +1,12 @@
 
 import * as maptalks from 'maptalks';
+type Grids = {
+    grids: BBox[],
+    averageX: number,
+    averageY: number,
+    ROWS: number,
+    COLS: number
+};
 
 const ROW: number = 30, COL: number = 30;
 
@@ -123,7 +130,7 @@ class BBox {
      * @param {*} maxlng
      * @param {*} maxlat
      */
-    static initGrids(minlng: number, minlat: number, maxlng: number, maxlat: number): BBox[] {
+    static initGrids(minlng: number, minlat: number, maxlng: number, maxlat: number): Grids {
         const grids: BBox[] = [], offsetX = maxlng - minlng, offsetY = maxlat - minlat;
         const averageX = offsetX / COL, averageY = offsetY / ROW;
         let x = minlng, y = minlat;
@@ -136,7 +143,7 @@ class BBox {
                 grids.push(bounds);
             }
         }
-        return grids;
+        return { grids, averageX, averageY, ROWS: ROW, COLS: COL };
     }
 
 }

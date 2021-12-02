@@ -16,6 +16,11 @@ const OPTIONS = {
 
 const vector = new THREE.Vector3();
 
+function roundFun(value: number, n: number) {
+    const tempValue = Math.pow(10, n);
+    return Math.round(value * tempValue) / tempValue;
+}
+
 /**
  *points
  */
@@ -36,32 +41,48 @@ class Points extends MergedMixin(BaseObject) {
                 x = coordinate.x;
                 y = coordinate.y;
             }
+            points[i].coords = [x, y];
             minX = Math.min(minX, x);
             minY = Math.min(minY, y);
             maxX = Math.max(maxX, x);
             maxY = Math.max(maxY, y);
         }
         const centerPt = layer.coordinateToVector3([(minX + maxX) / 2, (minY + maxY) / 2]);
-        const grids = BBox.initGrids(minX, minY, maxX, maxY);
+        const { grids, averageX, averageY, ROWS, COLS } = BBox.initGrids(minX, minY, maxX, maxY);
         const gridslen = grids.length;
 
-        const vs = [], vectors = [], colors = [], sizes = [], pointMeshes = [], geometriesAttributes = [];
+        const vs = new Float32Array(points.length * 3), vectors = [],
+            colors = new Float32Array(points.length * 3), sizes = new Float32Array(points.length),
+            pointMeshes = [], geometriesAttributes = [];
         const cache = {};
         let maxSize = 0;
+        let hasColor = false, hasSize = false;
+        const TEMP_VECTOR = new THREE.Vector3(0, 0, 0);
         for (let i = 0, len = points.length; i < len; i++) {
-            let { coordinate, height, color, size } = points[i];
+            let { coordinate, height, color, size, coords } = points[i];
+            const idx = i * 3;
             if (color) {
+                hasColor = true;
                 color = (color instanceof THREE.Color ? color : new THREE.Color(color));
-                colors.push(color.r, color.g, color.b);
+                colors[idx] = color.r;
+                colors[idx + 1] = color.g;
+                colors[idx + 2] = color.b;
             }
             if (size) {
-                sizes.push(size);
+                hasSize = true;
+                sizes[i] = size;
                 maxSize = Math.max(maxSize, size);
             }
             const z = distanceToVector3(height, layer, cache);
             const v = layer.coordinateToVector3(coordinate, z);
-            const v1 = v.clone().sub(centerPt);
-            vs.push(v1.x, v1.y, v1.z);
+            TEMP_VECTOR.x = v.x;
+            TEMP_VECTOR.y = v.y;
+            TEMP_VECTOR.z = v.z;
+            TEMP_VECTOR.sub(centerPt);
+            // const v1 = v.clone().sub(centerPt);
+            vs[idx] = TEMP_VECTOR.x;
+            vs[idx + 1] = TEMP_VECTOR.y;
+            vs[idx + 2] = TEMP_VECTOR.z;
 
             vectors.push(v);
 
@@ -73,22 +94,36 @@ class Points extends MergedMixin(BaseObject) {
                 },
                 hide: false
             };
-            for (let j = 0; j < gridslen; j++) {
-                if (grids[j].containsCoordinate(coordinate)) {
-                    // grids[j].coordinates.push(coordinate);
-                    grids[j].positions.push(v);
-                    grids[j].indexs.push(i);
-                    break;
-                }
+            let row = roundFun(((coords[1] - minY) / averageY), 4);
+            let col = roundFun(((coords[0] - minX) / averageX), 4);
+            row -= 1;
+            col -= 1;
+            row = Math.max(0, row);
+            col = Math.max(0, col);
+            row = Math.ceil(row);
+            col = Math.ceil(col);
+            const gridIndex = col * ROWS + row;
+            if (grids[gridIndex]) {
+                grids[gridIndex].positions.push(v);
+                grids[gridIndex].indexs.push(i);
             }
+            // for (let j = 0; j < gridslen; j++) {
+            //     if (grids[j].containsCoordinate(coordinate)) {
+            //         // grids[j].coordinates.push(coordinate);
+            //         grids[j].positions.push(v);
+            //         grids[j].indexs.push(i);
+            //         console.log(j, gridIndex);
+            //         break;
+            //     }
+            // }
         }
         const geometry = new THREE.BufferGeometry();
-        addAttribute(geometry, 'position', new THREE.Float32BufferAttribute(vs, 3, true));
-        if (colors.length) {
-            addAttribute(geometry, 'color', new THREE.Float32BufferAttribute(colors, 3, true));
+        addAttribute(geometry, 'position', new THREE.BufferAttribute(vs, 3, true));
+        if (hasColor) {
+            addAttribute(geometry, 'color', new THREE.BufferAttribute(colors, 3, true));
         }
-        if (sizes.length) {
-            addAttribute(geometry, 'size', new THREE.Float32BufferAttribute(sizes, 1, true));
+        if (hasSize) {
+            addAttribute(geometry, 'size', new THREE.BufferAttribute(sizes, 1, true));
         }
 
         //for identify

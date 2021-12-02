@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import BaseObject from './BaseObject';
 import { ImageType, TerrainOptionType } from './type';
 import { distanceToVector3 } from './util';
+import { getPlaneGeometry } from './util/GeometryUtil';
 // import { addAttribute } from './util/ThreeAdaptUtil';
 const textureLoader = new THREE.TextureLoader();
 const canvas = document.createElement('canvas'), tileSize = 256;
@@ -78,7 +79,8 @@ class Terrain extends BaseObject {
         });
         const w = Math.abs(vxmax - vxmin), h = Math.abs(vymax - vymin);
         const rgbImg = generateImage(image), img = generateImage(texture);
-        const geometry = new THREE.PlaneBufferGeometry(w, h, imageWidth - 1, imageHeight - 1);
+        // const geometry = new THREE.PlaneBufferGeometry(w, h, imageWidth - 1, imageHeight - 1);
+        const geometry = getPlaneGeometry(w, h, imageWidth - 1, imageHeight - 1);
         super();
         this._initOptions(options);
         this._createMesh(geometry, material);
