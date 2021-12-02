@@ -36,14 +36,17 @@ export function mergeBufferGeometriesAttribute(geometries: Array<MergeAttributeT
     // merge attributes
     const mergedGeometry: MergeAttributeType = {};
     let indexOffset = 0;
-    const mergedIndex = [];
+    const mergedIndex = new Uint32Array(attributesLen['indices']);
     for (const name in attributes) {
         if (name === 'indices') {
             const indices = attributes[name];
+            let iIndex = 0;
             for (let i = 0, len = indices.length; i < len; i++) {
                 const index = indices[i];
                 for (let j = 0, len1 = index.length; j < len1; j++) {
-                    mergedIndex.push(index[j] + indexOffset);
+                    mergedIndex[iIndex] = index[j] + indexOffset;
+                    iIndex++;
+                    // mergedIndex.push(index[j] + indexOffset);
                 }
                 indexOffset += attributes['position'][i].length / 3;
             }
@@ -53,7 +56,7 @@ export function mergeBufferGeometriesAttribute(geometries: Array<MergeAttributeT
             (mergedGeometry as any)[name] = mergedAttribute;
         }
     }
-    mergedGeometry['indices'] = new Uint32Array(mergedIndex);
+    mergedGeometry['indices'] = mergedIndex;
     return mergedGeometry;
 }
 
