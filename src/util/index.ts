@@ -71,3 +71,13 @@ export function setBottomHeight(geometry: THREE.BufferGeometry | MergeAttributeT
     }
     return h;
 }
+
+export function getGeometriesColorArray(geometriesAttributes): Float32Array {
+    const len = geometriesAttributes.length;
+    let colorsLen = 0;
+    for (let i = 0; i < len; i++) {
+        const { count } = geometriesAttributes[i].position;
+        colorsLen += count;
+    }
+    return new Float32Array(colorsLen * 3);
+}

@@ -14,15 +14,14 @@ const COMMA = ',';
  */
 export function getLinePosition(lineString: SingleLineStringType | Array<THREE.Vector3>,
     layer: ThreeLayer, center: maptalks.Coordinate): {
-        positions: number[];
+        positions2d: Float32Array,
+        positions: Float32Array;
         positionsV: THREE.Vector3[];
     } {
-    const positions: Array<number> = [];
     const positionsV: THREE.Vector3[] = [];
     if (Array.isArray(lineString) && lineString[0] instanceof THREE.Vector3) {
         for (let i = 0, len = lineString.length; i < len; i++) {
             const v = lineString[i];
-            positions.push(v.x, v.y, v.z);
             positionsV.push(v);
         }
     } else {
@@ -34,25 +33,40 @@ export function getLinePosition(lineString: SingleLineStringType | Array<THREE.V
         let coordinates: any, cent: maptalks.Coordinate;
         if (isGeoJSON(lineString as any)) {
             coordinates = getGeoJSONCoordinates(lineString as any);
-            cent = getGeoJSONCenter(lineString as any);
+            if (!center) {
+                cent = getGeoJSONCenter(lineString as any);
+            }
         } else if (lineString instanceof maptalks.LineString) {
             coordinates = lineString.getCoordinates();
-            cent = lineString.getCenter();
+            if (!center) {
+                cent = lineString.getCenter();
+            }
         }
         const centerPt = layer.coordinateToVector3(center || cent);
         for (let i = 0, len = coordinates.length; i < len; i++) {
-            let coordinate = coordinates[i];
-            if (Array.isArray(coordinate)) {
-                coordinate = new maptalks.Coordinate(coordinate);
-            }
+            const coordinate = coordinates[i];
             const v = layer.coordinateToVector3(coordinate, z).sub(centerPt);
-            positions.push(v.x, v.y, v.z);
+            // positions.push(v.x, v.y, v.z);
             positionsV.push(v);
         }
     }
+    const positions = new Float32Array(positionsV.length * 3);
+    const positions2d = new Float32Array(positionsV.length * 2);
+    for (let i = 0, len = positionsV.length; i < len; i++) {
+        const idx = i * 3;
+        const v = positionsV[i];
+        positions[idx] = v.x;
+        positions[idx + 1] = v.y;
+        positions[idx + 2] = v.z;
+
+        const idx1 = i * 2;
+        positions2d[idx1] = v.x;
+        positions2d[idx1 + 1] = v.y;
+    }
     return {
-        positions: positions,
-        positionsV: positionsV
+        positions,
+        positionsV,
+        positions2d
     };
 }
 
@@ -67,26 +81,17 @@ export function getLinePosition(lineString: SingleLineStringType | Array<THREE.V
  */
 export function getExtrudeLineGeometry(lineString: SingleLineStringType, lineWidth = 1, depth = 1,
     layer: ThreeLayer, center: maptalks.Coordinate): THREE.BufferGeometry {
-    const positions = getLinePosition(lineString, layer, center).positionsV;
-    const ps = [];
-    for (let i = 0, len = positions.length; i < len; i++) {
-        const p = positions[i];
-        ps.push([p.x, p.y]);
-    }
     const {
         indices,
         position,
         normal,
         uv
-    } = extrudePolyline([ps], {
-        lineWidth,
-        depth
-    });
+    } = getExtrudeLineParams(lineString, lineWidth, depth, layer, center);
     const geometry = new THREE.BufferGeometry();
-    addAttribute(geometry, 'position', new THREE.Float32BufferAttribute(position, 3));
-    addAttribute(geometry, 'normal', new THREE.Float32BufferAttribute(normal, 3));
-    addAttribute(geometry, 'uv', new THREE.Float32BufferAttribute(uv, 2));
-    geometry.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
+    addAttribute(geometry, 'position', new THREE.BufferAttribute(position, 3));
+    addAttribute(geometry, 'normal', new THREE.BufferAttribute(normal, 3));
+    addAttribute(geometry, 'uv', new THREE.BufferAttribute(uv, 2));
+    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
     return geometry;
 }
 
@@ -186,4 +191,14 @@ export function LineStringSplit(lineString: LineStringType) {
         lineStrings,
         center
     };
+}
+
+export function setLineSegmentPosition(position: Array<number>, positionsV: Array<THREE.Vector3>) {
+    for (let i = 0, len = positionsV.length; i < len; i++) {
+        const v = positionsV[i];
+        if (i > 0 && i < len - 1) {
+            position.push(v.x, v.y, v.z);
+        }
+        position.push(v.x, v.y, v.z);
+    }
 }
