@@ -1,14 +1,14 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
-import { getLinePosition, LineStringSplit } from './util/LineUtil';
+import { getLinePosition, LineStringSplit, setLineSegmentPosition } from './util/LineUtil';
 import MergedMixin from './MergedMixin';
 import FatLine from './FatLine';
 import { isGeoJSONLine } from './util/GeoJSONUtil';
 import LineGeometry from './util/fatline/LineGeometry';
 import Line2 from './util/fatline/Line2';
 import LineMaterial from './util/fatline/LineMaterial';
-import { getCenterOfPoints, setBottomHeight } from './util';
+import { getCenterOfPoints, getGeometriesColorArray, setBottomHeight } from './util';
 import { FatLineMaterialType, LineOptionType, LineStringType } from './type';
 import { ThreeLayer } from './index';
 import { getVertexColors } from './util/ThreeAdaptUtil';
@@ -51,13 +51,7 @@ class FatLines extends MergedMixin(BaseObject) {
                 const { positionsV } = getLinePosition(lls[m], layer, center);
                 setBottomHeight(positionsV, properties.bottomHeight, layer, cache);
                 psCount += (positionsV.length * 2 - 2);
-                for (let j = 0, len1 = positionsV.length; j < len1; j++) {
-                    const v = positionsV[j];
-                    if (j > 0 && j < len1 - 1) {
-                        ps.push(v.x, v.y, v.z);
-                    }
-                    ps.push(v.x, v.y, v.z);
-                }
+                setLineSegmentPosition(ps, positionsV);
             }
             // const psCount = positionsV.length + positionsV.length - 2;
             const faceLen = psCount;
@@ -126,7 +120,8 @@ class FatLines extends MergedMixin(BaseObject) {
         (geometry as LineGeometry).setPositions(ps);
         const pick = this.getLayer().getPick();
         const { _geometriesAttributes } = this;
-        const colors = [];
+        const colors = getGeometriesColorArray(_geometriesAttributes);
+        let cIndex = 0;
         for (let i = 0, len = _geometriesAttributes.length; i < len; i++) {
             const color = pick.getColor();
             const colorIndex = color.getHex();
@@ -134,7 +129,10 @@ class FatLines extends MergedMixin(BaseObject) {
             const { count } = _geometriesAttributes[i].position;
             this._datas[i].colorIndex = colorIndex;
             for (let j = 0; j < count; j++) {
-                colors.push(color.r, color.g, color.b);
+                colors[cIndex] = color.r;
+                colors[cIndex + 1] = color.g;
+                colors[cIndex + 2] = color.b;
+                cIndex += 3;
             }
         }
         (geometry as LineGeometry).setColors(colors);

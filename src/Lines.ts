@@ -1,12 +1,12 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
-import { getLinePosition, LineStringSplit } from './util/LineUtil';
+import { getLinePosition, LineStringSplit, setLineSegmentPosition } from './util/LineUtil';
 import MergedMixin from './MergedMixin';
 import Line from './Line';
 import { isGeoJSONLine } from './util/GeoJSONUtil';
 import { addAttribute, getVertexColors } from './util/ThreeAdaptUtil';
-import { getCenterOfPoints, setBottomHeight } from './util/index';
+import { getCenterOfPoints, getGeometriesColorArray, setBottomHeight } from './util/index';
 import { LineMaterialType, LineOptionType, LineStringType } from './type/index';
 import { ThreeLayer } from './index';
 
@@ -47,13 +47,7 @@ class Lines extends MergedMixin(BaseObject) {
                 const { positionsV } = getLinePosition(lls[m], layer, center);
                 setBottomHeight(positionsV, properties.bottomHeight, layer, cache);
                 psCount += (positionsV.length * 2 - 2);
-                for (let j = 0, len1 = positionsV.length; j < len1; j++) {
-                    const v = positionsV[j];
-                    if (j > 0 && j < len1 - 1) {
-                        ps.push(v.x, v.y, v.z);
-                    }
-                    ps.push(v.x, v.y, v.z);
-                }
+                setLineSegmentPosition(ps, positionsV);
             }
 
 
@@ -125,18 +119,23 @@ class Lines extends MergedMixin(BaseObject) {
         const geometry = this._geometryCache || (this.getObject3d() as any).geometry.clone();
         const pick = this.getLayer().getPick();
         const { _geometriesAttributes } = this;
-        const colors = [];
-        for (let i = 0, len = _geometriesAttributes.length; i < len; i++) {
+        const len = _geometriesAttributes.length;
+        const colors = getGeometriesColorArray(_geometriesAttributes);
+        let cIndex = 0;
+        for (let i = 0; i < len; i++) {
             const color = pick.getColor();
             const colorIndex = color.getHex();
             this._colorMap[colorIndex] = i;
             const { count } = _geometriesAttributes[i].position;
             this._datas[i].colorIndex = colorIndex;
             for (let j = 0; j < count; j++) {
-                colors.push(color.r, color.g, color.b);
+                colors[cIndex] = color.r;
+                colors[cIndex + 1] = color.g;
+                colors[cIndex + 2] = color.b;
+                cIndex += 3;
             }
         }
-        addAttribute(geometry, 'color', new THREE.Float32BufferAttribute(colors, 3, true));
+        addAttribute(geometry, 'color', new THREE.BufferAttribute(colors, 3, true));
         const material = (this.getObject3d() as any).material.clone();
         material.color.set('#fff');
         material.vertexColors = getVertexColors();

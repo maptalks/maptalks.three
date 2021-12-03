@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
+import { getGeometriesColorArray } from './util';
 import { addAttribute, getVertexColors } from './util/ThreeAdaptUtil';
 
 const EVENTS = ['click', 'mousemove', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].join(' ').toString();
@@ -187,12 +188,7 @@ const MergedMixin = <T extends Constructor<BaseObject>>(Base: T) => {
             const pick = this.getLayer().getPick();
             const { _geometriesAttributes } = this;
             const len = _geometriesAttributes.length;
-            let colorsLen = 0;
-            for (let i = 0; i < len; i++) {
-                const { count } = _geometriesAttributes[i].position;
-                colorsLen += count;
-            }
-            const colors = new Float32Array(colorsLen * 3);
+            const colors = getGeometriesColorArray(_geometriesAttributes);
             let cIndex = 0;
             for (let i = 0; i < len; i++) {
                 const color = pick.getColor();

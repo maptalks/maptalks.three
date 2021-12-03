@@ -4,7 +4,7 @@ import BaseObject from './BaseObject';
 import { ThreeLayer } from './index';
 import { LineMaterialType, LineOptionType, LineStringType } from './type/index';
 import { setBottomHeight } from './util';
-import { getLinePosition, LineStringSplit } from './util/LineUtil';
+import { getLinePosition, LineStringSplit, setLineSegmentPosition } from './util/LineUtil';
 import { addAttribute, getVertexColors } from './util/ThreeAdaptUtil';
 
 function initColors(cs) {
@@ -37,13 +37,7 @@ class Line extends BaseObject {
         for (let i = 0, len = lineStrings.length; i < len; i++) {
             const lineString = lineStrings[i];
             const { positionsV } = getLinePosition(lineString, layer, center);
-            for (let j = 0, len1 = positionsV.length; j < len1; j++) {
-                const v = positionsV[j];
-                if (j > 0 && j < len1 - 1) {
-                    ps.push(v.x, v.y, v.z);
-                }
-                ps.push(v.x, v.y, v.z);
-            }
+            setLineSegmentPosition(ps, positionsV);
         }
         const geometry = new THREE.BufferGeometry();
         addAttribute(geometry, 'position', new THREE.Float32BufferAttribute(ps, 3));

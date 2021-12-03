@@ -1,7 +1,7 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
-import { getLinePosition, LineStringSplit } from './util/LineUtil';
+import { getLinePosition, LineStringSplit, setLineSegmentPosition } from './util/LineUtil';
 import LineGeometry from './util/fatline/LineGeometry';
 import Line2 from './util/fatline/Line2';
 import LineMaterial from './util/fatline/LineMaterial';
@@ -25,13 +25,7 @@ class FatLine extends BaseObject {
         for (let m = 0, le = lineStrings.length; m < le; m++) {
             const positionsV = getLinePosition(lineStrings[m], layer, center).positionsV;
             setBottomHeight(positionsV, options.bottomHeight, layer, cache);
-            for (let i = 0, len = positionsV.length; i < len; i++) {
-                const v = positionsV[i];
-                if (i > 0 && i < len - 1) {
-                    ps.push(v.x, v.y, v.z);
-                }
-                ps.push(v.x, v.y, v.z);
-            }
+            setLineSegmentPosition(ps, positionsV);
         }
         const geometry = new LineGeometry();
         geometry.setPositions(ps);
