@@ -48,18 +48,19 @@ export function getActor(): maptalks.worker.Actor {
     if (!maptalks.worker) {
         console.error('maptalks.worker is not defined,You can\'t use ThreeVectorTileLayer');
     }
-    if (!actor) {
+    if (!actor && MeshActor) {
         actor = new MeshActor(getWorkerName());
     }
     return actor;
 }
-
 /**
  * generate extrudepolygons data for worker
  * @param {*} polygons
  * @param {*} layer
  */
 function gengerateExtrudePolygons(polygons: PolygonType[] = [], center: maptalks.Coordinate, layer: ThreeLayer) {
+    const time = 'time1';
+    console.time(time);
     const centerPt = layer.coordinateToVector3(center);
     const len = polygons.length;
     const datas = [], transfer = [], altCache = {};
@@ -92,6 +93,7 @@ function gengerateExtrudePolygons(polygons: PolygonType[] = [], center: maptalks
             bottomHeight
         });
     }
+    console.timeEnd(time);
     return {
         datas,
         transfer

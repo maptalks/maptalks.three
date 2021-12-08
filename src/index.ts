@@ -34,6 +34,7 @@ import * as geometryExtrude from 'deyihu-geometry-extrude';
 import LineMaterial from './util/fatline/LineMaterial';
 import { BarOptionType, BaseLayerOptionType, BaseObjectOptionType, ExtrudeLineOptionType, ExtrudeLineTrailOptionType, ExtrudePolygonOptionType, FatLineMaterialType, getBaseObjectMaterialType, HeatMapDataType, HeatMapOptionType, LineMaterialType, LineOptionType, LineStringType, PointOptionType, PolygonType, SingleLineStringType, TerrainOptionType } from './type/index';
 import { getWorkerCode, getWorkerName } from './worker/getworker';
+import { getActor } from './worker/MeshActor';
 
 
 const options: BaseLayerOptionType = {
@@ -1080,6 +1081,7 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         this._syncCamera();
         scene.add(camera);
         this.pick = new GPUPick(this.layer);
+        getActor();
     }
 
     onCanvasCreate() {
