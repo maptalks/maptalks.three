@@ -103,3 +103,4 @@ export function getDefaultBufferGeometry(): THREE.BufferGeometry {
     }
     return defaultBufferGeometry;
 }
+getDefaultBufferGeometry();
