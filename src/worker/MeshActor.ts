@@ -59,8 +59,6 @@ export function getActor(): maptalks.worker.Actor {
  * @param {*} layer
  */
 function gengerateExtrudePolygons(polygons: PolygonType[] = [], center: maptalks.Coordinate, layer: ThreeLayer) {
-    const time = 'time1';
-    console.time(time);
     const centerPt = layer.coordinateToVector3(center);
     const len = polygons.length;
     const datas = [], transfer = [], altCache = {};
@@ -93,7 +91,6 @@ function gengerateExtrudePolygons(polygons: PolygonType[] = [], center: maptalks
             bottomHeight
         });
     }
-    console.timeEnd(time);
     return {
         datas,
         transfer
