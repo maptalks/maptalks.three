@@ -34,7 +34,6 @@ import * as geometryExtrude from 'deyihu-geometry-extrude';
 import LineMaterial from './util/fatline/LineMaterial';
 import { BarOptionType, BaseLayerOptionType, BaseObjectOptionType, ExtrudeLineOptionType, ExtrudeLineTrailOptionType, ExtrudePolygonOptionType, FatLineMaterialType, getBaseObjectMaterialType, HeatMapDataType, HeatMapOptionType, LineMaterialType, LineOptionType, LineStringType, PointOptionType, PolygonType, SingleLineStringType, TerrainOptionType } from './type/index';
 import { getWorkerCode, getWorkerName } from './worker/getworker';
-import { getActor } from './worker/MeshActor';
 
 
 const options: BaseLayerOptionType = {
@@ -162,11 +161,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
         if (isArray) {
             TEMP_COORD.x = coordinate[0];
             TEMP_COORD.y = coordinate[1];
-        }
-        if (!isArray) {
-            if (!(coordinate instanceof maptalks.Coordinate)) {
-                coordinate = new maptalks.Coordinate(coordinate);
-            }
+        } else if (!(coordinate instanceof maptalks.Coordinate)) {
+            coordinate = new maptalks.Coordinate(coordinate);
         }
         const res = getGLRes(map);
         const p = coordinateToPoint(map, isArray ? TEMP_COORD : coordinate, res, TEMP_POINT);
@@ -187,11 +183,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
             if (isArray) {
                 TEMP_COORD.x = coordinate[0];
                 TEMP_COORD.y = coordinate[1];
-            }
-            if (!isArray) {
-                if (!(coordinate instanceof maptalks.Coordinate)) {
-                    coordinate = new maptalks.Coordinate(coordinate);
-                }
+            } else if (!(coordinate instanceof maptalks.Coordinate)) {
+                coordinate = new maptalks.Coordinate(coordinate);
             }
             const p = coordinateToPoint(map, isArray ? TEMP_COORD : coordinate, res, TEMP_POINT);
             p.x -= centerPt.x;
@@ -217,11 +210,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
             if (isArray) {
                 TEMP_COORD.x = coordinate[0];
                 TEMP_COORD.y = coordinate[1];
-            }
-            if (!isArray) {
-                if (!(coordinate instanceof maptalks.Coordinate)) {
-                    coordinate = new maptalks.Coordinate(coordinate);
-                }
+            } else if (!(coordinate instanceof maptalks.Coordinate)) {
+                coordinate = new maptalks.Coordinate(coordinate);
             }
             const p = coordinateToPoint(map, isArray ? TEMP_COORD : coordinate, res, TEMP_POINT);
             p.x -= centerPt.x;
@@ -1139,7 +1129,6 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         this._syncCamera();
         scene.add(camera);
         this.pick = new GPUPick(this.layer);
-        getActor();
     }
 
     onCanvasCreate() {
