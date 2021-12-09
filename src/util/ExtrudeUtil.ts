@@ -177,43 +177,24 @@ export function getSinglePolygonPositions(polygon: SinglePolygonType, layer: Thr
         center = center || getGeoJSONCenter(polygon as any);
     } else if (polygon instanceof maptalks.Polygon) {
         shell = polygon.getShell();
-        holes = polygon.getHoles();
+        holes = polygon.getHoles(); 
         center = center || polygon.getCenter();
     }
     centerPt = centerPt || layer.coordinateToVector3(center);
     let outer: Array<Array<number>> | Float32Array;
     if (isArrayBuff) {
-        outer = new Float32Array(shell.length * 2);
+        outer = layer.coordinatiesToGLFloatArray(shell, centerPt);
     } else {
-        outer = [];
-    }
-    for (let i = 0, len = shell.length; i < len; i++) {
-        const c = shell[i];
-        const v = layer.coordinateToVector3(c).sub(centerPt);
-        if (isArrayBuff) {
-            const idx = i * 2;
-            outer[idx] = v.x;
-            outer[idx + 1] = v.y;
-            // outer[idx + 2] = v.z;
-        } else {
-            (outer as Array<Array<number>>).push([v.x, v.y]);
-        }
+        outer = layer.coordinatiesToGLArray(shell, centerPt);
     }
     const data = [(isArrayBuff ? (outer as Float32Array).buffer : outer)];
     if (holes && holes.length > 0) {
         for (let i = 0, len = holes.length; i < len; i++) {
-            const pts: Array<Array<number>> | Float32Array = (isArrayBuff ? new Float32Array(holes[i].length * 2) : []);
-            for (let j = 0, len1 = holes[i].length; j < len1; j++) {
-                const c = holes[i][j];
-                const pt = layer.coordinateToVector3(c).sub(centerPt);
-                if (isArrayBuff) {
-                    const idx = j * 2;
-                    pts[idx] = pt.x;
-                    pts[idx + 1] = pt.y;
-                    // pts[idx + 2] = pt.z;
-                } else {
-                    (pts as Array<Array<number>>).push([pt.x, pt.y]);
-                }
+            let pts: Array<Array<number>> | Float32Array;
+            if (isArrayBuff) {
+                pts = layer.coordinatiesToGLFloatArray(holes[i], centerPt);
+            } else {
+                pts = layer.coordinatiesToGLArray(holes[i], centerPt);
             }
             data.push((isArrayBuff ? (pts as Float32Array).buffer : pts));
         }
