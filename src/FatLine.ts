@@ -1,7 +1,7 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
-import { getLinePosition, LineStringSplit, setLineSegmentPosition } from './util/LineUtil';
+import { getLinePosition, getLineSegmentPosition, LineStringSplit, mergeLinePositions } from './util/LineUtil';
 import LineGeometry from './util/fatline/LineGeometry';
 import Line2 from './util/fatline/Line2';
 import LineMaterial from './util/fatline/LineMaterial';
@@ -21,21 +21,22 @@ class FatLine extends BaseObject {
         super();
         this._initOptions(options);
         const { lineStrings, center } = LineStringSplit(lineString);
-        const ps = [], cache = {};
+        const positionList = [], cache = {};
         for (let m = 0, le = lineStrings.length; m < le; m++) {
-            const positionsV = getLinePosition(lineStrings[m], layer, center).positionsV;
-            setBottomHeight(positionsV, options.bottomHeight, layer, cache);
-            setLineSegmentPosition(ps, positionsV);
+            const positions = getLinePosition(lineStrings[m], layer, center, false).positions;
+            setBottomHeight(positions, options.bottomHeight, layer, cache);
+            positionList.push(getLineSegmentPosition(positions));
         }
+        const position = mergeLinePositions(positionList);
         const geometry = new LineGeometry();
-        geometry.setPositions(ps);
+        geometry.setPositions(position);
         this._setMaterialRes(layer, material);
         this._createLine2(geometry, material);
         const { altitude } = options;
         const z = layer.distanceToVector3(altitude, altitude).x;
         const v = layer.coordinateToVector3(center, z);
         this.getObject3d().position.copy(v);
-        this._setPickObject3d(ps, material.linewidth);
+        this._setPickObject3d(position, material.linewidth);
         this._init();
         this.type = 'FatLine';
     }

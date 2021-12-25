@@ -177,13 +177,13 @@ export function getSinglePolygonPositions(polygon: SinglePolygonType, layer: Thr
         center = center || getGeoJSONCenter(polygon as any);
     } else if (polygon instanceof maptalks.Polygon) {
         shell = polygon.getShell();
-        holes = polygon.getHoles(); 
+        holes = polygon.getHoles();
         center = center || polygon.getCenter();
     }
     centerPt = centerPt || layer.coordinateToVector3(center);
     let outer: Array<Array<number>> | Float32Array;
     if (isArrayBuff) {
-        outer = layer.coordinatiesToGLFloatArray(shell, centerPt);
+        outer = layer.coordinatiesToGLFloatArray(shell, centerPt).positons2d;
     } else {
         outer = layer.coordinatiesToGLArray(shell, centerPt);
     }
@@ -192,7 +192,7 @@ export function getSinglePolygonPositions(polygon: SinglePolygonType, layer: Thr
         for (let i = 0, len = holes.length; i < len; i++) {
             let pts: Array<Array<number>> | Float32Array;
             if (isArrayBuff) {
-                pts = layer.coordinatiesToGLFloatArray(holes[i], centerPt);
+                pts = layer.coordinatiesToGLFloatArray(holes[i], centerPt).positons2d;
             } else {
                 pts = layer.coordinatiesToGLArray(holes[i], centerPt);
             }

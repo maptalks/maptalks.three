@@ -13,12 +13,13 @@ const COMMA = ',';
  * @param {ThreeLayer} layer
  */
 export function getLinePosition(lineString: SingleLineStringType | Array<THREE.Vector3>,
-    layer: ThreeLayer, center: maptalks.Coordinate): {
+    layer: ThreeLayer, center: maptalks.Coordinate, hasVectorArray = true): {
         positions2d: Float32Array,
         positions: Float32Array;
         positionsV: THREE.Vector3[];
     } {
     const positionsV: THREE.Vector3[] = [];
+    let positions: Float32Array, positions2d: Float32Array;
     if (Array.isArray(lineString) && lineString[0] instanceof THREE.Vector3) {
         for (let i = 0, len = lineString.length; i < len; i++) {
             const v = lineString[i];
@@ -43,15 +44,28 @@ export function getLinePosition(lineString: SingleLineStringType | Array<THREE.V
             }
         }
         const centerPt = layer.coordinateToVector3(center || cent);
-        for (let i = 0, len = coordinates.length; i < len; i++) {
-            const coordinate = coordinates[i];
-            const v = layer.coordinateToVector3(coordinate, z).sub(centerPt);
-            // positions.push(v.x, v.y, v.z);
-            positionsV.push(v);
+        if (hasVectorArray) {
+            for (let i = 0, len = coordinates.length; i < len; i++) {
+                const coordinate = coordinates[i];
+                const v = layer.coordinateToVector3(coordinate, z).sub(centerPt);
+                // positions.push(v.x, v.y, v.z);
+                positionsV.push(v);
+            }
+        } else {
+            const result = layer.coordinatiesToGLFloatArray(coordinates, centerPt);
+            positions = result.positions;
+            positions2d = result.positons2d;
         }
     }
-    const positions = new Float32Array(positionsV.length * 3);
-    const positions2d = new Float32Array(positionsV.length * 2);
+    if (!hasVectorArray) {
+        return {
+            positions,
+            positionsV,
+            positions2d
+        }
+    }
+    positions2d = new Float32Array(positionsV.length * 2);
+    positions = new Float32Array(positionsV.length * 3);
     for (let i = 0, len = positionsV.length; i < len; i++) {
         const idx = i * 3;
         const v = positionsV[i];
@@ -201,4 +215,44 @@ export function setLineSegmentPosition(position: Array<number>, positionsV: Arra
         }
         position.push(v.x, v.y, v.z);
     }
+}
+
+export function getLineSegmentPosition(ps?: Float32Array): Float32Array {
+    const position = new Float32Array(ps.length * 2 - 6);
+    let j = 0;
+    for (let i = 0, len = ps.length / 3; i < len; i++) {
+        const x = ps[i * 3], y = ps[i * 3 + 1], z = ps[i * 3 + 2];
+        if (i > 0 && i < len - 1) {
+            const idx = j * 3;
+            position[idx] = x;
+            position[idx + 1] = y;
+            position[idx + 2] = z;
+            j++;
+        }
+        const idx = j * 3;
+        position[idx] = x;
+        position[idx + 1] = y;
+        position[idx + 2] = z;
+        j++;
+    }
+    return position;
+}
+
+export function mergeLinePositions(positionsList: Array<Float32Array>): Float32Array {
+    let len = 0
+    const l = positionsList.length;
+    if (l === 1) {
+        return positionsList[0];
+    }
+    for (let i = 0; i < l; i++) {
+        len += positionsList[i].length;
+    }
+    const position = new Float32Array(len);
+    let offset = 0;
+    for (let i = 0; i < l; i++) {
+        position.set(positionsList[i], offset);
+        offset += positionsList[i].length;
+    }
+    return position;
+
 }

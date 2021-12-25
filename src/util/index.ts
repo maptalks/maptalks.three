@@ -35,7 +35,7 @@ export function getCenterOfPoints(coordinates: Array<any> = []): maptalks.Coordi
     return new maptalks.Coordinate(sumX / len, sumY / len);
 }
 
-export function setBottomHeight(geometry: THREE.BufferGeometry | MergeAttributeType | THREE.Vector3[], bottomHeight: number, layer: ThreeLayer,
+export function setBottomHeight(geometry: THREE.BufferGeometry | MergeAttributeType | THREE.Vector3[] | Float32Array, bottomHeight: number, layer: ThreeLayer,
     cache?: { [key: number]: number }): number {
     if (bottomHeight === undefined || typeof bottomHeight !== 'number' || bottomHeight === 0) {
         return 0;
@@ -43,7 +43,7 @@ export function setBottomHeight(geometry: THREE.BufferGeometry | MergeAttributeT
     let position;
     if (geometry instanceof THREE.BufferGeometry) {
         position = geometry.attributes.position.array;
-    } else if (Array.isArray(geometry)) {
+    } else if (Array.isArray(geometry) || geometry instanceof Float32Array) {
         position = geometry;
     } else {
         position = geometry.position;

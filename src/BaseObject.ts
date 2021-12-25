@@ -3,6 +3,7 @@ import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import { BaseObjectOptionType } from './type/BaseOption';
 import Line2 from './util/fatline/Line2';
+import { addAttribute } from './util/ThreeAdaptUtil';
 
 const OPTIONS = {
     interactive: true,
@@ -419,7 +420,8 @@ class BaseObject extends maptalks.Eventable(Base) {
 
     _createLine(geometry: THREE.BufferGeometry, material: THREE.LineBasicMaterial | THREE.LineDashedMaterial) {
         this.object3d = new THREE.Line(geometry, material);
-        (this.object3d as THREE.Line).computeLineDistances();
+        // (this.object3d as THREE.Line).computeLineDistances();
+        this._computeLineDistances(geometry);
         this.object3d['__parent'] = this;
         return this;
     }
@@ -442,9 +444,36 @@ class BaseObject extends maptalks.Eventable(Base) {
 
     _createLineSegments(geometry: THREE.BufferGeometry, material: THREE.LineBasicMaterial | THREE.LineDashedMaterial) {
         this.object3d = new THREE.LineSegments(geometry, material);
-        (this.object3d as THREE.LineSegments).computeLineDistances();
+        // (this.object3d as THREE.LineSegments).computeLineDistances();
+        this._computeLineDistances(geometry);
         this.object3d['__parent'] = this;
         return this;
+    }
+
+    /**
+     * rewrite three.js computeLineDistances ,1.7 speed
+     * @param geometry 
+     */
+    _computeLineDistances(geometry: THREE.BufferGeometry) {
+        const position = geometry.attributes.position.array;
+        const count = geometry.attributes.position.count;
+        const lineDistances = new Float32Array(count);
+        lineDistances[0] = 0;
+        const start = new THREE.Vector3(0, 0, 0), end = new THREE.Vector3(0, 0, 0);
+        for (let i = 1; i < count; i++) {
+            const idx = (i - 1) * 3;
+            start.x = position[idx];
+            start.y = position[idx + 1];
+            start.z = position[idx + 2];
+
+            const idx1 = i * 3;
+            end.x = position[idx1];
+            end.y = position[idx1 + 1];
+            end.z = position[idx1 + 2];
+            const distance = end.distanceTo(start);
+            lineDistances[i] = lineDistances[i - 1] + distance;
+        }
+        addAttribute(geometry, 'lineDistance', new THREE.BufferAttribute(lineDistances, 1));
     }
 }
 
