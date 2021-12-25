@@ -1,7 +1,7 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
-import { getLinePosition, LineStringSplit, setLineSegmentPosition } from './util/LineUtil';
+import { getLinePosition, getLineSegmentPosition, LineStringSplit, mergeLinePositions } from './util/LineUtil';
 import MergedMixin from './MergedMixin';
 import FatLine from './FatLine';
 import { isGeoJSONLine } from './util/GeoJSONUtil';
@@ -41,17 +41,17 @@ class FatLines extends MergedMixin(BaseObject) {
 
         const lines = [], cache = {};
         let faceIndex = 0, faceMap = [], geometriesAttributes = [],
-            psIndex = 0, ps = [];
+            psIndex = 0, positionList = [];
         //LineSegmentsGeometry
         for (let i = 0; i < len; i++) {
             const lls = lineStringList[i];
             let psCount = 0;
             for (let m = 0, le = lls.length; m < le; m++) {
                 const properties = (isGeoJSONLine(lls[m] as any) ? lls[m]['properties'] : (lls[m] as any).getProperties() || {});
-                const { positionsV } = getLinePosition(lls[m], layer, center);
-                setBottomHeight(positionsV, properties.bottomHeight, layer, cache);
-                psCount += (positionsV.length * 2 - 2);
-                setLineSegmentPosition(ps, positionsV);
+                const { positions } = getLinePosition(lls[m], layer, center, false);
+                setBottomHeight(positions, properties.bottomHeight, layer, cache);
+                psCount += (positions.length / 3 * 2 - 2);
+                positionList.push(getLineSegmentPosition(positions));
             }
             // const psCount = positionsV.length + positionsV.length - 2;
             const faceLen = psCount;
@@ -81,9 +81,9 @@ class FatLines extends MergedMixin(BaseObject) {
 
         super();
         this._initOptions(options);
-
+        const position = mergeLinePositions(positionList);
         const geometry = new LineGeometry();
-        geometry.setPositions(ps);
+        geometry.setPositions(position);
         this._setMaterialRes(layer, material);
         this._createLine2(geometry, material);
         const { altitude } = options;
@@ -98,11 +98,12 @@ class FatLines extends MergedMixin(BaseObject) {
         this.faceIndex = null;
         this.index = null;
         this._geometryCache = new LineGeometry();
-        (this._geometryCache as any).setPositions(ps);
+        const newPosition = new Float32Array(position);
+        (this._geometryCache as any).setPositions(newPosition);
         this._colorMap = {};
         this.isHide = false;
         this._initBaseObjectsEvent(lines);
-        this._setPickObject3d(ps, material.linewidth);
+        this._setPickObject3d(newPosition, material.linewidth);
         this._init();
         this.type = 'FatLines';
     }

@@ -169,7 +169,10 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return new THREE.Vector3(p.x, p.y, z);
     }
 
-    coordinatiesToGLFloatArray(coordinaties: Array<maptalks.Coordinate | Array<number>>, centerPt: THREE.Vector3): Float32Array {
+    coordinatiesToGLFloatArray(coordinaties: Array<maptalks.Coordinate | Array<number>>, centerPt: THREE.Vector3): {
+        positions: Float32Array,
+        positons2d: Float32Array
+    } {
         const map = this.getMap();
         if (!map) {
             return null;
@@ -177,6 +180,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         const res = getGLRes(map);
         const len = coordinaties.length;
         const array = new Float32Array(len * 2);
+        const array3d = new Float32Array(len * 3);
         for (let i = 0; i < len; i++) {
             let coordinate = coordinaties[i];
             const isArray = Array.isArray(coordinate);
@@ -192,8 +196,17 @@ class ThreeLayer extends maptalks.CanvasLayer {
             const idx = i * 2;
             array[idx] = p.x;
             array[idx + 1] = p.y;
+
+            const idx1 = i * 3
+            array3d[idx1] = p.x;
+            array3d[idx1 + 1] = p.y;
+            array3d[idx1 + 2] = 0;
+
         }
-        return array;
+        return {
+            positions: array3d,
+            positons2d: array
+        };
     }
 
     coordinatiesToGLArray(coordinaties: Array<maptalks.Coordinate | Array<number>>, centerPt: THREE.Vector3): Array<Array<number>> {

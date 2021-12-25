@@ -1,7 +1,7 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
-import { getLinePosition, LineStringSplit, setLineSegmentPosition } from './util/LineUtil';
+import { getLinePosition, getLineSegmentPosition, LineStringSplit, mergeLinePositions } from './util/LineUtil';
 import MergedMixin from './MergedMixin';
 import Line from './Line';
 import { isGeoJSONLine } from './util/GeoJSONUtil';
@@ -35,19 +35,18 @@ class Lines extends MergedMixin(BaseObject) {
         // Get the center point of the point set
         const center = getCenterOfPoints(centers);
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, lineStrings, coordinate: center });
-
         const lines = [], cache = {};
         let faceIndex = 0, faceMap = [], geometriesAttributes = [],
-            psIndex = 0, ps = [];
+            psIndex = 0, positionList = [];
         for (let i = 0; i < len; i++) {
             const lls = lineStringList[i];
             let psCount = 0;
             for (let m = 0, le = lls.length; m < le; m++) {
                 const properties = (isGeoJSONLine(lls[m] as any) ? lls[m]['properties'] : (lls[m] as any).getProperties() || {});
-                const { positionsV } = getLinePosition(lls[m], layer, center);
-                setBottomHeight(positionsV, properties.bottomHeight, layer, cache);
-                psCount += (positionsV.length * 2 - 2);
-                setLineSegmentPosition(ps, positionsV);
+                const { positions } = getLinePosition(lls[m], layer, center, false);
+                setBottomHeight(positions, properties.bottomHeight, layer, cache);
+                psCount += (positions.length / 3 * 2 - 2);
+                positionList.push(getLineSegmentPosition(positions));
             }
 
 
@@ -69,9 +68,9 @@ class Lines extends MergedMixin(BaseObject) {
             };
             psIndex += psCount * 3;
         }
-
+        const position = mergeLinePositions(positionList);
         const geometry = new THREE.BufferGeometry();
-        addAttribute(geometry, 'position', new THREE.Float32BufferAttribute(ps, 3));
+        addAttribute(geometry, 'position', new THREE.BufferAttribute(position, 3));
         super();
         this._initOptions(options);
 
