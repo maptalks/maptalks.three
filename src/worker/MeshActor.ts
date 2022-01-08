@@ -18,7 +18,7 @@ if (maptalks.worker) {
         pushQueue(q: any = {}) {
             const { type, data, callback, layer, key, center, lineStrings } = q;
             let params;
-            if (type === 'Polygon') {
+            if (type.indexOf('Polygon') > -1) {
                 params = gengerateExtrudePolygons(data, center, layer);
             } else if (type === 'LineString') {
                 //todo liness
@@ -26,7 +26,7 @@ if (maptalks.worker) {
             } else if (type === 'Point') {
                 //todo points
             }
-            this.send({ type, datas: params.datas }, params.transfe, function (err, message) {
+            this.send({ type, datas: params.datas }, params.transfer, function (err, message) {
                 if (err) {
                     console.error(err);
                 }
@@ -59,12 +59,17 @@ export function getActor(): maptalks.worker.Actor {
  * @param {*} layer
  */
 function gengerateExtrudePolygons(polygons: PolygonType[] = [], center: maptalks.Coordinate, layer: ThreeLayer) {
-    const centerPt = layer.coordinateToVector3(center);
+    let centerPt;
+    if (center) {
+        centerPt = layer.coordinateToVector3(center);
+    }
     const len = polygons.length;
     const datas = [], transfer = [], altCache = {};
     for (let i = 0; i < len; i++) {
         const polygon = polygons[i];
-        const data = getPolygonPositions(polygon, layer, center, centerPt, true);
+        const p = (polygon as any);
+        const properties = p._properties ? p._properties : (isGeoJSONPolygon(p) ? polygon['properties'] : p.getProperties() || {});
+        const data = getPolygonPositions(polygon, layer, center || properties.center, centerPt, true);
         for (let j = 0, len1 = data.length; j < len1; j++) {
             const d = data[j];
             for (let m = 0, len2 = d.length; m < len2; m++) {
@@ -72,7 +77,6 @@ function gengerateExtrudePolygons(polygons: PolygonType[] = [], center: maptalks
                 transfer.push(d[m]);
             }
         }
-        const properties = (isGeoJSONPolygon(polygon as any) ? polygon['properties'] : (polygon as any).getProperties() || {});
         let height = properties.height || 1;
         let bottomHeight = properties.bottomHeight || 0;
         if (bottomHeight !== undefined && typeof bottomHeight === 'number' && bottomHeight !== 0) {
@@ -86,6 +90,7 @@ function gengerateExtrudePolygons(polygons: PolygonType[] = [], center: maptalks
         }
         height = altCache[height];
         datas.push({
+            id: properties.id,
             data,
             height,
             bottomHeight
@@ -127,7 +132,7 @@ function gengerateExtrudeLines(lineStringList: Array<Array<SingleLineStringType>
         const data = [];
         for (let j = 0, len1 = multiLineString.length; j < len1; j++) {
             const lineString = multiLineString[j];
-            const positions2d = getLinePosition(lineString, layer, center).positions2d;
+            const positions2d = getLinePosition(lineString, layer, center).positions2d.buffer;
             transfer.push(positions2d);
             data.push(positions2d);
         }

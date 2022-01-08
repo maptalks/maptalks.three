@@ -34,6 +34,7 @@ import * as geometryExtrude from 'deyihu-geometry-extrude';
 import LineMaterial from './util/fatline/LineMaterial';
 import { BarOptionType, BaseLayerOptionType, BaseObjectOptionType, ExtrudeLineOptionType, ExtrudeLineTrailOptionType, ExtrudePolygonOptionType, FatLineMaterialType, getBaseObjectMaterialType, HeatMapDataType, HeatMapOptionType, LineMaterialType, LineOptionType, LineStringType, PointOptionType, PolygonType, SingleLineStringType, TerrainOptionType } from './type/index';
 import { getWorkerCode, getWorkerName } from './worker/getworker';
+import { BaseObjectTaskManager } from './BaseObjectTaskManager';
 
 
 const options: BaseLayerOptionType = {
@@ -59,7 +60,11 @@ const LINEPRECISIONS = [
     [5, 0.7],
     [2, 0.1],
     [1, 0.05],
-    [0.5, 0.02]
+    [0.5, 0.02],
+    [0.4, 0.01],
+    [0.1, 0.005],
+    [0.05, 0.002],
+    [0.01, 0.001],
 ];
 
 const EVENTS = [
@@ -1129,6 +1134,7 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         this._syncCamera();
         scene.add(camera);
         this.pick = new GPUPick(this.layer);
+        BaseObjectTaskManager.star();
     }
 
     onCanvasCreate() {

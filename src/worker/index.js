@@ -18,6 +18,22 @@ export const onmessage = function (message, postResponse) {
         }
         const result = generateExtrude(datas, true);
         postResponse(null, result, [result.position, result.normal, result.uv, result.indices]);
+    } else if (type === 'Polygons') {
+        const polygons = [], transfer = [];
+        datas.forEach(d => {
+            const polygon = [d];
+            generateData(polygon);
+            const { position, normal, uv, indices } = generateExtrude(polygon);
+            polygons.push({
+                id: d.id,
+                position,
+                normal,
+                uv,
+                indices
+            });
+            transfer.push(position, normal, uv, indices);
+        });
+        postResponse(null, polygons, transfer);
     }
 };
 
