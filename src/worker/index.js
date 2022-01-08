@@ -5,9 +5,9 @@ export const initialize = function () {
 
 export const onmessage = function (message, postResponse) {
     const data = message.data;
-    let { type, datas } = data;
+    let { type, datas, glRes, matrix, center } = data;
     if (type === 'Polygon') {
-        generateData(datas);
+        generateData(datas, center, glRes, matrix);
         const result = generateExtrude(datas);
         postResponse(null, result, [result.position, result.normal, result.uv, result.indices]);
     } else if (type === 'LineString') {
@@ -22,7 +22,7 @@ export const onmessage = function (message, postResponse) {
         const polygons = [], transfer = [];
         datas.forEach(d => {
             const polygon = [d];
-            generateData(polygon);
+            generateData(polygon, center, glRes, matrix);
             const { position, normal, uv, indices } = generateExtrude(polygon);
             polygons.push({
                 id: d.id,
@@ -37,16 +37,20 @@ export const onmessage = function (message, postResponse) {
     }
 };
 
+const TEMP_COORD = { x: 0, y: 0 }, TEMP_POINT = { x: 0, y: 0 };
 
-function generateData(list) {
+function generateData(list, center, glRes, matrix) {
     const len = list.length;
     for (let i = 0; i < len; i++) {
         const { data } = list[i];
+        center = list[i].center || center;
+        //multi
         for (let j = 0, len1 = data.length; j < len1; j++) {
+            // poly
             const d = data[j];
             for (let m = 0, len2 = d.length; m < len2; m++) {
                 //ring
-                list[i].data[j][m] = arrayBufferToArray(d[m]);
+                list[i].data[j][m] = arrayBufferToArray(d[m], center, glRes, matrix);
             }
         }
     }
@@ -54,11 +58,31 @@ function generateData(list) {
 
 
 
-function arrayBufferToArray(buffer) {
+function arrayBufferToArray(buffer, center, glRes, matrix) {
     const ps = new Float32Array(buffer);
     const vs = [];
     for (let i = 0, len = ps.length; i < len; i += 2) {
-        const x = ps[i], y = ps[i + 1];
+        let x = ps[i], y = ps[i + 1];
+        if (center && glRes && matrix) {
+            TEMP_COORD.x = x;
+            TEMP_COORD.y = y;
+            let p = coordinateToMercator(TEMP_COORD, TEMP_POINT);
+            //is Mercator
+            TEMP_COORD.x = p.x;
+            TEMP_COORD.y = p.y;
+
+            p = transform(matrix, TEMP_COORD, glRes, TEMP_POINT);
+
+
+            //is GL point
+            x = p.x;
+            y = p.y;
+
+            //sub center
+            x -= center[0];
+            y -= center[1];
+
+        }
         vs.push([x, y]);
     }
     return vs;
@@ -201,3 +225,41 @@ function setBottomHeight(position, bottomHeight) {
     }
 }
 
+const rad = Math.PI / 180,
+    metersPerDegree = 6378137 * Math.PI / 180,
+    maxLatitude = 85.0511287798;
+
+function coordinateToMercator(lnglat, out) {
+    const max = maxLatitude;
+    const lng = lnglat.x,
+        lat = Math.max(Math.min(max, lnglat.y), -max);
+    let c;
+    if (lat === 0) {
+        c = 0;
+    } else {
+        c = Math.log(Math.tan((90 + lat) * rad / 2)) / rad;
+    }
+    const x = lng * metersPerDegree;
+    const y = c * metersPerDegree;
+    if (out) {
+        out.x = x;
+        out.y = y;
+        return out;
+    }
+    return {
+        x, y
+    };
+}
+
+function transform(matrix, coordinates, scale, out) {
+    const x = matrix[0] * (coordinates.x - matrix[2]) / scale;
+    const y = -matrix[1] * (coordinates.y - matrix[3]) / scale;
+    if (out) {
+        out.x = x;
+        out.y = y;
+        return out;
+    }
+    return {
+        x, y
+    };
+}

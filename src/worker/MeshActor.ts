@@ -1,6 +1,6 @@
 import * as maptalks from 'maptalks';
 import { isGeoJSONLine, isGeoJSONPolygon } from '../util/GeoJSONUtil';
-import { getPolygonPositions } from '../util/ExtrudeUtil';
+import { getPolygonArrayBuffer, getPolygonPositions } from '../util/ExtrudeUtil';
 // import pkg from './../../package.json';
 import { getLinePosition } from '../util/LineUtil';
 import { LineStringType, PolygonType, SingleLineStringType } from './../type/index';
@@ -26,7 +26,7 @@ if (maptalks.worker) {
             } else if (type === 'Point') {
                 //todo points
             }
-            this.send({ type, datas: params.datas }, params.transfer, function (err, message) {
+            this.send({ type, datas: params.datas, glRes: params.glRes, matrix: params.matrix, center: params.center }, params.transfer, function (err, message) {
                 if (err) {
                     console.error(err);
                 }
@@ -59,6 +59,12 @@ export function getActor(): maptalks.worker.Actor {
  * @param {*} layer
  */
 function gengerateExtrudePolygons(polygons: PolygonType[] = [], center: maptalks.Coordinate, layer: ThreeLayer) {
+    const isMercator = layer.isMercator();
+    let glRes, matrix;
+    if (isMercator) {
+        glRes = layer.getMap().getGLRes();
+        matrix = layer.getMap().getSpatialReference().getTransformation().matrix;
+    }
     let centerPt;
     if (center) {
         centerPt = layer.coordinateToVector3(center);
@@ -69,7 +75,15 @@ function gengerateExtrudePolygons(polygons: PolygonType[] = [], center: maptalks
         const polygon = polygons[i];
         const p = (polygon as any);
         const properties = p._properties ? p._properties : (isGeoJSONPolygon(p) ? polygon['properties'] : p.getProperties() || {});
-        const data = getPolygonPositions(polygon, layer, center || properties.center, centerPt, true);
+        if (!center) {
+            centerPt = layer.coordinateToVector3(properties.center);
+        }
+        let data;
+        if (isMercator) {
+            data = getPolygonArrayBuffer(polygon);
+        } else {
+            data = getPolygonPositions(polygon, layer, properties.center || center, centerPt, true);
+        }
         for (let j = 0, len1 = data.length; j < len1; j++) {
             const d = data[j];
             for (let m = 0, len2 = d.length; m < len2; m++) {
@@ -89,16 +103,23 @@ function gengerateExtrudePolygons(polygons: PolygonType[] = [], center: maptalks
             altCache[height] = layer.distanceToVector3(height, height).x;
         }
         height = altCache[height];
-        datas.push({
+        const d = {
             id: properties.id,
             data,
             height,
-            bottomHeight
-        });
+            bottomHeight,
+        };
+        if (isMercator) {
+            (d as any).center = [centerPt.x, centerPt.y];
+        }
+        datas.push(d);
     }
     return {
         datas,
-        transfer
+        transfer,
+        glRes,
+        matrix,
+        center: isMercator ? [centerPt.x, centerPt.y] : null
     };
 }
 

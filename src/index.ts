@@ -125,6 +125,19 @@ class ThreeLayer extends maptalks.CanvasLayer {
         this.type = 'ThreeLayer';
     }
 
+    isMercator() {
+        const map = this.getMap();
+        if (!map) {
+            return false;
+        }
+        const sp = map.getSpatialReference();
+        const prj = sp._projection, res = sp._resolutions;
+        if (prj && prj.code === 'EPSG:3857' && res && res.length && Math.floor(res[0]) === 156543) {
+            return true;
+        }
+        return false;
+    }
+
     isRendering(): boolean {
         const map = this.getMap();
         if (!map) {
