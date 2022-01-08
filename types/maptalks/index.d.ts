@@ -171,6 +171,7 @@ declare class Map {
   getProjection(): any
   isInteracting(): boolean
   isAnimating(): boolean
+  getSpatialReference(): any
 }
 
 
