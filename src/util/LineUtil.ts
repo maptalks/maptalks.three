@@ -17,6 +17,7 @@ export function getLinePosition(lineString: SingleLineStringType | Array<THREE.V
         positions2d: Float32Array,
         positions: Float32Array;
         positionsV: THREE.Vector3[];
+        arrayBuffer: ArrayBuffer
     } {
     const positionsV: THREE.Vector3[] = [];
     let positions: Float32Array, positions2d: Float32Array;
@@ -61,7 +62,8 @@ export function getLinePosition(lineString: SingleLineStringType | Array<THREE.V
         return {
             positions,
             positionsV,
-            positions2d
+            positions2d,
+            arrayBuffer: positions2d.buffer
         }
     }
     positions2d = new Float32Array(positionsV.length * 2);
@@ -80,7 +82,8 @@ export function getLinePosition(lineString: SingleLineStringType | Array<THREE.V
     return {
         positions,
         positionsV,
-        positions2d
+        positions2d,
+        arrayBuffer: positions2d.buffer
     };
 }
 

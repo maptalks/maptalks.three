@@ -127,9 +127,9 @@ function gengerateExtrudeLines(lineStringList: Array<Array<SingleLineStringType>
         const data = [];
         for (let j = 0, len1 = multiLineString.length; j < len1; j++) {
             const lineString = multiLineString[j];
-            const positions2d = getLinePosition(lineString, layer, center, false).positions2d.buffer;
-            transfer.push(positions2d);
-            data.push(positions2d);
+            const arrayBuffer = getLinePosition(lineString, layer, center, false).arrayBuffer;
+            transfer.push(arrayBuffer);
+            data.push(arrayBuffer);
         }
         datas.push({
             data,
