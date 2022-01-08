@@ -121,6 +121,7 @@ class ExtrudeLinesTask extends BaseObjectTask {
                     type: 'LineString',
                     layer: queue.layer,
                     data: queue.data,
+                    key: queue.key,
                     lineStrings: queue.lineStrings,
                     center: queue.center,
                     callback: (result) => {
