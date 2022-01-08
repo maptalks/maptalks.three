@@ -26,7 +26,7 @@ if (maptalks.worker) {
             } else if (type === 'Point') {
                 //todo points
             }
-            this.send({ type, datas: params.datas }, params.transfe, function (err, message) {
+            this.send({ type, datas: params.datas }, params.transfer, function (err, message) {
                 if (err) {
                     console.error(err);
                 }
@@ -127,7 +127,7 @@ function gengerateExtrudeLines(lineStringList: Array<Array<SingleLineStringType>
         const data = [];
         for (let j = 0, len1 = multiLineString.length; j < len1; j++) {
             const lineString = multiLineString[j];
-            const positions2d = getLinePosition(lineString, layer, center, false).positions2d;
+            const positions2d = getLinePosition(lineString, layer, center, false).positions2d.buffer;
             transfer.push(positions2d);
             data.push(positions2d);
         }
