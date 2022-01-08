@@ -209,30 +209,30 @@ export function getPolygonArrayBuffer(polygon: PolygonType): Array<Array<ArrayBu
     let datas = [];
     if (polygon instanceof maptalks.MultiPolygon) {
         datas = polygon.getGeometries().map(p => {
-            return getSinglePolygonArrayBuffer(p);
+            return getSinglePolygonArrayBuffer(p, false);
         });
     } else if (polygon instanceof maptalks.Polygon) {
-        const data = getSinglePolygonArrayBuffer(polygon);
+        const data = getSinglePolygonArrayBuffer(polygon, false);
         datas.push(data);
     } else if (isGeoJSONPolygon(polygon)) {
         // const cent = getGeoJSONCenter(polygon);
         if (!isGeoJSONMulti(polygon)) {
-            const data = getSinglePolygonArrayBuffer(polygon as any);
+            const data = getSinglePolygonArrayBuffer(polygon as any, true);
             datas.push(data);
         } else {
             const fs = spliteGeoJSONMulti(polygon);
             for (let i = 0, len = fs.length; i < len; i++) {
-                datas.push(getSinglePolygonArrayBuffer(fs[i] as any));
+                datas.push(getSinglePolygonArrayBuffer(fs[i] as any, true));
             }
         }
     }
     return datas;
 }
 
-export function getSinglePolygonArrayBuffer(polygon: SinglePolygonType): Array<ArrayBufferLike> {
+export function getSinglePolygonArrayBuffer(polygon: SinglePolygonType, isGeoJSON: boolean): Array<ArrayBufferLike> {
     let shell: Array<any>, holes: Array<any>;
     //it is pre for geojson,Possible later use of geojson
-    if (isGeoJSONPolygon(polygon as any)) {
+    if (isGeoJSON) {
         const coordinates = getGeoJSONCoordinates(polygon as any);
         shell = coordinates[0] as Array<any>;
         holes = coordinates.slice(1, coordinates.length);

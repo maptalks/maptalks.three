@@ -21,10 +21,12 @@ if (maptalks.worker) {
             if (type.indexOf('Polygon') > -1) {
                 params = gengerateExtrudePolygons(data, center, layer);
             } else if (type === 'LineString') {
-                //todo liness
                 params = gengerateExtrudeLines(data, center, layer, lineStrings);
             } else if (type === 'Point') {
                 //todo points
+            }
+            if (!params) {
+                return;
             }
             this.send({ type, datas: params.datas, glRes: params.glRes, matrix: params.matrix, center: params.center }, params.transfer, function (err, message) {
                 if (err) {
@@ -62,8 +64,9 @@ function gengerateExtrudePolygons(polygons: PolygonType[] = [], center: maptalks
     const isMercator = layer.isMercator();
     let glRes, matrix;
     if (isMercator) {
-        glRes = layer.getMap().getGLRes();
-        matrix = layer.getMap().getSpatialReference().getTransformation().matrix;
+        const map = layer.getMap();
+        glRes = map.getGLRes();
+        matrix = map.getSpatialReference().getTransformation().matrix;
     }
     let centerPt;
     if (center) {
@@ -74,7 +77,7 @@ function gengerateExtrudePolygons(polygons: PolygonType[] = [], center: maptalks
     for (let i = 0; i < len; i++) {
         const polygon = polygons[i];
         const p = (polygon as any);
-        const properties = p._properties ? p._properties : (isGeoJSONPolygon(p) ? polygon['properties'] : p.getProperties() || {});
+        const properties = p._properties ? p._properties : (isGeoJSONPolygon(p) ? p['properties'] : p.getProperties() || {});
         if (!center) {
             centerPt = layer.coordinateToVector3(properties.center);
         }
