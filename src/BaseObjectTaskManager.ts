@@ -54,7 +54,7 @@ class ExtrudePolygonTask extends BaseObjectTask {
         if ((t - this.time >= 32 || this.tempQueue.length >= 1000) && this.tempQueue.length) {
             const actor = getActor();
             (actor as any).pushQueue({
-                type: 'Polygons',
+                type: 'ExtrudePolygon',
                 layer: this.tempQueue[0].layer,
                 data: getDatas(this.tempQueue),
                 callback: (result) => {
@@ -88,7 +88,7 @@ class ExtrudePolygonsTask extends BaseObjectTask {
             const actor = getActor();
             this.tempQueue.forEach(queue => {
                 (actor as any).pushQueue({
-                    type: 'Polygon',
+                    type: 'ExtrudePolygons',
                     layer: queue.layer,
                     data: queue.data,
                     key: queue.key,
@@ -118,7 +118,7 @@ class ExtrudeLinesTask extends BaseObjectTask {
             const actor = getActor();
             this.tempQueue.forEach(queue => {
                 (actor as any).pushQueue({
-                    type: 'LineString',
+                    type: 'ExtrudeLines',
                     layer: queue.layer,
                     data: queue.data,
                     key: queue.key,

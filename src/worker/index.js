@@ -6,11 +6,11 @@ export const initialize = function () {
 export const onmessage = function (message, postResponse) {
     const data = message.data;
     let { type, datas, glRes, matrix, center } = data;
-    if (type === 'Polygon') {
+    if (type === 'ExtrudePolygons') {
         generateData(datas, center, glRes, matrix);
         const result = generateExtrude(datas);
         postResponse(null, result, [result.position, result.normal, result.uv, result.indices]);
-    } else if (type === 'LineString') {
+    } else if (type === 'ExtrudeLines') {
         for (let i = 0, len = datas.length; i < len; i++) {
             for (let j = 0, len1 = datas[i].data.length; j < len1; j++) {
                 datas[i].data[j] = arrayBufferToArray(datas[i].data[j]);
@@ -18,7 +18,7 @@ export const onmessage = function (message, postResponse) {
         }
         const result = generateExtrude(datas, true);
         postResponse(null, result, [result.position, result.normal, result.uv, result.indices]);
-    } else if (type === 'Polygons') {
+    } else if (type === 'ExtrudePolygon') {
         const polygons = [], transfer = [];
         datas.forEach(d => {
             const polygon = [d];

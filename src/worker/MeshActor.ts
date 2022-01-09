@@ -18,9 +18,9 @@ if (maptalks.worker) {
         pushQueue(q: any = {}) {
             const { type, data, callback, layer, key, center, lineStrings } = q;
             let params;
-            if (type.indexOf('Polygon') > -1) {
+            if (type.indexOf('ExtrudePolygon') > -1) {
                 params = gengerateExtrudePolygons(data, center, layer);
-            } else if (type === 'LineString') {
+            } else if (type === 'ExtrudeLines') {
                 params = gengerateExtrudeLines(data, center, layer, lineStrings);
             } else if (type === 'Point') {
                 //todo points
