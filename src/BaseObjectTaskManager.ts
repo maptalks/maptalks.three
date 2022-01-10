@@ -28,7 +28,7 @@ class BaseObjectTask {
     constructor() {
         this.queueMap = {};
         this.tempQueue = [];
-        this.time = maptalks.Util.now();
+        this.time = this.getCurrentTime();
     }
 
     getCurrentTime() {
@@ -44,6 +44,11 @@ class BaseObjectTask {
         if (data.id) {
             this.queueMap[data.id] = data;
         }
+    }
+
+    reset() {
+        this.time = this.getCurrentTime();
+        this.tempQueue = [];
     }
 }
 
@@ -73,8 +78,7 @@ class ExtrudePolygonTask extends BaseObjectTask {
                     });
                 }
             });
-            this.time = t;
-            this.tempQueue = [];
+            this.reset();
         }
     }
 
@@ -83,7 +87,6 @@ class ExtrudePolygonTask extends BaseObjectTask {
 class ExtrudePolygonsTask extends BaseObjectTask {
 
     loop(): void {
-        const t = this.getCurrentTime();
         if (this.tempQueue.length) {
             const actor = getActor();
             this.tempQueue.forEach(queue => {
@@ -104,8 +107,7 @@ class ExtrudePolygonsTask extends BaseObjectTask {
                     }
                 });
             });
-            this.time = t;
-            this.tempQueue = [];
+            this.reset();
         }
     }
 }
@@ -113,7 +115,6 @@ class ExtrudePolygonsTask extends BaseObjectTask {
 class ExtrudeLinesTask extends BaseObjectTask {
 
     loop(): void {
-        const t = this.getCurrentTime();
         if (this.tempQueue.length) {
             const actor = getActor();
             this.tempQueue.forEach(queue => {
@@ -135,8 +136,7 @@ class ExtrudeLinesTask extends BaseObjectTask {
                     }
                 });
             });
-            this.time = t;
-            this.tempQueue = [];
+            this.reset();
         }
     }
 }
