@@ -47,6 +47,6 @@
   },
   "peerDependencies": {},
   "dependencies": {
-    "deyihu-geometry-extrude": "^0.1.3"
+    "deyihu-geometry-extrude": "0.1.3"
   }
 }
