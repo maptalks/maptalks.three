@@ -54,7 +54,7 @@
             var light = new THREE.DirectionalLight(0xffffff);
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
-            fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json').then(res => res.json()).then(geojson => {
+            fetch('./data/china.json').then(res => res.json()).then(geojson => {
                 const time = 'time';
                 console.time(time);
                 geojson.features.forEach(f => {
