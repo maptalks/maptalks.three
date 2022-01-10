@@ -6,7 +6,9 @@ import { ExtrudePolygonOptionType, PolygonType } from './type/index';
 import { setBottomHeight } from './util';
 import { getExtrudeGeometry, initVertexColors } from './util/ExtrudeUtil';
 import { getGeoJSONCenter, isGeoJSONPolygon } from './util/GeoJSONUtil';
+import { generateBufferGeometry, getDefaultBufferGeometry } from './util/MergeGeometryUtil';
 import { getVertexColors } from './util/ThreeAdaptUtil';
+import { ExtrudePolygonTaskIns } from './BaseObjectTaskManager';
 
 const OPTIONS = {
     altitude: 0,
@@ -24,20 +26,57 @@ class ExtrudePolygon extends BaseObject {
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, polygon });
         super();
         this._initOptions(options);
-        const { height, topColor, bottomColor, altitude, bottomHeight } = options;
-        const geometry = getExtrudeGeometry(polygon, height, layer);
+        const { height, topColor, bottomColor, altitude, bottomHeight, asynchronous } = options;
+        let geometry: THREE.BufferGeometry;
         const center = (isGeoJSONPolygon(polygon as any) ? getGeoJSONCenter(polygon as any) : (polygon as any).getCenter());
-        const h = setBottomHeight(geometry, bottomHeight, layer);
-        if (topColor) {
-            const extrudeH = layer.distanceToVector3(height, height).x;
-            initVertexColors(geometry, bottomColor, topColor, h + extrudeH / 2);
-            (material as any).vertexColors = getVertexColors();
+        if (asynchronous) {
+            geometry = getDefaultBufferGeometry();
+            const p = (polygon as any);
+            const id = maptalks.Util.GUID();
+            p._properties = {
+                bottomHeight,
+                height,
+                center,
+                id
+            };
+            ExtrudePolygonTaskIns.push({
+                data: p,
+                layer,
+                id,
+                baseObject: this
+            });
+
+        } else {
+            geometry = getExtrudeGeometry(polygon, height, layer);
+            const h = setBottomHeight(geometry, bottomHeight, layer);
+            if (topColor) {
+                const extrudeH = layer.distanceToVector3(height, height).x;
+                initVertexColors(geometry, bottomColor, topColor, h + extrudeH / 2);
+                (material as any).vertexColors = getVertexColors();
+            }
         }
         this._createMesh(geometry, material);
         const z = layer.distanceToVector3(altitude, altitude).x;
         const v = layer.coordinateToVector3(center, z);
         this.getObject3d().position.copy(v);
         this.type = 'ExtrudePolygon';
+    }
+
+    _workerLoad(data) {
+        const bufferGeometry = generateBufferGeometry(data);
+        const { topColor, bottomColor, bottomHeight, height } = (this.getOptions() as any);
+        const object3d = this.getObject3d() as any;
+        const material = object3d.material;
+        if (topColor) {
+            const layer = this.getLayer();
+            const h = layer.distanceToVector3(bottomHeight, bottomHeight).x;
+            const extrudeH = layer.distanceToVector3(height, height).x;
+            initVertexColors(bufferGeometry, bottomColor, topColor, h + extrudeH / 2);
+            (material as any).vertexColors = getVertexColors();
+        }
+        object3d.geometry = bufferGeometry;
+        object3d.material.needsUpdate = true;
+        this._fire('workerload', { target: this });
     }
 }
 

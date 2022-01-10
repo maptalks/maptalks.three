@@ -12,6 +12,7 @@ import { getActor } from './worker/MeshActor';
 import { ExtrudeLineOptionType, LineStringType, MergeAttributeType, SingleLineStringType } from './type/index';
 import { ThreeLayer } from './index';
 import { getVertexColors } from './util/ThreeAdaptUtil';
+import { ExtrudeLinesTaskIns } from './BaseObjectTaskManager';
 
 const OPTIONS = {
     width: 3,
@@ -40,36 +41,18 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
         const { altitude, topColor, bottomColor, asynchronous } = options;
         let bufferGeometry: THREE.BufferGeometry;
         const faceMap = [], extrudeLines = [], geometriesAttributes = [];
+
+        super();
         if (asynchronous) {
-            var actor = getActor();
             bufferGeometry = getDefaultBufferGeometry();
-            (actor as any).pushQueue({
-                type: 'LineString',
+            ExtrudeLinesTaskIns.push({
+                id: maptalks.Util.GUID(),
                 layer,
                 key: options.key,
                 center,
                 data: lineStringList,
                 lineStrings,
-                callback: (e) => {
-                    const { faceMap, geometriesAttributes } = e;
-                    this._faceMap = faceMap;
-                    this._geometriesAttributes = geometriesAttributes;
-                    const bufferGeometry = generateBufferGeometry(e);
-                    this._geometryCache = generatePickBufferGeometry(bufferGeometry);
-                    if (topColor) {
-                        initVertexColors(bufferGeometry, bottomColor, topColor, geometriesAttributes);
-                        (material as any).vertexColors = getVertexColors();
-                    }
-                    (this.getObject3d() as any).geometry = bufferGeometry;
-                    (this.getObject3d() as any).material.needsUpdate = true;
-                    this._setPickObject3d();
-                    this._init();
-                    if (this.isAdd) {
-                        const pick = this.getLayer().getPick();
-                        pick.add(this.pickObject3d);
-                    }
-                    this._fire('workerload', { target: this });
-                }
+                baseObject: this
             });
         } else {
             const geometries: MergeAttributeType[] = [];
@@ -139,8 +122,6 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
                 (material as any).vertexColors = getVertexColors();
             }
         }
-
-        super();
         this._initOptions(options);
 
         this._createMesh(bufferGeometry, material);
@@ -185,6 +166,30 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
     // eslint-disable-next-line no-unused-vars
     identify(coordinate): boolean {
         return this.picked;
+    }
+
+    _workerLoad(result) {
+        const { faceMap, geometriesAttributes } = result;
+        this._faceMap = faceMap;
+        this._geometriesAttributes = geometriesAttributes;
+        const bufferGeometry = generateBufferGeometry(result);
+        this._geometryCache = generatePickBufferGeometry(bufferGeometry);
+        const { topColor, bottomColor, bottomHeight, height } = (this.getOptions() as any);
+        const object3d = this.getObject3d() as any;
+        const material = object3d.material;
+        if (topColor) {
+            initVertexColors(bufferGeometry, bottomColor, topColor, geometriesAttributes);
+            (material as any).vertexColors = getVertexColors();
+        }
+        (this.getObject3d() as any).geometry = bufferGeometry;
+        (this.getObject3d() as any).material.needsUpdate = true;
+        this._setPickObject3d();
+        this._init();
+        if (this.isAdd) {
+            const pick = this.getLayer().getPick();
+            pick.add(this.pickObject3d);
+        }
+        this._fire('workerload', { target: this });
     }
 }
 
