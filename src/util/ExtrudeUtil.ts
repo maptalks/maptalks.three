@@ -202,3 +202,71 @@ export function getSinglePolygonPositions(polygon: SinglePolygonType, layer: Thr
     return data;
 }
 
+export function getPolygonArrayBuffer(polygon: PolygonType): Array<Array<ArrayBufferLike>> {
+    if (!polygon) {
+        return null;
+    }
+    let datas = [];
+    if (polygon instanceof maptalks.MultiPolygon) {
+        datas = polygon.getGeometries().map(p => {
+            return getSinglePolygonArrayBuffer(p, false);
+        });
+    } else if (polygon instanceof maptalks.Polygon) {
+        const data = getSinglePolygonArrayBuffer(polygon, false);
+        datas.push(data);
+    } else if (isGeoJSONPolygon(polygon)) {
+        // const cent = getGeoJSONCenter(polygon);
+        if (!isGeoJSONMulti(polygon)) {
+            const data = getSinglePolygonArrayBuffer(polygon as any, true);
+            datas.push(data);
+        } else {
+            const fs = spliteGeoJSONMulti(polygon);
+            for (let i = 0, len = fs.length; i < len; i++) {
+                datas.push(getSinglePolygonArrayBuffer(fs[i] as any, true));
+            }
+        }
+    }
+    return datas;
+}
+
+export function getSinglePolygonArrayBuffer(polygon: SinglePolygonType, isGeoJSON: boolean): Array<ArrayBufferLike> {
+    let shell: Array<any>, holes: Array<any>;
+    //it is pre for geojson,Possible later use of geojson
+    if (isGeoJSON) {
+        const coordinates = getGeoJSONCoordinates(polygon as any);
+        shell = coordinates[0] as Array<any>;
+        holes = coordinates.slice(1, coordinates.length);
+    } else if (polygon instanceof maptalks.Polygon) {
+        shell = polygon.getShell();
+        holes = polygon.getHoles();
+    }
+    const outer = coordiantesToArrayBuffer(shell);
+    const data = [outer];
+    if (holes && holes.length > 0) {
+        for (let i = 0, len = holes.length; i < len; i++) {
+            const pts = coordiantesToArrayBuffer(holes[i]);
+            data.push(pts);
+        }
+    }
+    return data;
+}
+
+function coordiantesToArrayBuffer(coordiantes = []): ArrayBuffer {
+    const len = coordiantes.length;
+    const array = new Float32Array(len * 2);
+    for (let i = 0; i < len; i++) {
+        let x, y;
+        const c = coordiantes[i];
+        if (c.x) {
+            x = c.x;
+            y = c.y;
+        } else {
+            x = c[0];
+            y = c[1];
+        }
+        array[i * 2] = x;
+        array[i * 2 + 1] = y;
+    }
+    return array.buffer;
+}
+

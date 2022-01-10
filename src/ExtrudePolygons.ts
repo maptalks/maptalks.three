@@ -6,11 +6,11 @@ import ExtrudePolygon from './ExtrudePolygon';
 import MergedMixin from './MergedMixin';
 import { getGeoJSONCenter, isGeoJSONPolygon } from './util/GeoJSONUtil';
 import { generateBufferGeometry, generatePickBufferGeometry, getDefaultBufferGeometry, mergeBufferGeometries } from './util/MergeGeometryUtil';
-import { getActor } from './worker/MeshActor';
 import { ExtrudePolygonOptionType, PolygonType } from './type';
 import { ThreeLayer } from './index';
 import { getVertexColors } from './util/ThreeAdaptUtil';
 import { setBottomHeight } from './util';
+import { ExtrudePolygonsTaskIns } from './BaseObjectTaskManager';
 
 const OPTIONS = {
     altitude: 0,
@@ -54,36 +54,16 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
         const { topColor, bottomColor, altitude, asynchronous } = options;
         let bufferGeometry;
         const extrudePolygons = [], faceMap = [], geometriesAttributes = [];
+        super();
         if (asynchronous) {
-            var actor = getActor();
             bufferGeometry = getDefaultBufferGeometry();
-            (actor as any).pushQueue({
-                type: 'Polygon',
+            ExtrudePolygonsTaskIns.push({
+                id: maptalks.Util.GUID(),
                 layer,
                 key: options.key,
                 center,
                 data: polygons,
-                callback: (e) => {
-                    const { faceMap, geometriesAttributes } = e;
-                    this._faceMap = faceMap;
-                    this._geometriesAttributes = geometriesAttributes;
-                    const bufferGeometry = generateBufferGeometry(e);
-                    this._geometryCache = generatePickBufferGeometry(bufferGeometry);
-                    if (topColor) {
-                        initVertexColors(bufferGeometry, bottomColor, topColor, geometriesAttributes);
-                        (material as any).vertexColors = getVertexColors();
-                    }
-                    const object3d = this.getObject3d() as any;
-                    object3d.geometry = bufferGeometry;
-                    object3d.material.needsUpdate = true;
-                    this._setPickObject3d();
-                    this._init();
-                    if (this.isAdd) {
-                        const pick = this.getLayer().getPick();
-                        pick.add(this.pickObject3d);
-                    }
-                    this._fire('workerload', { target: this });
-                }
+                baseObject: this
             });
         } else {
             const centerPt = layer.coordinateToVector3(center);
@@ -145,7 +125,6 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
             }
         }
 
-        super();
         this._initOptions(options);
 
         this._createMesh(bufferGeometry, material);
@@ -190,6 +169,30 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
     // eslint-disable-next-line no-unused-vars
     identify(coordinate): boolean {
         return this.picked;
+    }
+
+    _workerLoad(result) {
+        const { faceMap, geometriesAttributes } = result;
+        this._faceMap = faceMap;
+        this._geometriesAttributes = geometriesAttributes;
+        const bufferGeometry = generateBufferGeometry(result);
+        this._geometryCache = generatePickBufferGeometry(bufferGeometry);
+        const { topColor, bottomColor } = (this.getOptions() as any);
+        const object3d = this.getObject3d() as any;
+        const material = object3d.material;
+        if (topColor) {
+            initVertexColors(bufferGeometry, bottomColor, topColor, geometriesAttributes);
+            (material as any).vertexColors = getVertexColors();
+        }
+        object3d.geometry = bufferGeometry;
+        object3d.material.needsUpdate = true;
+        this._setPickObject3d();
+        this._init();
+        if (this.isAdd) {
+            const pick = this.getLayer().getPick();
+            pick.add(this.pickObject3d);
+        }
+        this._fire('workerload', { target: this });
     }
 }
 
