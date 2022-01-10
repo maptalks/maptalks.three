@@ -1,7 +1,7 @@
 const resolve = require('rollup-plugin-node-resolve');
-const babel = require('rollup-plugin-babel');
+import { babel } from '@rollup/plugin-babel';
 const commonjs = require('rollup-plugin-commonjs');
-const uglify = require('rollup-plugin-uglify').uglify;
+import { terser } from 'rollup-plugin-terser';
 const json = require('rollup-plugin-json');
 
 module.exports = [
@@ -16,7 +16,7 @@ module.exports = [
             }),
             commonjs(),
             babel(),
-            uglify()
+            terser()
         ],
         external: ['maptalks'],
         output: {
