@@ -27,6 +27,7 @@ declare namespace Util {
   function extend(...obj: any[]): any
   function sign(params: number): number
   function now(): number
+  function requestAnimFrame(params: Function)
 }
 
 declare const animation: {
@@ -170,6 +171,7 @@ declare class Map {
   getProjection(): any
   isInteracting(): boolean
   isAnimating(): boolean
+  getSpatialReference(): any
 }
 
 

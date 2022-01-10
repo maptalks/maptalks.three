@@ -34,6 +34,7 @@ import * as geometryExtrude from 'deyihu-geometry-extrude';
 import LineMaterial from './util/fatline/LineMaterial';
 import { BarOptionType, BaseLayerOptionType, BaseObjectOptionType, ExtrudeLineOptionType, ExtrudeLineTrailOptionType, ExtrudePolygonOptionType, FatLineMaterialType, getBaseObjectMaterialType, HeatMapDataType, HeatMapOptionType, LineMaterialType, LineOptionType, LineStringType, PointOptionType, PolygonType, SingleLineStringType, TerrainOptionType } from './type/index';
 import { getWorkerCode, getWorkerName } from './worker/getworker';
+import { BaseObjectTaskManager } from './BaseObjectTaskManager';
 
 
 const options: BaseLayerOptionType = {
@@ -122,6 +123,19 @@ class ThreeLayer extends maptalks.CanvasLayer {
     constructor(id: string, options: BaseLayerOptionType) {
         super(id, options);
         this.type = 'ThreeLayer';
+    }
+
+    isMercator() {
+        const map = this.getMap();
+        if (!map) {
+            return false;
+        }
+        const sp = map.getSpatialReference();
+        const prj = sp._projection, res = sp._resolutions;
+        if (prj && prj.code === 'EPSG:3857' && res && res.length && Math.floor(res[0]) === 156543) {
+            return true;
+        }
+        return false;
     }
 
     isRendering(): boolean {
@@ -1146,6 +1160,7 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         this._syncCamera();
         scene.add(camera);
         this.pick = new GPUPick(this.layer);
+        BaseObjectTaskManager.star();
     }
 
     onCanvasCreate() {
