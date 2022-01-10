@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>extrudepolyogn china</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/randomcolor@0.6.2/randomColor.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.104.0/build/three.min.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            "center": [108.70296180227058, 32.44563434720479], "zoom": 5.717254596370028, "pitch": 58.40000000000007, "bearing": 0.8533528124999066,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+            // animation: true
+        });
+
+        var meshs = [];
+        var material = new THREE.MeshBasicMaterial({ color: '#3e35cf', transparent: true });
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json').then(res => res.json()).then(geojson => {
+                const time = 'time';
+                console.time(time);
+                geojson.features.forEach(f => {
+                    const m = material.clone();
+                    m.color.setStyle(randomColor());
+                    const mesh = threeLayer.toExtrudePolygon(f, {
+                        height: f.properties.height || 100000,
+                        topColor: '#fff',
+                        asynchronous: true
+                    }, m);
+                    meshs.push(mesh);
+                });
+                console.timeEnd(time);
+                threeLayer.addMesh(meshs);
+            })
+
+            threeLayer.config('animation', true);
+        };
+        threeLayer.addTo(map);
+
+
+    </script>
+</body>
+
+</html>
