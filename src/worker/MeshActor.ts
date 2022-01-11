@@ -117,6 +117,10 @@ function gengerateExtrudePolygons(polygons: PolygonType[] = [], center: maptalks
             (d as any).center = [centerPt.x, centerPt.y];
         }
         datas.push(d);
+        //delete Internal properties
+        if (p._properties) {
+            delete p._properties;
+        }
     }
     return {
         datas,
