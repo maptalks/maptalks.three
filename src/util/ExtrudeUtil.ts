@@ -5,6 +5,7 @@ import { extrudePolygon } from 'deyihu-geometry-extrude';
 import { addAttribute } from './ThreeAdaptUtil';
 import { ThreeLayer } from './../index';
 import { MergeAttributeType, PolygonType, SinglePolygonType } from './../type/index';
+import { coordiantesToArrayBuffer } from '.';
 
 const topColor: THREE.Color = new THREE.Color('#fff'),
     bottomColor: THREE.Color = new THREE.Color('#fff');
@@ -250,23 +251,3 @@ export function getSinglePolygonArrayBuffer(polygon: SinglePolygonType, isGeoJSO
     }
     return data;
 }
-
-function coordiantesToArrayBuffer(coordiantes = []): ArrayBuffer {
-    const len = coordiantes.length;
-    const array = new Float32Array(len * 2);
-    for (let i = 0; i < len; i++) {
-        let x, y;
-        const c = coordiantes[i];
-        if (c.x) {
-            x = c.x;
-            y = c.y;
-        } else {
-            x = c[0];
-            y = c[1];
-        }
-        array[i * 2] = x;
-        array[i * 2 + 1] = y;
-    }
-    return array.buffer;
-}
-

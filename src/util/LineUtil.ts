@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import * as maptalks from 'maptalks';
 import { extrudePolyline } from 'deyihu-geometry-extrude';
-import { isGeoJSON, getGeoJSONCoordinates, getGeoJSONCenter, isGeoJSONMulti, spliteGeoJSONMulti } from './GeoJSONUtil';
+import { isGeoJSON, getGeoJSONCoordinates, getGeoJSONCenter, isGeoJSONMulti, spliteGeoJSONMulti, isGeoJSONLine } from './GeoJSONUtil';
 import { addAttribute } from './ThreeAdaptUtil';
 import { ThreeLayer } from './../index';
 import { GeoJSONLineStringFeature, LineStringType, MergeAttributeType, SingleLineStringType } from './../type/index';
+import { coordiantesToArrayBuffer } from '.';
 const COMMA = ',';
 
 /**
@@ -258,4 +259,21 @@ export function mergeLinePositions(positionsList: Array<Float32Array>): Float32A
     }
     return position;
 
+}
+
+export function getLineArrayBuffer(lineString: SingleLineStringType): ArrayBuffer {
+    if (lineString instanceof maptalks.LineString) {
+        return coordiantesToArrayBuffer(lineString.getCoordinates());
+    } else if (isGeoJSONLine(lineString)) {
+        return coordiantesToArrayBuffer(lineString.geometry.coordinates);
+    }
+}
+
+let defaultGeometry;
+export function getDefaultLineGeometry() {
+    if (!defaultGeometry) {
+        defaultGeometry = new THREE.BufferGeometry();
+        addAttribute(defaultGeometry, 'position', new THREE.BufferAttribute(new Float32Array(3), 3));
+    }
+    return defaultGeometry;
 }

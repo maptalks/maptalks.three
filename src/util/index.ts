@@ -81,3 +81,22 @@ export function getGeometriesColorArray(geometriesAttributes): Float32Array {
     }
     return new Float32Array(colorsLen * 3);
 }
+
+export function coordiantesToArrayBuffer(coordiantes = []): ArrayBuffer {
+    const len = coordiantes.length;
+    const array = new Float32Array(len * 2);
+    for (let i = 0; i < len; i++) {
+        let x, y;
+        const c = coordiantes[i];
+        if (c.x) {
+            x = c.x;
+            y = c.y;
+        } else {
+            x = c[0];
+            y = c[1];
+        }
+        array[i * 2] = x;
+        array[i * 2 + 1] = y;
+    }
+    return array.buffer;
+}

@@ -34,6 +34,24 @@ export const onmessage = function (message, postResponse) {
             transfer.push(position, normal, uv, indices);
         });
         postResponse(null, polygons, transfer);
+    } else if (type === 'Line') {
+        const lines = [], transfer = [];
+        for (let i = 0, len = datas.length; i < len; i++) {
+            const positionList = [];
+            for (let j = 0, len1 = datas[i].data.length; j < len1; j++) {
+                datas[i].data[j] = arrayBufferToArray(datas[i].data[j], datas[i].center || center, glRes, matrix);
+                const array = lineArrayToFloatArray(datas[i].data[j]);
+                positionList.push(getLineSegmentPosition(array));
+            }
+            const position = mergeLinePositions(positionList);
+            setBottomHeight(position, datas[i].bottomHeight);
+            lines.push({
+                id: datas[i].id,
+                position: position.buffer
+            });
+            transfer.push(position.buffer);
+        }
+        postResponse(null, lines, transfer);
     }
 };
 
@@ -263,5 +281,58 @@ function transform(matrix, coordinates, scale, out) {
     return {
         x, y
     };
+}
+
+function lineArrayToFloatArray(coordinates = []) {
+    const len = coordinates.length;
+    const array = new Float32Array(len * 3);
+    for (let i = 0; i < len; i++) {
+        const c = coordinates[i];
+        const idx = i * 3;
+        array[idx] = c[0];
+        array[idx + 1] = c[1];
+    }
+    return array;
+}
+
+
+function getLineSegmentPosition(ps) {
+    const position = new Float32Array(ps.length * 2 - 6);
+    let j = 0;
+    for (let i = 0, len = ps.length / 3; i < len; i++) {
+        const x = ps[i * 3], y = ps[i * 3 + 1], z = ps[i * 3 + 2];
+        if (i > 0 && i < len - 1) {
+            const idx = j * 3;
+            position[idx] = x;
+            position[idx + 1] = y;
+            position[idx + 2] = z;
+            j++;
+        }
+        const idx = j * 3;
+        position[idx] = x;
+        position[idx + 1] = y;
+        position[idx + 2] = z;
+        j++;
+    }
+    return position;
+}
+
+function mergeLinePositions(positionsList) {
+    let len = 0;
+    const l = positionsList.length;
+    if (l === 1) {
+        return positionsList[0];
+    }
+    for (let i = 0; i < l; i++) {
+        len += positionsList[i].length;
+    }
+    const position = new Float32Array(len);
+    let offset = 0;
+    for (let i = 0; i < l; i++) {
+        position.set(positionsList[i], offset);
+        offset += positionsList[i].length;
+    }
+    return position;
+
 }
 
