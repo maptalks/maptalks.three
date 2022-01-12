@@ -31,16 +31,11 @@ class ExtrudePolygon extends BaseObject {
         const center = (isGeoJSONPolygon(polygon as any) ? getGeoJSONCenter(polygon as any) : (polygon as any).getCenter());
         if (asynchronous) {
             geometry = getDefaultBufferGeometry();
-            const p = (polygon as any);
             const id = maptalks.Util.GUID();
-            p._properties = {
-                bottomHeight,
-                height,
-                center,
-                id
-            };
+            this.getOptions().id = id;
+            this.getOptions().center = center;
             ExtrudePolygonTaskIns.push({
-                data: p,
+                data: polygon,
                 layer,
                 id,
                 baseObject: this

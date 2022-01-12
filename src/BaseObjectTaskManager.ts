@@ -10,12 +10,19 @@ type TaskQueue = {
     baseObject: BaseObject,
     key?: string,
     center?: any,
-    lineStrings?: any
+    lineStrings?: any,
+    lineString?: any
 }
 
 function getDatas(queues: Array<TaskQueue>) {
     return queues.map(q => {
         return q.data;
+    });
+}
+
+function getOptions(queues: Array<TaskQueue>) {
+    return queues.map(q => {
+        return q.baseObject.getOptions();
     });
 }
 
@@ -61,6 +68,7 @@ class ExtrudePolygonTask extends BaseObjectTask {
                 type: 'ExtrudePolygon',
                 layer: this.tempQueue[0].layer,
                 data: getDatas(this.tempQueue),
+                options: getOptions(this.tempQueue),
                 callback: (result) => {
                     if (!result) {
                         return;
@@ -140,9 +148,44 @@ class ExtrudeLinesTask extends BaseObjectTask {
     }
 }
 
+class LineTask extends BaseObjectTask {
+    loop(): void {
+        const t = this.getCurrentTime();
+        if ((t - this.time >= 32 || this.tempQueue.length >= 1000) && this.tempQueue.length) {
+            const actor = getActor();
+            (actor as any).pushQueue({
+                type: 'Line',
+                layer: this.tempQueue[0].layer,
+                data: getDatas(this.tempQueue),
+                options: getOptions(this.tempQueue),
+                lineStrings: this.tempQueue.map(q => {
+                    return q.lineString;
+                }),
+                callback: (result) => {
+                    if (!result) {
+                        return;
+                    }
+                    result.forEach(d => {
+                        const { id } = d;
+                        if (this.queueMap[id]) {
+                            const { baseObject } = this.queueMap[id];
+                            if (baseObject && baseObject._workerLoad) {
+                                baseObject._workerLoad(d);
+                            }
+                            delete this.queueMap[id];
+                        }
+                    });
+                }
+            });
+            this.reset();
+        }
+    }
+}
+
 export const ExtrudePolygonTaskIns = new ExtrudePolygonTask();
 export const ExtrudePolygonsTaskIns = new ExtrudePolygonsTask();
 export const ExtrudeLinesTaskIns = new ExtrudeLinesTask();
+export const LineTaskIns = new LineTask();
 
 export const BaseObjectTaskManager = {
     isRunning: false,
@@ -150,6 +193,7 @@ export const BaseObjectTaskManager = {
         ExtrudePolygonTaskIns.loop();
         ExtrudePolygonsTaskIns.loop();
         ExtrudeLinesTaskIns.loop();
+        LineTaskIns.loop();
         maptalks.Util.requestAnimFrame(BaseObjectTaskManager.loop);
     },
     star() {
