@@ -26,8 +26,11 @@ if (maptalks.worker) {
                 //todo points
             } else if (type === 'Line') {
                 params = gengerateLines(data, center, layer, lineStrings, options);
+            } else if (type === 'Lines') {
+                params = gengerateLines(data, center, layer, lineStrings);
             }
             if (!params) {
+                console.error(`not support '${type}' worker`);
                 return;
             }
             this.send({ type, datas: params.datas, glRes: params.glRes, matrix: params.matrix, center: params.center },

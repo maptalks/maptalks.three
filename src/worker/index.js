@@ -52,6 +52,39 @@ export const onmessage = function (message, postResponse) {
             transfer.push(position.buffer);
         }
         postResponse(null, lines, transfer);
+    } else if (type === 'Lines') {
+        let faceIndex = 0, faceMap = [], geometriesAttributes = [],
+            psIndex = 0, positionList = [];
+        for (let i = 0, len = datas.length; i < len; i++) {
+            let psCount = 0;
+            for (let j = 0, len1 = datas[i].data.length; j < len1; j++) {
+                datas[i].data[j] = arrayBufferToArray(datas[i].data[j], datas[i].center || center, glRes, matrix);
+                const array = lineArrayToFloatArray(datas[i].data[j]);
+                setBottomHeight(array, datas[i].bottomHeight);
+                psCount += (array.length / 3 * 2 - 2);
+                positionList.push(getLineSegmentPosition(array));
+            }
+            const faceLen = psCount;
+            faceMap[i] = [faceIndex, faceIndex + faceLen];
+            faceIndex += faceLen;
+
+            geometriesAttributes[i] = {
+                position: {
+                    count: psCount,
+                    start: psIndex,
+                    end: psIndex + psCount * 3,
+                },
+                hide: false
+            };
+            psIndex += psCount * 3;
+        }
+        const position = mergeLinePositions(positionList);
+        postResponse(null, {
+            id: datas.id,
+            position: position.buffer,
+            geometriesAttributes,
+            faceMap
+        }, [position.buffer]);
     }
 };
 
