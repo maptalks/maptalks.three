@@ -182,10 +182,39 @@ class LineTask extends BaseObjectTask {
     }
 }
 
+class LinesTask extends BaseObjectTask {
+    loop(): void {
+        if (this.tempQueue.length) {
+            const actor = getActor();
+            this.tempQueue.forEach(queue => {
+                (actor as any).pushQueue({
+                    type: 'Lines',
+                    layer: queue.layer,
+                    data: queue.data,
+                    key: queue.key,
+                    lineStrings: queue.lineStrings,
+                    center: queue.center,
+                    callback: (result) => {
+                        if (!result) {
+                            return;
+                        }
+                        const { baseObject } = queue;
+                        if (baseObject && baseObject._workerLoad) {
+                            baseObject._workerLoad(result);
+                        }
+                    }
+                });
+            });
+            this.reset();
+        }
+    }
+}
+
 export const ExtrudePolygonTaskIns = new ExtrudePolygonTask();
 export const ExtrudePolygonsTaskIns = new ExtrudePolygonsTask();
 export const ExtrudeLinesTaskIns = new ExtrudeLinesTask();
 export const LineTaskIns = new LineTask();
+export const LinesTaskIns = new LinesTask();
 
 export const BaseObjectTaskManager = {
     isRunning: false,
@@ -194,6 +223,7 @@ export const BaseObjectTaskManager = {
         ExtrudePolygonsTaskIns.loop();
         ExtrudeLinesTaskIns.loop();
         LineTaskIns.loop();
+        LinesTaskIns.loop();
         maptalks.Util.requestAnimFrame(BaseObjectTaskManager.loop);
     },
     star() {

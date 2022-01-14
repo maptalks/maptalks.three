@@ -1,7 +1,7 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
-import { getLinePosition, getLineSegmentPosition, LineStringSplit, mergeLinePositions } from './util/LineUtil';
+import { getDefaultLineGeometry, getLinePosition, getLineSegmentPosition, LineStringSplit, mergeLinePositions } from './util/LineUtil';
 import MergedMixin from './MergedMixin';
 import Line from './Line';
 import { isGeoJSONLine } from './util/GeoJSONUtil';
@@ -9,6 +9,7 @@ import { addAttribute, getVertexColors } from './util/ThreeAdaptUtil';
 import { getCenterOfPoints, getGeometriesColorArray, setBottomHeight } from './util/index';
 import { LineMaterialType, LineOptionType, LineStringType } from './type/index';
 import { ThreeLayer } from './index';
+import { LinesTaskIns } from './BaseObjectTaskManager';
 
 const OPTIONS = {
     altitude: 0,
@@ -35,44 +36,59 @@ class Lines extends MergedMixin(BaseObject) {
         // Get the center point of the point set
         const center = getCenterOfPoints(centers);
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, lineStrings, coordinate: center });
+        super();
+        this._initOptions(options);
+        const { asynchronous } = options;
+        let geometry: THREE.BufferGeometry;
         const lines = [], cache = {};
         let faceIndex = 0, faceMap = [], geometriesAttributes = [],
             psIndex = 0, positionList = [];
-        for (let i = 0; i < len; i++) {
-            const lls = lineStringList[i];
-            let psCount = 0;
-            for (let m = 0, le = lls.length; m < le; m++) {
-                const properties = (isGeoJSONLine(lls[m] as any) ? lls[m]['properties'] : (lls[m] as any).getProperties() || {});
-                const { positions } = getLinePosition(lls[m], layer, center, false);
-                setBottomHeight(positions, properties.bottomHeight, layer, cache);
-                psCount += (positions.length / 3 * 2 - 2);
-                positionList.push(getLineSegmentPosition(positions));
+        if (asynchronous) {
+            geometry = getDefaultLineGeometry();
+            LinesTaskIns.push({
+                id: maptalks.Util.GUID(),
+                layer,
+                key: (options as any).key,
+                center,
+                data: lineStringList,
+                lineStrings,
+                baseObject: this
+            });
+        } else {
+            for (let i = 0; i < len; i++) {
+                const lls = lineStringList[i];
+                let psCount = 0;
+                for (let m = 0, le = lls.length; m < le; m++) {
+                    const properties = (isGeoJSONLine(lls[m] as any) ? lls[m]['properties'] : (lls[m] as any).getProperties() || {});
+                    const { positions } = getLinePosition(lls[m], layer, center, false);
+                    setBottomHeight(positions, properties.bottomHeight, layer, cache);
+                    psCount += (positions.length / 3 * 2 - 2);
+                    positionList.push(getLineSegmentPosition(positions));
+                }
+
+
+                // const line = new Line(lineString, opts, material, layer);
+                // lines.push(line);
+
+                // const psCount = positionsV.length + positionsV.length - 2;
+                const faceLen = psCount;
+                faceMap[i] = [faceIndex, faceIndex + faceLen];
+                faceIndex += faceLen;
+
+                geometriesAttributes[i] = {
+                    position: {
+                        count: psCount,
+                        start: psIndex,
+                        end: psIndex + psCount * 3,
+                    },
+                    hide: false
+                };
+                psIndex += psCount * 3;
             }
-
-
-            // const line = new Line(lineString, opts, material, layer);
-            // lines.push(line);
-
-            // const psCount = positionsV.length + positionsV.length - 2;
-            const faceLen = psCount;
-            faceMap[i] = [faceIndex, faceIndex + faceLen];
-            faceIndex += faceLen;
-
-            geometriesAttributes[i] = {
-                position: {
-                    count: psCount,
-                    start: psIndex,
-                    end: psIndex + psCount * 3,
-                },
-                hide: false
-            };
-            psIndex += psCount * 3;
+            const position = mergeLinePositions(positionList);
+            geometry = new THREE.BufferGeometry();
+            addAttribute(geometry, 'position', new THREE.BufferAttribute(position, 3));
         }
-        const position = mergeLinePositions(positionList);
-        const geometry = new THREE.BufferGeometry();
-        addAttribute(geometry, 'position', new THREE.BufferAttribute(position, 3));
-        super();
-        this._initOptions(options);
 
         this._createLineSegments(geometry, material);
 
@@ -91,8 +107,10 @@ class Lines extends MergedMixin(BaseObject) {
         this.isHide = false;
         this._colorMap = {};
         this._initBaseObjectsEvent(lines);
-        this._setPickObject3d();
-        this._init();
+        if (!asynchronous) {
+            this._setPickObject3d();
+            this._init();
+        }
         this.type = 'Lines';
     }
 
@@ -149,6 +167,26 @@ class Lines extends MergedMixin(BaseObject) {
     // eslint-disable-next-line no-unused-vars
     identify(coordinate) {
         return this.picked;
+    }
+
+    _workerLoad(result) {
+        const { position, faceMap, geometriesAttributes } = result;
+        this._faceMap = faceMap;
+        this._geometriesAttributes = geometriesAttributes;
+        const geometry = new THREE.BufferGeometry();
+        addAttribute(geometry, 'position', new THREE.BufferAttribute(new Float32Array(position), 3));
+        this._computeLineDistances(geometry);
+        this._geometryCache = geometry.clone();
+
+        (this.getObject3d() as any).geometry = geometry;
+        (this.getObject3d() as any).material.needsUpdate = true;
+        this._setPickObject3d();
+        this._init();
+        if (this.isAdd) {
+            const pick = this.getLayer().getPick();
+            pick.add(this.pickObject3d);
+        }
+        this._fire('workerload', { target: this });
     }
 }
 
