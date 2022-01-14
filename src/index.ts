@@ -132,7 +132,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         }
         const sp = map.getSpatialReference();
         const prj = sp._projection, res = sp._resolutions;
-        if (prj && prj.code === 'EPSG:3857' && res && res.length && Math.floor(res[0]) === 156543) {
+        if (prj && prj.code === 'EPSG:3857' && res && res.length && Math.floor(res[0]) === 156543 && map.getGLRes) {
             return true;
         }
         return false;
