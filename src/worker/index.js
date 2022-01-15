@@ -34,7 +34,7 @@ export const onmessage = function (message, postResponse) {
             transfer.push(position, normal, uv, indices);
         });
         postResponse(null, polygons, transfer);
-    } else if (type === 'Line') {
+    } else if (type === 'Line' || type === 'FatLine') {
         const lines = [], transfer = [];
         for (let i = 0, len = datas.length; i < len; i++) {
             const positionList = [];
