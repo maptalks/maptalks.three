@@ -210,11 +210,48 @@ class LinesTask extends BaseObjectTask {
     }
 }
 
+
+class FatLineTask extends BaseObjectTask {
+    loop(): void {
+        const t = this.getCurrentTime();
+        if ((t - this.time >= 32 || this.tempQueue.length >= 1000) && this.tempQueue.length) {
+            const actor = getActor();
+            (actor as any).pushQueue({
+                type: 'FatLine',
+                layer: this.tempQueue[0].layer,
+                data: getDatas(this.tempQueue),
+                options: getOptions(this.tempQueue),
+                lineStrings: this.tempQueue.map(q => {
+                    return q.lineString;
+                }),
+                callback: (result) => {
+                    if (!result) {
+                        return;
+                    }
+                    result.forEach(d => {
+                        const { id } = d;
+                        if (this.queueMap[id]) {
+                            const { baseObject } = this.queueMap[id];
+                            if (baseObject && baseObject._workerLoad) {
+                                baseObject._workerLoad(d);
+                            }
+                            delete this.queueMap[id];
+                        }
+                    });
+                }
+            });
+            this.reset();
+        }
+    }
+}
+
+
 export const ExtrudePolygonTaskIns = new ExtrudePolygonTask();
 export const ExtrudePolygonsTaskIns = new ExtrudePolygonsTask();
 export const ExtrudeLinesTaskIns = new ExtrudeLinesTask();
 export const LineTaskIns = new LineTask();
 export const LinesTaskIns = new LinesTask();
+export const FatLineTaskIns = new FatLineTask();
 
 export const BaseObjectTaskManager = {
     isRunning: false,
@@ -224,6 +261,7 @@ export const BaseObjectTaskManager = {
         ExtrudeLinesTaskIns.loop();
         LineTaskIns.loop();
         LinesTaskIns.loop();
+        FatLineTaskIns.loop();
         maptalks.Util.requestAnimFrame(BaseObjectTaskManager.loop);
     },
     star() {

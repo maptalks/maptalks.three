@@ -24,7 +24,7 @@ if (maptalks.worker) {
                 params = gengerateExtrudeLines(data, center, layer, lineStrings);
             } else if (type === 'Point') {
                 //todo points
-            } else if (type === 'Line') {
+            } else if (type === 'Line' || type === 'FatLine') {
                 params = gengerateLines(data, center, layer, lineStrings, options);
             } else if (type === 'Lines') {
                 params = gengerateLines(data, center, layer, lineStrings);

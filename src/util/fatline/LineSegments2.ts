@@ -27,6 +27,9 @@ class LineSegments2 extends THREE.Mesh {
 
         var instanceStart = geometry.attributes.instanceStart;
         var instanceEnd = geometry.attributes.instanceEnd;
+        if (!instanceStart || !instanceEnd) {
+            return this;
+        }
         var lineDistances = new Float32Array(2 * (instanceStart as any).data.count);
 
         for (var i = 0, j = 0, l = (instanceStart as any).data.count; i < l; i++, j += 2) {
