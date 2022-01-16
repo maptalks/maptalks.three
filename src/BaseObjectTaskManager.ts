@@ -245,6 +245,34 @@ class FatLineTask extends BaseObjectTask {
     }
 }
 
+class FatLinesTask extends BaseObjectTask {
+    loop(): void {
+        if (this.tempQueue.length) {
+            const actor = getActor();
+            this.tempQueue.forEach(queue => {
+                (actor as any).pushQueue({
+                    type: 'FatLines',
+                    layer: queue.layer,
+                    data: queue.data,
+                    key: queue.key,
+                    lineStrings: queue.lineStrings,
+                    center: queue.center,
+                    callback: (result) => {
+                        if (!result) {
+                            return;
+                        }
+                        const { baseObject } = queue;
+                        if (baseObject && baseObject._workerLoad) {
+                            baseObject._workerLoad(result);
+                        }
+                    }
+                });
+            });
+            this.reset();
+        }
+    }
+}
+
 
 export const ExtrudePolygonTaskIns = new ExtrudePolygonTask();
 export const ExtrudePolygonsTaskIns = new ExtrudePolygonsTask();
@@ -252,6 +280,7 @@ export const ExtrudeLinesTaskIns = new ExtrudeLinesTask();
 export const LineTaskIns = new LineTask();
 export const LinesTaskIns = new LinesTask();
 export const FatLineTaskIns = new FatLineTask();
+export const FatLinesTaskIns = new FatLinesTask();
 
 export const BaseObjectTaskManager = {
     isRunning: false,
@@ -262,6 +291,7 @@ export const BaseObjectTaskManager = {
         LineTaskIns.loop();
         LinesTaskIns.loop();
         FatLineTaskIns.loop();
+        FatLinesTaskIns.loop();
         maptalks.Util.requestAnimFrame(BaseObjectTaskManager.loop);
     },
     star() {
