@@ -26,7 +26,7 @@ if (maptalks.worker) {
                 //todo points
             } else if (type === 'Line' || type === 'FatLine') {
                 params = gengerateLines(data, center, layer, lineStrings, options);
-            } else if (type === 'Lines') {
+            } else if (type === 'Lines' || type === 'FatLines') {
                 params = gengerateLines(data, center, layer, lineStrings);
             }
             if (!params) {

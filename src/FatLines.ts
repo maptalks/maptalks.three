@@ -12,6 +12,7 @@ import { getCenterOfPoints, getGeometriesColorArray, setBottomHeight } from './u
 import { FatLineMaterialType, LineOptionType, LineStringType } from './type';
 import { ThreeLayer } from './index';
 import { getVertexColors } from './util/ThreeAdaptUtil';
+import { FatLinesTaskIns } from './BaseObjectTaskManager';
 
 const OPTIONS = {
     altitude: 0,
@@ -38,52 +39,66 @@ class FatLines extends MergedMixin(BaseObject) {
         // Get the center point of the point set
         const center = getCenterOfPoints(centers);
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, lineStrings, coordinate: center });
-
+        super();
+        this._initOptions(options);
+        const { asynchronous } = options;
+        const geometry = new LineGeometry();
         const lines = [], cache = {};
         let faceIndex = 0, faceMap = [], geometriesAttributes = [],
             psIndex = 0, positionList = [];
-        //LineSegmentsGeometry
-        for (let i = 0; i < len; i++) {
-            const lls = lineStringList[i];
-            let psCount = 0;
-            for (let m = 0, le = lls.length; m < le; m++) {
-                const properties = (isGeoJSONLine(lls[m] as any) ? lls[m]['properties'] : (lls[m] as any).getProperties() || {});
-                const { positions } = getLinePosition(lls[m], layer, center, false);
-                setBottomHeight(positions, properties.bottomHeight, layer, cache);
-                psCount += (positions.length / 3 * 2 - 2);
-                positionList.push(getLineSegmentPosition(positions));
-            }
-            // const psCount = positionsV.length + positionsV.length - 2;
-            const faceLen = psCount;
-            faceMap[i] = [faceIndex, faceIndex + faceLen];
-            faceIndex += faceLen;
+        let position: Float32Array;
+        let newPosition: Float32Array;
+        if (asynchronous) {
+            FatLinesTaskIns.push({
+                id: maptalks.Util.GUID(),
+                data: lineStringList,
+                key: (options as any).key,
+                center,
+                layer,
+                baseObject: this,
+                lineStrings
+            });
+        } else {
+            //LineSegmentsGeometry
+            for (let i = 0; i < len; i++) {
+                const lls = lineStringList[i];
+                let psCount = 0;
+                for (let m = 0, le = lls.length; m < le; m++) {
+                    const properties = (isGeoJSONLine(lls[m] as any) ? lls[m]['properties'] : (lls[m] as any).getProperties() || {});
+                    const { positions } = getLinePosition(lls[m], layer, center, false);
+                    setBottomHeight(positions, properties.bottomHeight, layer, cache);
+                    psCount += (positions.length / 3 * 2 - 2);
+                    positionList.push(getLineSegmentPosition(positions));
+                }
+                // const psCount = positionsV.length + positionsV.length - 2;
+                const faceLen = psCount;
+                faceMap[i] = [faceIndex, faceIndex + faceLen];
+                faceIndex += faceLen;
 
-            geometriesAttributes[i] = {
-                position: {
-                    count: psCount,
-                    start: psIndex,
-                    end: psIndex + psCount * 3,
-                },
-                instanceStart: {
-                    count: psCount,
-                    start: psIndex,
-                    end: psIndex + psCount * 3,
-                },
-                instanceEnd: {
-                    count: psCount,
-                    start: psIndex,
-                    end: psIndex + psCount * 3,
-                },
-                hide: false
-            };
-            psIndex += psCount * 3;
+                geometriesAttributes[i] = {
+                    position: {
+                        count: psCount,
+                        start: psIndex,
+                        end: psIndex + psCount * 3,
+                    },
+                    instanceStart: {
+                        count: psCount,
+                        start: psIndex,
+                        end: psIndex + psCount * 3,
+                    },
+                    instanceEnd: {
+                        count: psCount,
+                        start: psIndex,
+                        end: psIndex + psCount * 3,
+                    },
+                    hide: false
+                };
+                psIndex += psCount * 3;
+            }
+            position = mergeLinePositions(positionList);
+            geometry.setPositions(position);
         }
 
-        super();
-        this._initOptions(options);
-        const position = mergeLinePositions(positionList);
-        const geometry = new LineGeometry();
-        geometry.setPositions(position);
         this._setMaterialRes(layer, material);
         this._createLine2(geometry, material);
         const { altitude } = options;
@@ -98,13 +113,17 @@ class FatLines extends MergedMixin(BaseObject) {
         this.faceIndex = null;
         this.index = null;
         this._geometryCache = new LineGeometry();
-        const newPosition = new Float32Array(position);
-        (this._geometryCache as any).setPositions(newPosition);
+        if (!asynchronous) {
+            newPosition = new Float32Array(position);
+            (this._geometryCache as any).setPositions(newPosition);
+        }
         this._colorMap = {};
         this.isHide = false;
         this._initBaseObjectsEvent(lines);
-        this._setPickObject3d(newPosition, material.linewidth);
-        this._init();
+        if (!asynchronous) {
+            this._setPickObject3d(newPosition, material.linewidth);
+            this._init();
+        }
         this.type = 'FatLines';
     }
 
@@ -237,6 +256,24 @@ class FatLines extends MergedMixin(BaseObject) {
             this.isHide = isHide;
         }
         return this;
+    }
+
+    _workerLoad(result) {
+        const { faceMap, geometriesAttributes } = result;
+        this._faceMap = faceMap;
+        this._geometriesAttributes = geometriesAttributes;
+        const object3d = this.getObject3d();
+        const position = new Float32Array(result.position);
+        const newPosition = new Float32Array(position);
+        (object3d as any).geometry.setPositions(new Float32Array(position));
+        (this._geometryCache as any).setPositions(newPosition);
+        this._setPickObject3d(newPosition, (object3d as any).material.linewidth);
+        this._init();
+        if (this.isAdd) {
+            const pick = this.getLayer().getPick();
+            pick.add(this.pickObject3d);
+        }
+        this._fire('workerload', { target: this });
     }
 }
 

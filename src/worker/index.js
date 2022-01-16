@@ -52,7 +52,7 @@ export const onmessage = function (message, postResponse) {
             transfer.push(position.buffer);
         }
         postResponse(null, lines, transfer);
-    } else if (type === 'Lines') {
+    } else if (type === 'Lines' || type === 'FatLines') {
         let faceIndex = 0, faceMap = [], geometriesAttributes = [],
             psIndex = 0, positionList = [];
         for (let i = 0, len = datas.length; i < len; i++) {
@@ -76,6 +76,18 @@ export const onmessage = function (message, postResponse) {
                 },
                 hide: false
             };
+            if (type === 'FatLines') {
+                geometriesAttributes[i].instanceStart = {
+                    count: psCount,
+                    start: psIndex,
+                    end: psIndex + psCount * 3,
+                };
+                geometriesAttributes[i].instanceEnd = {
+                    count: psCount,
+                    start: psIndex,
+                    end: psIndex + psCount * 3,
+                };
+            }
             psIndex += psCount * 3;
         }
         const position = mergeLinePositions(positionList);
