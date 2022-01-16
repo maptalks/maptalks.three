@@ -13,7 +13,7 @@ export const onmessage = function (message, postResponse) {
     } else if (type === 'ExtrudeLines') {
         for (let i = 0, len = datas.length; i < len; i++) {
             for (let j = 0, len1 = datas[i].data.length; j < len1; j++) {
-                datas[i].data[j] = arrayBufferToArray(datas[i].data[j]);
+                datas[i].data[j] = arrayBufferToArray(datas[i].data[j], datas[i].center || center, glRes, matrix);
             }
         }
         const result = generateExtrude(datas, true);
@@ -97,6 +97,26 @@ export const onmessage = function (message, postResponse) {
             geometriesAttributes,
             faceMap
         }, [position.buffer]);
+    } else if (type === 'ExtrudeLine') {
+        for (let i = 0, len = datas.length; i < len; i++) {
+            for (let j = 0, len1 = datas[i].data.length; j < len1; j++) {
+                datas[i].data[j] = arrayBufferToArray(datas[i].data[j], datas[i].center || center, glRes, matrix);
+            }
+        }
+        const lines = [], transfer = [];
+        datas.forEach(d => {
+            const line = [d];
+            const { position, normal, uv, indices } = generateExtrude(line, true);
+            lines.push({
+                id: d.id,
+                position,
+                normal,
+                uv,
+                indices
+            });
+            transfer.push(position, normal, uv, indices);
+        });
+        postResponse(null, lines, transfer);
     }
 };
 

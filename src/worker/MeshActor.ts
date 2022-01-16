@@ -28,6 +28,8 @@ if (maptalks.worker) {
                 params = gengerateLines(data, center, layer, lineStrings, options);
             } else if (type === 'Lines' || type === 'FatLines') {
                 params = gengerateLines(data, center, layer, lineStrings);
+            } else if (type === 'ExtrudeLine') {
+                params = gengerateExtrudeLines(data, center, layer, lineStrings, options);
             }
             if (!params) {
                 console.error(`not support '${type}' worker`);
@@ -151,12 +153,26 @@ function gengerateExtrudePolygons(polygons: PolygonType[] = [], center: maptalks
  * @param {*} center
  * @param {*} layer
  */
-function gengerateExtrudeLines(lineStringList: Array<Array<SingleLineStringType>>, center: maptalks.Coordinate, layer: ThreeLayer, lineStrings: Array<LineStringType>) {
+function gengerateExtrudeLines(lineStringList: Array<Array<SingleLineStringType>>, center: maptalks.Coordinate, layer: ThreeLayer, lineStrings: Array<LineStringType>, options: Array<any> = []) {
+    const isMercator = layer.isMercator();
+    let glRes, matrix;
+    if (isMercator) {
+        const map = layer.getMap();
+        glRes = map.getGLRes();
+        matrix = map.getSpatialReference().getTransformation().matrix;
+    }
+    let centerPt;
+    if (center) {
+        centerPt = layer.coordinateToVector3(center);
+    }
     const datas = [], transfer = [], altCache = {};
     const len = lineStringList.length;
     for (let i = 0; i < len; i++) {
         const multiLineString = lineStringList[i];
-        const properties = (isGeoJSONLine(lineStrings[i] as any) ? lineStrings[i]['properties'] : (lineStrings[i] as any).getProperties() || {});
+        const properties = options[i] ? options[i] : (isGeoJSONLine(lineStrings[i] as any) ? lineStrings[i]['properties'] : (lineStrings[i] as any).getProperties() || {});
+        if (!center) {
+            centerPt = layer.coordinateToVector3(properties.center);
+        }
         let width = properties.width || 1;
         let height = properties.height || 1;
         let bottomHeight = properties.bottomHeight || 0;
@@ -166,20 +182,33 @@ function gengerateExtrudeLines(lineStringList: Array<Array<SingleLineStringType>
         const data = [];
         for (let j = 0, len1 = multiLineString.length; j < len1; j++) {
             const lineString = multiLineString[j];
-            const arrayBuffer = getLinePosition(lineString, layer, center, false).arrayBuffer;
+            let arrayBuffer: ArrayBuffer;
+            if (isMercator) {
+                arrayBuffer = getLineArrayBuffer(lineString);
+            } else {
+                arrayBuffer = getLinePosition(lineString, layer, center, false).arrayBuffer;
+            }
             transfer.push(arrayBuffer);
             data.push(arrayBuffer);
         }
-        datas.push({
+        const d = {
+            id: properties.id,
             data,
             height,
             width,
             bottomHeight
-        });
+        };
+        if (isMercator) {
+            (d as any).center = [centerPt.x, centerPt.y];
+        }
+        datas.push(d);
     }
     return {
         datas,
-        transfer
+        transfer,
+        glRes,
+        matrix,
+        center: isMercator ? [centerPt.x, centerPt.y] : null
     };
 }
 
