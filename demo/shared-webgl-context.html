@@ -94,6 +94,7 @@
         // threeLayer.addTo(map);
         // 添加到GroupGLLayer中
         // GroupGLLayer能实现抗锯齿等后处理，也能加入其他三维图层，让子图层都融合到同一个三维空间中
+        
         const groupLayer = new maptalks.GroupGLLayer('group', [geo3DTilesLayer, threeLayer], { antialias: true });
         groupLayer.addTo(map);
 
@@ -158,7 +159,7 @@
             requestAnimationFrame(animate);
             threeLayer._needsUpdate = !threeLayer._needsUpdate;
             if (threeLayer._needsUpdate && !threeLayer.isRendering()) {
-                threeLayer.renderScene();
+                threeLayer.redraw();
             }
 
         }
