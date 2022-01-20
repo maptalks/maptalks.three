@@ -81,6 +81,7 @@ const EVENTS = [
 const TEMP_COORD = new maptalks.Coordinate(0, 0);
 const TEMP_POINT = new maptalks.Point(0, 0);
 
+const KEY_FBO = '__webglFramebuffer';
 
 // const MATRIX4 = new THREE.Matrix4();
 
@@ -153,16 +154,16 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * Draw method of ThreeLayer
      * In default, it calls renderScene, refresh the camera and the scene
      */
-    draw() {
-        this.renderScene();
+    draw(gl, view, scene, camera, timeStamp, context) {
+        this.renderScene(context);
     }
 
     /**
      * Draw method of ThreeLayer when map is interacting
      * In default, it calls renderScene, refresh the camera and the scene
      */
-    drawOnInteracting() {
-        this.renderScene();
+    drawOnInteracting(gl, view, scene, camera, event, timeStamp, context) {
+        this.renderScene(context);
     }
     /**
      * Convert a geographic coordinate to THREE Vector3
@@ -642,11 +643,11 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return null;
     }
 
-    renderScene() {
+    renderScene(context?: Object) {
         const renderer = this._getRenderer();
         if (renderer) {
             renderer.clearCanvas();
-            renderer.renderScene();
+            renderer.renderScene(context);
         }
         return this;
     }
@@ -732,7 +733,10 @@ class ThreeLayer extends maptalks.CanvasLayer {
         });
         this._zoomend();
         if (render) {
-            this.renderScene();
+            const renderer = this._getRenderer();
+            if (renderer) {
+                renderer.setToRedraw();
+            }
         }
         return this;
     }
@@ -771,7 +775,10 @@ class ThreeLayer extends maptalks.CanvasLayer {
             }
         });
         if (render) {
-            this.renderScene();
+            const renderer = this._getRenderer();
+            if (renderer) {
+                renderer.setToRedraw();
+            }
         }
         return this;
     }
@@ -1100,6 +1107,7 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
     matrix4: THREE.Matrix4;
     pick: GPUPick;
     _renderTime: number = 0;
+    _renderTarget: THREE.WebGLRenderTarget = null;
 
     getPrepareParams(): Array<any> {
         return [this.scene, this.camera];
@@ -1209,7 +1217,7 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         return null;
     }
 
-    renderScene() {
+    renderScene(context) {
         const time = maptalks.Util.now();
         // Make sure to execute only once in a frame
         if (time - this._renderTime >= 16) {
@@ -1217,12 +1225,45 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
             this._renderTime = time;
         }
         this._syncCamera();
-        this.context.render(this.scene, this.camera);
+        // 把 WebglRenderTarget 中的 framebuffer 替换为 GroupGLLayer 中的 fbo
+        // 参考: https://stackoverflow.com/questions/55082573/use-webgl-texture-as-a-three-js-texture-map
+        // 实现有点 hacky，需要留意 three 版本变动 对它的影响
+        if (context && context.renderTarget) {
+            const { width, height } = context.renderTarget.fbo;
+            if (!this._renderTarget) {
+                this._renderTarget = new THREE.WebGLRenderTarget(width, height, {
+                    // depthTexture: new THREE.DepthTexture(width, height, THREE.UnsignedInt248Type)
+                    depthBuffer: false
+                });
+                // 绘制一次以后，才会生成 framebuffer 对象
+                this.context.setRenderTarget(this._renderTarget);
+                this.context.render(this.scene, this.camera);
+            } else {
+                // 这里不能setSize，因为setSize中会把原有的fbo dipose掉
+                // this._renderTarget.setSize(width, height);
+                this._renderTarget.viewport.set(0, 0, width, height);
+                this._renderTarget.scissor.set(0, 0, width, height);
+            }
+            const renderTargetProps = this.context.properties.get(this._renderTarget);
+
+            const threeCreatedFBO = renderTargetProps[KEY_FBO];
+            // 用GroupGLLayer的webgl fbo对象替换WebglRenderTarget的fbo对象
+            renderTargetProps[KEY_FBO] = context.renderTarget.getFramebuffer(context.renderTarget.fbo);
+            this.context.setRenderTarget(this._renderTarget);
+            this.context.render(this.scene, this.camera);
+            renderTargetProps[KEY_FBO] = threeCreatedFBO;
+        } else {
+            this.context.render(this.scene, this.camera);
+        }
+        this.context.setRenderTarget(null);
         this.completeRender();
     }
 
     remove() {
         delete this._drawContext;
+        if (this._renderTarget) {
+            this._renderTarget.dispose();
+        }
         super.remove();
     }
 
