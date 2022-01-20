@@ -1263,6 +1263,7 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         delete this._drawContext;
         if (this._renderTarget) {
             this._renderTarget.dispose();
+            delete this._renderTarget;
         }
         super.remove();
     }
