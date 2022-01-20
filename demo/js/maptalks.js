@@ -1,7 +1,7 @@
 /*!
  * maptalks v1.0.0-beta.7
  * LICENSE : BSD-3-Clause
- * (c) 2016-2021 maptalks.org
+ * (c) 2016-2022 maptalks.org
  */
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
@@ -116,7 +116,7 @@
   if (!IS_NODE) {
     var ua = navigator.userAgent.toLowerCase(),
         doc = document.documentElement,
-        ie = 'ActiveXObject' in window,
+        ie = ('ActiveXObject' in window),
         webkit = ua.indexOf('webkit') !== -1,
         phantomjs = ua.indexOf('phantom') !== -1,
         android23 = ua.search('android [23]') !== -1,
@@ -127,8 +127,8 @@
         pointer = window.PointerEvent && navigator.pointerEnabled || msPointer,
         ie3d = ie && 'transition' in doc.style,
         webkit3d = 'WebKitCSSMatrix' in window && 'm11' in new window.WebKitCSSMatrix() && !android23,
-        gecko3d = 'MozPerspective' in doc.style,
-        opera12 = 'OTransition' in doc.style,
+        gecko3d = ('MozPerspective' in doc.style),
+        opera12 = ('OTransition' in doc.style),
         any3d = (ie3d || webkit3d || gecko3d) && !opera12 && !phantomjs,
         imageBitMap = typeof window !== 'undefined' && isFunction(window.createImageBitmap),
         resizeObserver = typeof window !== 'undefined' && isFunction(window.ResizeObserver),
@@ -184,7 +184,17 @@
   function _inheritsLoose(subClass, superClass) {
     subClass.prototype = Object.create(superClass.prototype);
     subClass.prototype.constructor = subClass;
-    if (typeof document !== 'undefined' && document.documentMode < 11) { _defaults(subClass, superClass); } else { subClass.__proto__ = superClass;}
+
+    _setPrototypeOf(subClass, superClass);
+  }
+
+  function _setPrototypeOf(o, p) {
+    _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) {
+      o.__proto__ = p;
+      return o;
+    };
+
+    return _setPrototypeOf(o, p);
   }
 
   function _assertThisInitialized(self) {
@@ -868,7 +878,7 @@
               zoom: stop[0].zoom,
               type: parameters.type,
               property: parameters.property,
-              default: parameters.default,
+              "default": parameters["default"],
               stops: []
             };
           }
@@ -928,7 +938,7 @@
       }
     }
 
-    return parameters.default;
+    return parameters["default"];
   }
 
   function evaluateIntervalFunction(parameters, input) {
@@ -957,7 +967,7 @@
   }
 
   function evaluateIdentityFunction(parameters, input) {
-    return coalesce(input, parameters.default);
+    return coalesce(input, parameters["default"]);
   }
 
   function interpolate$1(input, base, inputLower, inputUpper, outputLower, outputUpper) {
@@ -3829,137 +3839,144 @@
     ctx.strokeStyle = savedCtx.strokeStyle;
   }
 
-  var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
+  var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
   function createCommonjsModule(fn, module) {
   	return module = { exports: {} }, fn(module, module.exports), module.exports;
   }
 
   var zousanMin = createCommonjsModule(function (module) {
-    !function (t) {
+    !function (i) {
 
-      function e(t) {
-        if (t) {
-          var e = this;
-          t(function (t) {
-            e.resolve(t);
-          }, function (t) {
-            e.reject(t);
-          });
-        }
-      }
+      var c,
+          s,
+          u = "fulfilled",
+          f = "undefined",
+          a = function () {
+        var e = [],
+            n = 0;
 
-      function n(t, e) {
-        if ("function" == typeof t.y) try {
-          var n = t.y.call(i, e);
-          t.p.resolve(n);
-        } catch (o) {
-          t.p.reject(o);
-        } else t.p.resolve(e);
-      }
-
-      function o(t, e) {
-        if ("function" == typeof t.n) try {
-          var n = t.n.call(i, e);
-          t.p.resolve(n);
-        } catch (o) {
-          t.p.reject(o);
-        } else t.p.reject(e);
-      }
-
-      var r,
-          i,
-          c = "fulfilled",
-          u = "rejected",
-          s = "undefined",
-          f = function () {
-        function e() {
-          for (; n.length - o;) {
+        function o() {
+          for (; e.length - n;) {
             try {
-              n[o]();
-            } catch (e) {
-              t.console && t.console.error(e);
+              e[n]();
+            } catch (t) {
+              i.console && i.console.error(t);
             }
 
-            n[o++] = i, o == r && (n.splice(0, r), o = 0);
+            e[n++] = s, 1024 == n && (e.splice(0, 1024), n = 0);
           }
         }
 
-        var n = [],
-            o = 0,
-            r = 1024,
-            c = function () {
-          if (typeof MutationObserver !== s) {
-            var t = document.createElement("div"),
-                n = new MutationObserver(e);
-            return n.observe(t, {
-              attributes: !0
-            }), function () {
-              t.setAttribute("a", 0);
-            };
-          }
-
-          return typeof setImmediate !== s ? function () {
-            setImmediate(e);
+        var r = function () {
+          if (typeof MutationObserver === f) return typeof process !== f && "function" == typeof process.nextTick ? function () {
+            process.nextTick(o);
+          } : typeof setImmediate !== f ? function () {
+            setImmediate(o);
           } : function () {
-            setTimeout(e, 0);
+            setTimeout(o, 0);
+          };
+          var t = document.createElement("div");
+          return new MutationObserver(o).observe(t, {
+            attributes: !0
+          }), function () {
+            t.setAttribute("a", 0);
           };
         }();
 
         return function (t) {
-          n.push(t), n.length - o == 1 && c();
+          e.push(t), e.length - n == 1 && r();
         };
       }();
 
-      e.prototype = {
-        resolve: function resolve(t) {
-          if (this.state === r) {
-            if (t === this) return this.reject(new TypeError("Attempt to resolve promise with self"));
-            var e = this;
-            if (t && ("function" == typeof t || "object" == typeof t)) try {
-              var o = !0,
-                  i = t.then;
-              if ("function" == typeof i) return void i.call(t, function (t) {
-                o && (o = !1, e.resolve(t));
+      function l(t) {
+        if (!(this instanceof l)) throw new TypeError("Zousan must be created with the new keyword");
+
+        if ("function" == typeof t) {
+          var e = this;
+
+          try {
+            t(function (t) {
+              e.resolve(t);
+            }, function (t) {
+              e.reject(t);
+            });
+          } catch (t) {
+            e.reject(t);
+          }
+        } else if (0 < arguments.length) throw new TypeError("Zousan resolver " + t + " is not a function");
+      }
+
+      function h(e, t) {
+        if ("function" == typeof e.y) try {
+          var n = e.y.call(s, t);
+          e.p.resolve(n);
+        } catch (t) {
+          e.p.reject(t);
+        } else e.p.resolve(t);
+      }
+
+      function v(e, t) {
+        if ("function" == typeof e.n) try {
+          var n = e.n.call(s, t);
+          e.p.resolve(n);
+        } catch (t) {
+          e.p.reject(t);
+        } else e.p.reject(t);
+      }
+
+      l.prototype = {
+        resolve: function resolve(n) {
+          if (this.state === c) {
+            if (n === this) return this.reject(new TypeError("Attempt to resolve promise with self"));
+            var o = this;
+            if (n && ("function" == typeof n || "object" == typeof n)) try {
+              var e = !0,
+                  t = n.then;
+              if ("function" == typeof t) return void t.call(n, function (t) {
+                e && (e = !1, o.resolve(t));
               }, function (t) {
-                o && (o = !1, e.reject(t));
+                e && (e = !1, o.reject(t));
               });
-            } catch (u) {
-              return void (o && this.reject(u));
+            } catch (t) {
+              return void (e && this.reject(t));
             }
-            this.state = c, this.v = t, e.c && f(function () {
-              for (var o = 0, r = e.c.length; r > o; o++) {
-                n(e.c[o], t);
+            this.state = u, this.v = n, o.c && a(function () {
+              for (var t = 0, e = o.c.length; t < e; t++) {
+                h(o.c[t], n);
               }
             });
           }
         },
         reject: function reject(n) {
-          if (this.state === r) {
-            this.state = u, this.v = n;
-            var i = this.c;
-            i ? f(function () {
-              for (var t = 0, e = i.length; e > t; t++) {
-                o(i[t], n);
+          if (this.state === c) {
+            var t = this;
+            this.state = "rejected", this.v = n;
+            var o = this.c;
+            a(o ? function () {
+              for (var t = 0, e = o.length; t < e; t++) {
+                v(o[t], n);
               }
-            }) : !e.suppressUncaughtRejectionError && t.console && t.console.log("You upset Zousan. Please catch rejections: ", n, n ? n.stack : null);
-          }
-        },
-        then: function then(t, i) {
-          var u = new e(),
-              s = {
-            y: t,
-            n: i,
-            p: u
-          };
-          if (this.state === r) this.c ? this.c.push(s) : this.c = [s];else {
-            var l = this.state,
-                a = this.v;
-            f(function () {
-              l === c ? n(s, a) : o(s, a);
+            } : function () {
+              t.handled || !l.suppressUncaughtRejectionError && i.console && l.warn("You upset Zousan. Please catch rejections: ", n, n ? n.stack : null);
             });
           }
-          return u;
+        },
+        then: function then(t, e) {
+          var n = new l(),
+              o = {
+            y: t,
+            n: e,
+            p: n
+          };
+          if (this.state === c) this.c ? this.c.push(o) : this.c = [o];else {
+            var r = this.state,
+                i = this.v;
+            this.handled = !0, a(function () {
+              r === u ? h(o, i) : v(o, i);
+            });
+          }
+          return n;
         },
         "catch": function _catch(t) {
           return this.then(null, t);
@@ -3967,42 +3984,46 @@
         "finally": function _finally(t) {
           return this.then(t, t);
         },
-        timeout: function timeout(t, n) {
-          n = n || "Timeout";
-          var o = this;
-          return new e(function (e, r) {
+        timeout: function timeout(t, o) {
+          o = o || "Timeout";
+          var r = this;
+          return new l(function (e, n) {
             setTimeout(function () {
-              r(Error(n));
-            }, t), o.then(function (t) {
+              n(Error(o));
+            }, t), r.then(function (t) {
               e(t);
             }, function (t) {
-              r(t);
+              n(t);
             });
           });
         }
-      }, e.resolve = function (t) {
-        var n = new e();
-        return n.resolve(t), n;
-      }, e.reject = function (t) {
-        var n = new e();
-        return n.reject(t), n;
-      }, e.all = function (t) {
-        function n(n, c) {
-          n && "function" == typeof n.then || (n = e.resolve(n)), n.then(function (e) {
-            o[c] = e, r++, r == t.length && i.resolve(o);
+      }, l.resolve = function (t) {
+        var e = new l();
+        return e.resolve(t), e;
+      }, l.reject = function (t) {
+        var e = new l();
+        return e.c = [], e.reject(t), e;
+      }, l.all = function (n) {
+        var o = [],
+            r = 0,
+            i = new l();
+
+        function t(t, e) {
+          t && "function" == typeof t.then || (t = l.resolve(t)), t.then(function (t) {
+            o[e] = t, ++r == n.length && i.resolve(o);
           }, function (t) {
             i.reject(t);
           });
         }
 
-        for (var o = [], r = 0, i = new e(), c = 0; c < t.length; c++) {
-          n(t[c], c);
+        for (var e = 0; e < n.length; e++) {
+          t(n[e], e);
         }
 
-        return t.length || i.resolve(o), i;
-      }, module.exports && (module.exports = e), t.define && t.define.amd && t.define([], function () {
-        return e;
-      }), t.Zousan = e, e.soon = f;
+        return n.length || i.resolve(o), i;
+      }, l.warn = console.warn, module.exports && (module.exports = l), i.define && i.define.amd && i.define([], function () {
+        return l;
+      }), (i.Zousan = l).soon = a;
     }("undefined" != typeof commonjsGlobal ? commonjsGlobal : commonjsGlobal);
   });
 
@@ -5090,7 +5111,7 @@
       stack.push(left, mid, mid, right);
     }
   }
-  rbush_1.default = default_1;
+  rbush_1["default"] = default_1;
 
   var search = {};
 
@@ -6372,7 +6393,7 @@
     }
 
     var bear360;
-    if (options.final) bear360 = calculateRhumbBearing(end, start);else bear360 = calculateRhumbBearing(start, end);
+    if (options["final"]) bear360 = calculateRhumbBearing(end, start);else bear360 = calculateRhumbBearing(start, end);
     var bear180 = bear360 > 180 ? -(360 - bear360) : bear360;
     return bear180;
   }
@@ -7044,8 +7065,8 @@
       var map = this.getMap();
       var size = map.getSize();
       var r = map.getDevicePixelRatio(),
-          w = r * size.width,
-          h = r * size.height;
+          w = Math.round(r * size.width),
+          h = Math.round(r * size.height);
 
       if (this.layer._canvas) {
         var canvas = this.layer._canvas;
@@ -7107,13 +7128,15 @@
 
       var size = canvasSize || this.getMap().getSize();
       var r = this.getMap().getDevicePixelRatio();
+      var width = Math.round(r * size.width),
+          height = Math.round(r * size.height);
 
-      if (canvas.width === r * size.width && canvas.height === r * size.height) {
+      if (canvas.width === width && canvas.height === height) {
         return;
       }
 
-      canvas.height = r * size.height;
-      canvas.width = r * size.width;
+      canvas.height = height;
+      canvas.width = width;
 
       if (r !== 1 && this.context) {
         this.context.scale(r, r);
@@ -11620,6 +11643,10 @@
       this._layer = layer;
 
       this._clearCache();
+
+      this._bindInfoWindow();
+
+      this._bindMenu();
     };
 
     _proto._prepareSymbol = function _prepareSymbol(symbol) {
@@ -12649,6 +12676,9 @@
       return !IS_NODE;
     }(),
     'panAnimationDuration': 600,
+    'rotateAnimation': function () {
+      return !IS_NODE;
+    }(),
     'zoomable': true,
     'enableInfoWindow': true,
     'hitDetect': function () {
@@ -12693,7 +12723,7 @@
       delete opts['layers'];
       _this = _Handlerable.call(this, opts) || this;
       _this.VERSION = Map.VERSION;
-      Object.defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), 'id', {
+      Object.defineProperty(_assertThisInitialized(_this), 'id', {
         value: UID(),
         writable: false
       });
@@ -14738,6 +14768,7 @@
         return;
       }
 
+      var isTouch = param.domEvent.type === 'touchend';
       var map = this.target;
       var t = now() - this.startDragTime;
       var mx = param['mousePos'].x,
@@ -14748,9 +14779,11 @@
       this._clear();
 
       if (map.options['panAnimation'] && !param.interupted && map._verifyExtent(map._getPrjCenter()) && t < 280 && Math.abs(dy) + Math.abs(dx) > 5) {
-        t = 5 * t * (Math.abs(dx) + Math.abs(dy)) / 500;
-        map.panBy(new Point(dx, dy), {
-          'duration': t
+        t = 5 * t;
+        var dscale = isTouch ? 5 : 2.8;
+        map.panBy(new Point(dx * dscale, dy * dscale), {
+          'duration': isTouch ? t * 3 : t * 2,
+          'easing': 'outExpo'
         });
       } else {
         map.onMoveEnd(param);
@@ -14829,14 +14862,14 @@
       var t = now() - this.startDragTime;
       map.onDragRotateEnd(param);
 
-      if (Math.abs(bearing - this.startBearing) > 20 && (this._rotateMode === 'rotate' || this._rotateMode === 'rotate_pitch') && !param.interupted && t < 400) {
+      if (map.options['rotateAnimation'] && Math.abs(bearing - this.startBearing) > 20 && (this._rotateMode === 'rotate' || this._rotateMode === 'rotate_pitch') && !param.interupted && t < 400) {
         var _bearing = map.getBearing();
 
         map._animateTo({
-          'bearing': _bearing + this._db / 2
+          'bearing': _bearing + this._db / 1.5
         }, {
-          'easing': 'out',
-          'duration': 800
+          'easing': 'outQuint',
+          'duration': 1600
         });
       }
     };
@@ -15109,7 +15142,7 @@
       var _this;
 
       _this = _Handler.call(this, target) || this;
-      _this._thisScrollZoom = _this._scrollZoom.bind(_assertThisInitialized(_assertThisInitialized(_this)));
+      _this._thisScrollZoom = _this._scrollZoom.bind(_assertThisInitialized(_this));
       _this._wheelZoomRate = wheelZoomRate;
       _this._defaultZoomRate = defaultZoomRate;
       _this._delta = 0;
@@ -15469,11 +15502,17 @@
 
   var KEY = '__anim_player';
   var Easing = {
-    in: function _in(t) {
+    outExpo: function outExpo(x) {
+      return x === 1 ? 1 : 1 - Math.pow(2, -10 * x);
+    },
+    outQuint: function outQuint(x) {
+      return 1 - Math.pow(1 - x, 5);
+    },
+    "in": function _in(t) {
       return Math.pow(t, 2);
     },
     out: function out(t) {
-      return 1 - Easing.in(1 - t);
+      return 1 - Easing["in"](1 - t);
     },
     inAndOut: function inAndOut(t) {
       return 3 * t * t - 2 * t * t * t;
@@ -16020,7 +16059,7 @@
 
       {
         module.exports = simplify;
-        module.exports.default = simplify;
+        module.exports["default"] = simplify;
       }
     })();
   });
@@ -23812,7 +23851,7 @@
 
       _this = _DrawTool.call(this, options) || this;
 
-      _this.on('enable', _this._afterEnable, _assertThisInitialized(_assertThisInitialized(_this))).on('disable', _this._afterDisable, _assertThisInitialized(_assertThisInitialized(_this)));
+      _this.on('enable', _this._afterEnable, _assertThisInitialized(_this)).on('disable', _this._afterDisable, _assertThisInitialized(_this));
 
       _this._measureLayers = [];
       return _this;
@@ -24151,7 +24190,7 @@
 
       _this = _DistanceTool.call(this, options) || this;
 
-      _this.on('enable', _this._afterEnable, _assertThisInitialized(_assertThisInitialized(_this))).on('disable', _this._afterDisable, _assertThisInitialized(_assertThisInitialized(_this)));
+      _this.on('enable', _this._afterEnable, _assertThisInitialized(_this)).on('disable', _this._afterDisable, _assertThisInitialized(_this));
 
       _this._measureLayers = [];
       return _this;
@@ -24955,7 +24994,7 @@
     'autoPanDuration': 600,
     'single': true,
     'animation': 'scale',
-    'animationOnHide': true,
+    'animationOnHide': false,
     'animationDuration': 500,
     'pitchWithMap': false,
     'rotateWithMap': false,
@@ -25031,6 +25070,7 @@
       this._measureSize(dom);
 
       if (this._singleton()) {
+        dom._uiComponent = this;
         map[this._uiDomKey()] = dom;
       }
 
@@ -25130,6 +25170,8 @@
       if (anim.scale) {
         dom.style[TRANSFORM] = this._toCSSTranslate(this._pos) + ' scale(0)';
       }
+
+      this._switchMapEvents('off');
 
       return this;
     };
@@ -25341,6 +25383,11 @@
           }
 
           removeDomNode(map[key]);
+
+          if (map[key]._uiComponent && !this.hideDom) {
+            map[key]._uiComponent._switchMapEvents('off');
+          }
+
           delete map[key];
         }
 
@@ -25396,8 +25443,6 @@
     };
 
     _proto._switchEvents = function _switchEvents(to) {
-      this._switchMapEvents(to);
-
       var ownerEvents = this._getOwnerEvents();
 
       if (this._owner) {
@@ -26342,6 +26387,8 @@
       if (this.isVisible()) {
         this._removePrevDOM();
       }
+
+      this._switchMapEvents('off');
     };
 
     _proto.onMouseMove = function onMouseMove(e) {
@@ -26603,7 +26650,7 @@
 
       if (!this._menu) {
         if (this._menuOptions && map) {
-          this._bindMenu(this._menuOptions);
+          this._bindMenu();
 
           this._menu.show(coordinate);
         }
@@ -26655,8 +26702,12 @@
       this.fire('removemenu', {});
       return this;
     },
-    _bindMenu: function _bindMenu(options) {
-      this._menu = new Menu(options);
+    _bindMenu: function _bindMenu() {
+      if (!this._menuOptions) {
+        return this;
+      }
+
+      this._menu = new Menu(this._menuOptions);
 
       this._menu.addTo(this);
 
@@ -28689,7 +28740,7 @@
             return this.getTiles(z, layer);
           }
 
-          queue = rootNodes.tiles.concat();
+          queue = [].concat(rootNodes.tiles);
         }
       } else {
         var _rootNodes = this._getRootNodes(offset0);
@@ -28700,7 +28751,7 @@
           return this.getTiles(z, layer);
         }
 
-        queue = _rootNodes.tiles.concat();
+        queue = [].concat(_rootNodes.tiles);
       }
 
       var glRes = map.getGLRes();
@@ -30771,11 +30822,11 @@
       this.prepareCanvas();
       this.prepareDrawContext();
 
-      this._drawLayer();
+      this._drawLayer.apply(this, arguments);
     };
 
     _proto.drawOnInteracting = function drawOnInteracting() {
-      this._drawLayerOnInteracting();
+      this._drawLayerOnInteracting.apply(this, arguments);
     };
 
     _proto.getCanvasImage = function getCanvasImage() {
@@ -30885,13 +30936,17 @@
     };
 
     _proto._drawLayer = function _drawLayer() {
-      var args = this._prepareDrawParams();
+      var params = this._prepareDrawParams();
 
-      if (!args) {
+      if (!params) {
         return;
       }
 
-      this.layer.draw.apply(this.layer, args);
+      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+
+      this.layer.draw.apply(this.layer, params.concat(args));
       this.completeRender();
     };
 
@@ -30900,13 +30955,17 @@
         return;
       }
 
-      var args = this._prepareDrawParams();
+      var params = this._prepareDrawParams();
 
-      if (!args) {
+      if (!params) {
         return;
       }
 
-      this.layer.drawOnInteracting.apply(this.layer, args);
+      for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+        args[_key2] = arguments[_key2];
+      }
+
+      this.layer.drawOnInteracting.apply(this.layer, params.concat(args));
       this.completeRender();
     };
 
@@ -31143,7 +31202,7 @@
 
       _this = _Eventable.call(this, options) || this;
       _this.target = target;
-      target.once('remove', _this.delete, _assertThisInitialized(_assertThisInitialized(_this)));
+      target.once('remove', _this["delete"], _assertThisInitialized(_this));
       var symbol = _this.options['symbol'];
       var lineWidth = symbol['markerLineWidth'] || 1;
       _this.w = symbol['markerWidth'] + lineWidth;
@@ -31244,7 +31303,7 @@
       return false;
     };
 
-    _proto.delete = function _delete() {
+    _proto["delete"] = function _delete() {
       if (this.map) {
         var renderer = this.map.getRenderer();
 
@@ -31358,7 +31417,7 @@
   var EditOutline = function () {
     function EditOutline(target, map) {
       this.target = target;
-      target.once('remove', this.delete, this);
+      target.once('remove', this["delete"], this);
       this.map = map;
       this.addTo(map);
     }
@@ -31418,7 +31477,7 @@
       renderer.addTopElement(this);
     };
 
-    _proto.delete = function _delete() {
+    _proto["delete"] = function _delete() {
       if (this.map) {
         var renderer = this.map.getRenderer();
 
@@ -32281,10 +32340,10 @@
 
         geoToEdit._updateCache();
 
-        vertexHandles[ringIndex].splice(index, 1)[0].delete();
+        vertexHandles[ringIndex].splice(index, 1)[0]["delete"]();
 
         if (index < newVertexHandles[ringIndex].length) {
-          newVertexHandles[ringIndex].splice(index, 1)[0].delete();
+          newVertexHandles[ringIndex].splice(index, 1)[0]["delete"]();
         }
 
         var nextIndex;
@@ -32295,7 +32354,7 @@
           nextIndex = index - 1;
         }
 
-        newVertexHandles[ringIndex].splice(nextIndex, 1)[0].delete();
+        newVertexHandles[ringIndex].splice(nextIndex, 1)[0]["delete"]();
 
         if (!isEnd) {
           newVertexHandles[ringIndex].splice(nextIndex, 0, createNewVertexHandle.call(me, nextIndex, ringIndex));
@@ -32441,7 +32500,7 @@
 
             var vertexIndex = handle[propertyOfVertexIndex];
             removeFromArray(handle, newVertexHandles[ringIndex]);
-            handle.delete();
+            handle["delete"]();
             vertexHandles[ringIndex].splice(vertexIndex + 1, 0, createVertexHandle.call(me, vertexIndex + 1, ringIndex));
             onVertexAddOrRemove();
 
@@ -33509,7 +33568,7 @@
       if (this._infoWindow) {
         this._infoWindow.setOptions(options);
       } else if (this.getMap()) {
-        this._bindInfoWindow(this._infoWinOptions);
+        this._bindInfoWindow();
       }
 
       return this;
@@ -33532,7 +33591,7 @@
 
       if (!this._infoWindow) {
         if (this._infoWinOptions && this.getMap()) {
-          this._bindInfoWindow(this._infoWinOptions);
+          this._bindInfoWindow();
 
           this._infoWindow.show(coordinate);
         }
@@ -33556,7 +33615,13 @@
       delete this._infoWindow;
       return this;
     },
-    _bindInfoWindow: function _bindInfoWindow(options) {
+    _bindInfoWindow: function _bindInfoWindow() {
+      var options = this._infoWinOptions;
+
+      if (!options) {
+        return this;
+      }
+
       this._infoWindow = new InfoWindow(options);
 
       this._infoWindow.addTo(this);
@@ -33592,7 +33657,7 @@
       _this.tilesLoading = {};
       _this._parentTiles = [];
       _this._childTiles = [];
-      _this.tileCache = new LRUCache(layer.options['maxCacheSize'], _this.deleteTile.bind(_assertThisInitialized(_assertThisInitialized(_this))));
+      _this.tileCache = new LRUCache(layer.options['maxCacheSize'], _this.deleteTile.bind(_assertThisInitialized(_this)));
       return _this;
     }
 
@@ -34959,7 +35024,12 @@
         var _this$context$canvas = this.context.canvas,
             width = _this$context$canvas.width,
             height = _this$context$canvas.height;
-        this._imageData = this.context.getImageData(0, 0, width, height);
+
+        try {
+          this._imageData = this.context.getImageData(0, 0, width, height);
+        } catch (error) {
+          console.warn('hit detect failed with tainted canvas, some geometries have external resources in another domain:\n', error);
+        }
       }
 
       return this._imageData;
@@ -35534,7 +35604,7 @@
 
       _this = _MapRenderer.call(this, map) || this;
       _this._containerIsCanvas = !!map._containerDOM.getContext;
-      _this._thisVisibilitychange = _this._onVisibilitychange.bind(_assertThisInitialized(_assertThisInitialized(_this)));
+      _this._thisVisibilitychange = _this._onVisibilitychange.bind(_assertThisInitialized(_this));
 
       _this._registerEvents();
 

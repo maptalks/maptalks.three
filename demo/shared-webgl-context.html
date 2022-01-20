@@ -6,7 +6,8 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/turf@7.0.0-alpha.1/dist/turf.min.js"></script>
     <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
     <script type="text/javascript" src="./js/maptalks.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@maptalks/gl/dist/maptalksgl.min.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/@maptalks/gl/dist/maptalksgl.min.js"></script>
     <script type="text/javascript"
         src="https://cdn.jsdelivr.net/npm/@maptalks/3dtiles/dist/maptalks.3dtiles.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.104.0/build/three.min.js"></script>
@@ -94,8 +95,13 @@
         // threeLayer.addTo(map);
         // 添加到GroupGLLayer中
         // GroupGLLayer能实现抗锯齿等后处理，也能加入其他三维图层，让子图层都融合到同一个三维空间中
-        
-        const groupLayer = new maptalks.GroupGLLayer('group', [geo3DTilesLayer, threeLayer], { antialias: true });
+        const sceneConfig = {
+            postProcess: {
+                enable: true,
+                antialias: { enable: true }
+            }
+        };
+        const groupLayer = new maptalks.GroupGLLayer('group', [geo3DTilesLayer, threeLayer], {sceneConfig });
         groupLayer.addTo(map);
 
         const material = new THREE.MeshLambertMaterial({ color: '#fff', transparent: true });
