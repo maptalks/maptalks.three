@@ -142,7 +142,12 @@ function generateData(list, center, glRes, matrix) {
 
 
 function arrayBufferToArray(buffer, center, glRes, matrix) {
-    const ps = new Float32Array(buffer);
+    let ps;
+    if (glRes) {
+        ps = new Float64Array(buffer);
+    } else {
+        ps = new Float32Array(buffer);
+    }
     const vs = [];
     for (let i = 0, len = ps.length; i < len; i += 2) {
         let x = ps[i], y = ps[i + 1];
