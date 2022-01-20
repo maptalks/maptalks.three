@@ -84,7 +84,7 @@ export function getGeometriesColorArray(geometriesAttributes): Float32Array {
 
 export function coordiantesToArrayBuffer(coordiantes = []): ArrayBuffer {
     const len = coordiantes.length;
-    const array = new Float32Array(len * 2);
+    const array = new Float64Array(len * 2);
     for (let i = 0; i < len; i++) {
         let x, y;
         const c = coordiantes[i];
