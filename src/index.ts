@@ -155,7 +155,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * In default, it calls renderScene, refresh the camera and the scene
      */
     draw(gl, view, scene, camera, timeStamp, context) {
-        this.renderScene(context);
+        this.renderScene(context, this);
     }
 
     /**
@@ -163,7 +163,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * In default, it calls renderScene, refresh the camera and the scene
      */
     drawOnInteracting(gl, view, scene, camera, event, timeStamp, context) {
-        this.renderScene(context);
+        this.renderScene(context, this);
     }
     /**
      * Convert a geographic coordinate to THREE Vector3
@@ -643,11 +643,15 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return null;
     }
 
-    renderScene(context?: Object) {
+    renderScene(context?: Object, layer?: any) {
         const renderer = this._getRenderer();
         if (renderer) {
             renderer.clearCanvas();
             renderer.renderScene(context);
+            //外部调用时，直接redraw
+            if (!layer) {
+                renderer.setToRedraw();
+            }
         }
         return this;
     }
