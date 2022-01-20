@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>share webgl context by GroupGLLayer</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/turf@7.0.0-alpha.1/dist/turf.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="./js/maptalks.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@maptalks/gl/dist/maptalksgl.min.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/@maptalks/3dtiles/dist/maptalks.3dtiles.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.104.0/build/three.min.js"></script>
+    <script type="text/javascript" src="../dist/maptalks.three.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            center: [108.95946422883344, 34.219415098713256],
+            zoom: 19.4,
+            pitch: 60,
+            // bearing: 180,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            // baseLayer: new maptalks.TileLayer('tile', {
+            //     urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+            //     subdomains: ['a', 'b', 'c', 'd'],
+            //     attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            // })
+        });
+
+        map.on('click', e => {
+            console.log(e.coordinate.toArray());
+        })
+
+        const geo3DTilesLayer = new maptalks.Geo3DTilesLayer('3dtiles', {
+            maxGPUMemory: 512, //最大缓存数，单位 M bytes
+            // loadingLimitOnInteracting : 1, //地图交互过程中瓦片请求最大数量
+            // loadingLimit : 0, //瓦片请求最大数量
+            services: [
+                {
+                    //data from cesiumlab
+                    url: 'http://earthsdk.com/v/last/Apps/assets/dayanta/tileset.json',
+                    // maximumScreenSpaceError值越小，加载的模型越清晰，但加载的数据量会变大
+                    // 清晰度可以接受的情况下，推荐把这个值设得越大越好，性能会越好
+                    maximumScreenSpaceError: 12.0,
+                    // 数据请求的额外参数
+                    // urlParams: 'v=0.0',
+                    // ajax请求的额外参数
+                    // ajaxOptions : { credentials : 'include' },
+                    // 把模型降低指定高度，单位米
+                    heightOffset: -420,
+                    // 环境光照值，倾斜摄影可以设为[1.0, 1.0, 1.0]获得最清晰的效果，非倾斜摄影可以适当降低，例如设为 [0.2, 0.2, 0.2]
+                    // 如果不设置，则采用地图上的默认光照值
+                    ambientLight: [1.0, 1.0, 1.0],
+                    // maxExtent: maxExtent
+                },
+                // 其他的3dtiles数据源
+            ]
+        });
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            identifyCountOnEvent: 1,
+            // forceRenderOnMoving: true,
+            // forceRenderOnRotating: true
+        });
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            scene.add(new THREE.AmbientLight('#fff', 0.5));
+            animate();
+            addPolygon();
+
+        };
+        // threeLayer.addTo(map);
+        // 添加到GroupGLLayer中
+        // GroupGLLayer能实现抗锯齿等后处理，也能加入其他三维图层，让子图层都融合到同一个三维空间中
+        const groupLayer = new maptalks.GroupGLLayer('group', [geo3DTilesLayer, threeLayer], { antialias: true });
+        groupLayer.addTo(map);
+
+        const material = new THREE.MeshLambertMaterial({ color: '#fff', transparent: true });
+        const material1 = new THREE.MeshLambertMaterial({ color: '#fff', transparent: true, opacity: 0.01 });
+        const highlightmaterial = new THREE.MeshLambertMaterial({ color: 'red', transparent: true, opacity: 0.7 });
+
+        function addPolygon() {
+            const extrudePolygons = [];
+            const f = { "type": "Feature", "geometry": { "type": "Polygon", "coordinates": [[[108.9588646064086, 34.219978885705856], [108.95910091657608, 34.21999155943827], [108.95908997865132, 34.21962188029219], [108.95886762567669, 34.21963481298575], [108.9588646064086, 34.219978885705856]]] }, "properties": { "name": "1-3cf0006e", "_color": "#4b3aff", "center": [108.95898078182817, 34.21980678460552] } };
+
+            const building = threeLayer.toExtrudePolygon(f, { height: 60 }, material);
+            extrudePolygons.push(building);
+            bindEvent(building);
+
+            const lnglats = [
+                [108.95927951840235, 34.2198985206206]
+                , [108.95958161109672, 34.21989288002388]
+                , [108.9595882795428, 34.21965161122742]
+                , [108.95927076979888, 34.21964299613117]
+                , [108.95927951840235, 34.2198985206206]
+            ];
+            const feature = {
+                type: 'Feature',
+                geometry: {
+                    type: 'Polygon',
+                    coordinates: [lnglats]
+                }
+            };
+            const dScale = 0.6, dHeight = 10;
+            for (let i = 0, len = 6; i < len; i++) {
+                const f = turf.transformScale(feature, i > 0 ? 1 - i * dScale / len : 1);
+                const building = threeLayer.toExtrudePolygon(f, { height: 8, bottomHeight: i * 8 + dHeight }, material1);
+                extrudePolygons.push(building);
+                bindEvent(building);
+            }
+            threeLayer.addMesh(extrudePolygons);
+        }
+
+        function bindEvent(baseObject) {
+            //event test
+            ['mouseout', 'mouseover'].forEach(function (eventType) {
+                baseObject.on(eventType, function (e) {
+                    // console.log(this);
+                    if (e.type === 'mouseout') {
+                        this.setSymbol(this._originalMaterial || material);
+                    }
+                    if (e.type === 'mouseover') {
+                        if (!this._originalMaterial) {
+                            this._originalMaterial = this.getObject3d().material;
+                        }
+                        this.setSymbol(highlightmaterial);
+                    }
+                });
+            });
+        }
+
+
+
+
+        function animate() {
+            requestAnimationFrame(animate);
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate && !threeLayer.isRendering()) {
+                threeLayer.renderScene();
+            }
+
+        }
+
+
+    </script>
+</body>
+
+</html>
