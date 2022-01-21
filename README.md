@@ -3,7 +3,7 @@
 [![CircleCI](https://circleci.com/gh/maptalks/maptalks.three/tree/master.svg?style=shield)](https://circleci.com/gh/maptalks/maptalks.three)
 [![NPM Version](https://img.shields.io/npm/v/maptalks.three.svg)](https://github.com/maptalks/maptalks.three)
 
-A maptalks Layer to render with THREE.js
+A maptalks Layer to render with three.js
 
 ![screenshot](https://cloud.githubusercontent.com/assets/13678919/26443408/db7afe66-416a-11e7-951b-0f99beaadb5a.jpg)
 ## Examples
@@ -32,9 +32,9 @@ A maptalks Layer to render with THREE.js
 
 ## Usage
 
-As a plugin, `maptalks.three` must be loaded after `maptalks.js` and `THREE.js` in browsers.
+As a plugin, `maptalks.three` must be loaded after `maptalks.js` and `three.js` in browsers.
 ```html
-<script type="text/javascript" src="https://unpkg.com/three@0.97.0/build/three.min.js"></script>
+<script type="text/javascript" src="https://unpkg.com/three@0.104.0/build/three.min.js"></script>
 <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.min.js"></script>
 <script type="text/javascript" src="https://unpkg.com/maptalks.three/dist/maptalks.three.js"></script>
 <script>
@@ -43,19 +43,14 @@ threeLayer.prepareToDraw = function (gl, scene, camera) {
     var light = new THREE.DirectionalLight(0xffffff);
     light.position.set(0, -10, -10).normalize();
     scene.add(light);
-    var me = this;
+
+    var material = new THREE.MeshPhongMaterial();
     countries.features.forEach(function (g) {
+        //g is geojson Feature
         var num = g.properties.population;
-        var color = getColor(num);
 
-        var m = new THREE.MeshPhongMaterial({color: color, opacity : 0.7});
-
-        var mesh = me.toExtrudeMesh(maptalks.GeoJSON.toGeometry(g), num / 4E2, m);
-        if (Array.isArray(mesh)) {
-            scene.add.apply(scene, mesh);
-        } else {
-            scene.add(mesh);
-        }
+        var extrudePolygon=threeLayer.toExtrudePolygon(g, { height: num }, material);
+        threeLayer.addMesh(extrudePolygon)
     });
 };
 
