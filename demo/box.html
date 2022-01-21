@@ -129,10 +129,7 @@
 
                 console.log(bars);
                 console.timeEnd(time);
-                // bars.forEach(function (bar) {
-                //     scene.add(bar.getObject3d());
-                // });
-                // threeLayer.renderScene();
+
                 threeLayer.addMesh(bars);
                 initGui();
                 animation();
@@ -143,7 +140,7 @@
             // layer animation support Skipping frames
             threeLayer._needsUpdate = !threeLayer._needsUpdate;
             if (threeLayer._needsUpdate && !map.isInteracting()) {
-                threeLayer.renderScene();
+                threeLayer.redraw();
             }
             stats.update();
             requestAnimationFrame(animation);

@@ -263,7 +263,7 @@
             layers.forEach(layer => {
                 layer._needsUpdate = !layer._needsUpdate;
                 if (layer._needsUpdate && !layer.isRendering()) {
-                    layer.renderScene();
+                    layer.redraw();
                 }
             });
             stats.update();

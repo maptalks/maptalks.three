@@ -134,7 +134,7 @@
             });
             this.collides();
             if (render) {
-                this.renderScene();
+                this.redraw();
             }
             return this;
         }
@@ -178,7 +178,7 @@
             });
             this.collides();
             if (render) {
-                this.renderScene();
+                this.redraw();
             }
             return this;
         }
@@ -199,7 +199,7 @@
             var light = new THREE.DirectionalLight(0xffffff);
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
-            this.renderScene();
+            this.redraw();
 
             fetch('https://webapi.amap.com/ui/1.1/ui/geo/DistrictExplorer/assets/d_v2/area_tree.json').then(res => res.json()).then(chinacitys => {
                 addSprites(chinacitys);
@@ -277,7 +277,7 @@
             // layer animation support Skipping frames
             threeLayer._needsUpdate = !threeLayer._needsUpdate;
             if (threeLayer._needsUpdate) {
-                threeLayer.renderScene();
+                threeLayer.redraw();
                 threeLayer.collides();
             }
             stats.update();
