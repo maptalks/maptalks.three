@@ -163,7 +163,7 @@
             // layer animation support Skipping frames
             threeLayer._needsUpdate = !threeLayer._needsUpdate;
             if (threeLayer._needsUpdate && !threeLayer.isRendering()) {
-                threeLayer.renderScene();
+                threeLayer.redraw();
             }
             stats.update();
             requestAnimationFrame(animation);

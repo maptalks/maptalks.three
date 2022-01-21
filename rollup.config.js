@@ -1,11 +1,10 @@
 import { DEFAULT_EXTENSIONS } from '@babel/core';
-const resolve = require('rollup-plugin-node-resolve');
+import { nodeResolve as resolve } from '@rollup/plugin-node-resolve';
 import { babel } from '@rollup/plugin-babel';
-const commonjs = require('rollup-plugin-commonjs');
-// const uglify = require('rollup-plugin-uglify').uglify;
+import commonjs from '@rollup/plugin-commonjs';
 import { terser } from 'rollup-plugin-terser';
-const json = require('rollup-plugin-json');
-const typescript = require('rollup-plugin-typescript2');
+import json from '@rollup/plugin-json';
+import typescript from '@rollup/plugin-typescript';
 const pkg = require('./package.json');
 
 const banner = `/*!\n * ${pkg.name} v${pkg.version}\n * LICENSE : ${pkg.license}\n * (c) 2016-${new Date().getFullYear()} maptalks.org\n */`;

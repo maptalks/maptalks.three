@@ -1,8 +1,8 @@
-const resolve = require('rollup-plugin-node-resolve');
+import { nodeResolve as resolve } from '@rollup/plugin-node-resolve';
 import { babel } from '@rollup/plugin-babel';
-const commonjs = require('rollup-plugin-commonjs');
+import commonjs from '@rollup/plugin-commonjs';
 import { terser } from 'rollup-plugin-terser';
-const json = require('rollup-plugin-json');
+import json from '@rollup/plugin-json';
 
 module.exports = [
     {

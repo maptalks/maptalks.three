@@ -123,10 +123,6 @@
 
                 console.log(bars);
                 console.timeEnd(time);
-                // bars.forEach(function (bar) {
-                //     scene.add(bar.getObject3d());
-                // });
-                // threeLayer.renderScene();
                 threeLayer.addMesh(bars);
                 initGui();
                 threeLayer.config('animation', true);

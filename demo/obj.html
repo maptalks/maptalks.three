@@ -92,7 +92,7 @@ threeLayer.prepareToDraw = function (gl, scene, camera) {
                this.getObject3d().scale.set(1,1,scale);
             });
             mtlLoaded = true;
-            threeLayer.renderScene();
+            threeLayer.redraw();
             threeLayer.config('animation',true);
         });
     });
@@ -100,13 +100,13 @@ threeLayer.prepareToDraw = function (gl, scene, camera) {
 
 threeLayer.draw = function () {
     if (mtlLoaded) {
-        this.renderScene();
+        this.redraw();
     }
 }
 
 threeLayer.drawOnInteracting = function () {
     if (mtlLoaded) {
-        this.renderScene();
+        this.redraw();
     }
 }
 

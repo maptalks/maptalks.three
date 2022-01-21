@@ -75,7 +75,7 @@
         function animation() {
             // layer animation support Skipping frames
             if (threeLayer._needsUpdate) {
-                threeLayer.renderScene();
+                threeLayer.redraw();
             }
             stats.update();
             requestAnimationFrame(animation);
