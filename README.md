@@ -5,7 +5,7 @@
 
 A maptalks Layer to render with three.js
 
-![screenshot](https://cloud.githubusercontent.com/assets/13678919/26443408/db7afe66-416a-11e7-951b-0f99beaadb5a.jpg)
+<a href="http://maptalks.org/maptalks.three/demo/bloom.html" title="maptalks.three Demo" target="_blank"><video width="820" src = "https://user-images.githubusercontent.com/25998927/149662311-4cb06c54-49ab-44b2-b019-518c0228508c.mp4" autoplay loop hspace="10"></video></a>
 ## Examples
 
 * [Demos](https://maptalks.github.io/maptalks.three/demo/index.html).
