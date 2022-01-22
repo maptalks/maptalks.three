@@ -73,14 +73,14 @@ class ThreeVectorTileLayer extends BaseVectorTileLayer {
                 if (lineStrings.length) {
                     const material = this._getMaterial(layerName, lineStrings, index, geojson);
                     if (material && (material instanceof THREE.LineBasicMaterial || material instanceof THREE.LineDashedMaterial)) {
-                        const lines = this._layer.toLines(lineStrings, maptalks.Util.extend({}, { layerName }, opts), material);
+                        const lines = this._layer.toLines(lineStrings, maptalks.Util.extend({}, { layerName, asynchronous }, opts), material);
                         baseobjects.push(lines);
                     }
                 }
                 if (points.length) {
                     const material = this._getMaterial(layerName, points, index, geojson);
                     if (material && material instanceof THREE.PointsMaterial) {
-                        const ps = this._layer.toPoints(points, maptalks.Util.extend({}, { layerName }, opts), material);
+                        const ps = this._layer.toPoints(points, maptalks.Util.extend({}, { layerName, asynchronous }, opts), material);
                         baseobjects.push(ps);
                     }
                 }

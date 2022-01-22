@@ -16,7 +16,7 @@ if (maptalks.worker) {
         }
 
         pushQueue(q: any = {}) {
-            const { type, data, callback, layer, key, center, lineStrings, options } = q;
+            const { type, data, callback, layer, key, center, lineStrings, options, id } = q;
             let params;
             if (type.indexOf('ExtrudePolygon') > -1) {
                 params = gengerateExtrudePolygons(data, center, layer, options);
@@ -41,6 +41,7 @@ if (maptalks.worker) {
                         console.error(err);
                     }
                     message.key = key;
+                    message.id = id;
                     callback(message);
                 });
         }
