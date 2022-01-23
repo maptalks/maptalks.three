@@ -20,7 +20,7 @@
         #map {
             width: 100%;
             height: 100%;
-            background-color: #000;
+            /* background-color: #000; */
         }
     </style>
 </head>
@@ -30,15 +30,15 @@
     <script>
 
         var map = new maptalks.Map("map", {
-            center: [13.416935229170008, 52.529564137540376],
-            zoom: 15,
+            center: [13.415118329414781, 52.53001062340084],
+            zoom: 16,
             pitch: 70,
-            bearing: 180,
+            // bearing: 180,
 
             centerCross: true,
             doubleClickZoom: false,
             baseLayer: new maptalks.TileLayer('tile', {
-                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
                 subdomains: ['a', 'b', 'c', 'd'],
                 attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
             })
@@ -59,12 +59,13 @@
         });
 
         var meshs = [];
-        var material = new THREE.MeshBasicMaterial({ color: '#3e35cf', transparent: true });
+        var material = new THREE.MeshLambertMaterial({ color: '#fff', transparent: true });
         var highlightmaterial = new THREE.MeshBasicMaterial({ color: 'yellow', transparent: true });
         threeLayer.prepareToDraw = function (gl, scene, camera) {
             var light = new THREE.DirectionalLight(0xffffff);
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
+            scene.add(new THREE.AmbientLight('#fff', 0.2));
 
             // var material = new THREE.MeshBasicMaterial({ color: '#3e35cf' });
             // material.vertexColors = THREE.VertexColors;
@@ -73,7 +74,8 @@
                 var levels = g.properties.levels || 1;
                 var mesh = threeLayer.toExtrudePolygon(maptalks.GeoJSON.toGeometry(g), {
                     height: levels * heightPerLevel,
-                    topColor: '#fff'
+                    topColor: '#fff',
+                    asynchronous: true
                 }, material);
 
                 //tooltip test
@@ -127,7 +129,7 @@
         function initGui() {
             var params = {
                 add: true,
-                color: '#3e35cf',
+                color: material.color.getStyle(),
                 show: true,
                 opacity: 1,
                 altitude: 0,

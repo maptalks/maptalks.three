@@ -30,11 +30,15 @@ class BaseObjectTask {
     queueMap: { [key: string]: TaskQueue };
     tempQueue: Array<TaskQueue>;
     time: number;
+    deQueueCount: number;
+    resultQueue: Array<any>;
 
     constructor() {
         this.queueMap = {};
         this.tempQueue = [];
         this.time = this.getCurrentTime();
+        this.deQueueCount = 5;
+        this.resultQueue = [];
     }
 
     getCurrentTime() {
@@ -42,7 +46,7 @@ class BaseObjectTask {
     }
 
     loop() {
-
+        this.deQueue();
     }
 
     push(data: TaskQueue) {
@@ -50,15 +54,54 @@ class BaseObjectTask {
         if (data.id) {
             this.queueMap[data.id] = data;
         }
+        return this;
     }
 
     reset() {
         this.time = this.getCurrentTime();
         this.tempQueue = [];
+        return this;
+    }
+
+    pushResult(result: any) {
+        if (!result) {
+            return;
+        }
+        if (!Array.isArray(result)) {
+            result = [result];
+        }
+        result.forEach(d => {
+            this.resultQueue.push(d);
+        });
+        return this;
+    }
+
+    deQueue() {
+        if (!this.resultQueue.length) {
+            return this;
+        }
+        const count = this.deQueueCount;
+        const resultList = this.resultQueue.slice(0, count) || [];
+        resultList.forEach(result => {
+            const { id } = result;
+            if (this.queueMap[id]) {
+                const { baseObject } = this.queueMap[id];
+                if (baseObject && baseObject._workerLoad) {
+                    baseObject._workerLoad(result);
+                }
+                delete this.queueMap[id];
+            }
+        });
+        this.resultQueue.splice(0, count);
+        return this;
     }
 }
 
 class ExtrudePolygonTask extends BaseObjectTask {
+    constructor() {
+        super();
+        this.deQueueCount = 100;
+    }
 
     loop(): void {
         const t = this.getCurrentTime();
@@ -70,23 +113,12 @@ class ExtrudePolygonTask extends BaseObjectTask {
                 data: getDatas(this.tempQueue),
                 options: getOptions(this.tempQueue),
                 callback: (result) => {
-                    if (!result) {
-                        return;
-                    }
-                    result.forEach(d => {
-                        const { id } = d;
-                        if (this.queueMap[id]) {
-                            const { baseObject } = this.queueMap[id];
-                            if (baseObject && baseObject._workerLoad) {
-                                baseObject._workerLoad(d);
-                            }
-                            delete this.queueMap[id];
-                        }
-                    });
+                    this.pushResult(result);
                 }
             });
             this.reset();
         }
+        super.loop();
     }
 
 }
@@ -98,29 +130,29 @@ class ExtrudePolygonsTask extends BaseObjectTask {
             const actor = getActor();
             this.tempQueue.forEach(queue => {
                 (actor as any).pushQueue({
+                    id: queue.id,
                     type: 'ExtrudePolygons',
                     layer: queue.layer,
                     data: queue.data,
                     key: queue.key,
                     center: queue.center,
                     callback: (result) => {
-                        if (!result) {
-                            return;
-                        }
-                        const { baseObject } = queue;
-                        if (baseObject && baseObject._workerLoad) {
-                            baseObject._workerLoad(result);
-                        }
+                        this.pushResult(result);
                     }
                 });
             });
             this.reset();
         }
+        super.loop();
     }
 }
 
 
 class ExtrudeLineTask extends BaseObjectTask {
+    constructor() {
+        super();
+        this.deQueueCount = 100;
+    }
 
     loop(): void {
         const t = this.getCurrentTime();
@@ -135,23 +167,12 @@ class ExtrudeLineTask extends BaseObjectTask {
                     return q.lineString;
                 }),
                 callback: (result) => {
-                    if (!result) {
-                        return;
-                    }
-                    result.forEach(d => {
-                        const { id } = d;
-                        if (this.queueMap[id]) {
-                            const { baseObject } = this.queueMap[id];
-                            if (baseObject && baseObject._workerLoad) {
-                                baseObject._workerLoad(d);
-                            }
-                            delete this.queueMap[id];
-                        }
-                    });
+                    this.pushResult(result);
                 }
             });
             this.reset();
         }
+        super.loop();
     }
 }
 
@@ -162,6 +183,7 @@ class ExtrudeLinesTask extends BaseObjectTask {
             const actor = getActor();
             this.tempQueue.forEach(queue => {
                 (actor as any).pushQueue({
+                    id: queue.id,
                     type: 'ExtrudeLines',
                     layer: queue.layer,
                     data: queue.data,
@@ -169,22 +191,22 @@ class ExtrudeLinesTask extends BaseObjectTask {
                     lineStrings: queue.lineStrings,
                     center: queue.center,
                     callback: (result) => {
-                        if (!result) {
-                            return;
-                        }
-                        const { baseObject } = queue;
-                        if (baseObject && baseObject._workerLoad) {
-                            baseObject._workerLoad(result);
-                        }
+                        this.pushResult(result);
                     }
                 });
             });
             this.reset();
         }
+        super.loop();
     }
 }
 
 class LineTask extends BaseObjectTask {
+    constructor() {
+        super();
+        this.deQueueCount = 200;
+    }
+
     loop(): void {
         const t = this.getCurrentTime();
         if ((t - this.time >= 32 || this.tempQueue.length >= 1000) && this.tempQueue.length) {
@@ -198,23 +220,12 @@ class LineTask extends BaseObjectTask {
                     return q.lineString;
                 }),
                 callback: (result) => {
-                    if (!result) {
-                        return;
-                    }
-                    result.forEach(d => {
-                        const { id } = d;
-                        if (this.queueMap[id]) {
-                            const { baseObject } = this.queueMap[id];
-                            if (baseObject && baseObject._workerLoad) {
-                                baseObject._workerLoad(d);
-                            }
-                            delete this.queueMap[id];
-                        }
-                    });
+                    this.pushResult(result);
                 }
             });
             this.reset();
         }
+        super.loop();
     }
 }
 
@@ -224,6 +235,7 @@ class LinesTask extends BaseObjectTask {
             const actor = getActor();
             this.tempQueue.forEach(queue => {
                 (actor as any).pushQueue({
+                    id: queue.id,
                     type: 'Lines',
                     layer: queue.layer,
                     data: queue.data,
@@ -231,23 +243,23 @@ class LinesTask extends BaseObjectTask {
                     lineStrings: queue.lineStrings,
                     center: queue.center,
                     callback: (result) => {
-                        if (!result) {
-                            return;
-                        }
-                        const { baseObject } = queue;
-                        if (baseObject && baseObject._workerLoad) {
-                            baseObject._workerLoad(result);
-                        }
+                        this.pushResult(result);
                     }
                 });
             });
             this.reset();
         }
+        super.loop();
     }
 }
 
 
 class FatLineTask extends BaseObjectTask {
+    constructor() {
+        super();
+        this.deQueueCount = 100;
+    }
+
     loop(): void {
         const t = this.getCurrentTime();
         if ((t - this.time >= 32 || this.tempQueue.length >= 1000) && this.tempQueue.length) {
@@ -261,23 +273,12 @@ class FatLineTask extends BaseObjectTask {
                     return q.lineString;
                 }),
                 callback: (result) => {
-                    if (!result) {
-                        return;
-                    }
-                    result.forEach(d => {
-                        const { id } = d;
-                        if (this.queueMap[id]) {
-                            const { baseObject } = this.queueMap[id];
-                            if (baseObject && baseObject._workerLoad) {
-                                baseObject._workerLoad(d);
-                            }
-                            delete this.queueMap[id];
-                        }
-                    });
+                    this.pushResult(result);
                 }
             });
             this.reset();
         }
+        super.loop();
     }
 }
 
@@ -287,6 +288,7 @@ class FatLinesTask extends BaseObjectTask {
             const actor = getActor();
             this.tempQueue.forEach(queue => {
                 (actor as any).pushQueue({
+                    id: queue.id,
                     type: 'FatLines',
                     layer: queue.layer,
                     data: queue.data,
@@ -294,18 +296,13 @@ class FatLinesTask extends BaseObjectTask {
                     lineStrings: queue.lineStrings,
                     center: queue.center,
                     callback: (result) => {
-                        if (!result) {
-                            return;
-                        }
-                        const { baseObject } = queue;
-                        if (baseObject && baseObject._workerLoad) {
-                            baseObject._workerLoad(result);
-                        }
+                        this.pushResult(result);
                     }
                 });
             });
             this.reset();
         }
+        super.loop();
     }
 }
 
