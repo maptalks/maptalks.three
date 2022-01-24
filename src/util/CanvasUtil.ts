@@ -2,23 +2,19 @@
 const canvas: HTMLCanvasElement = document.createElement('canvas');
 const SIZE: number = 256;
 canvas.width = canvas.height = SIZE;
+let DEFAULT_IMAGE;
 
 
 export function generateImage(key: string, debug: boolean = false): string {
+    if (DEFAULT_IMAGE) {
+        return DEFAULT_IMAGE;
+    }
+
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, SIZE, SIZE);
     ctx.save();
-    if (debug) {
-        ctx.fillStyle = 'red';
-        ctx.strokeStyle = 'rgba(255,0,0,0.4)';
-        ctx.lineWidth = 0.2;
-        const text = key || 'tile';
-        ctx.font = '18px sans-serif';
-        ctx.rect(0, 0, SIZE, SIZE);
-        ctx.stroke();
-        ctx.fillText(text, 15, SIZE / 2);
-    }
-    return canvas.toDataURL();
+    DEFAULT_IMAGE = canvas.toDataURL();
+    return DEFAULT_IMAGE;
 }
 
 

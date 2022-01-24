@@ -136,6 +136,9 @@ class FatLines extends MergedMixin(BaseObject) {
     }
 
     _setPickObject3d(ps?, linewidth?) {
+        if (!this._colorMap) {
+            return;
+        }
         const geometry = this._geometryCache || new LineGeometry();
         (geometry as LineGeometry).setPositions(ps);
         const pick = this.getLayer().getPick();

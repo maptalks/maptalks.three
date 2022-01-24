@@ -183,6 +183,9 @@ const MergedMixin = <T extends Constructor<BaseObject>>(Base: T) => {
 
         //Different objects need to implement their own methods
         _setPickObject3d() {
+            if (!this._colorMap) {
+                return;
+            }
             // multiplexing geometry
             const geometry = this._geometryCache || (this.getObject3d() as any).geometry.clone();
             const pick = this.getLayer().getPick();
