@@ -14,7 +14,8 @@
         src="https://cdn.jsdelivr.net/npm/three@0.104.0/examples/js/lines/LineMaterial.js"></script>
     <!---->
     <!-- <script type="text/javascript" src="./https://cdn.jsdelivr.net/npm/maptalks.three@latest/dist/maptalks.three.js"></script> -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/maptalks.three@latest/dist/maptalks.three.js"></script>
     <script type="text/javascript"
         src="https://cdn.jsdelivr.net/npm/three@0.104.0/examples/js/libs/stats.min.js"></script>
     <style>
@@ -158,14 +159,14 @@
 
 
                             // override tooltip
-                            if (e.type === 'mousemove' && data) {
-                                const id = data.getId();
+                            if (e.type === 'mousemove' && data && baseObject) {
+                                const id = baseObject.getId();
                                 const tooltip = this.getToolTip();
                                 tooltip._content = `id:${id}`;
                             }
                             //override infowindow
                             if (e.type === 'click' && data) {
-                                const height = JSON.stringify(data.getProperties());
+                                const height = JSON.stringify(data.getProperties ? data.getProperties() : data.properties);
                                 const infoWindow = this.getInfoWindow();
                                 infoWindow.setContent(`property:${height}`);
                                 if (infoWindow && (!infoWindow._owner)) {

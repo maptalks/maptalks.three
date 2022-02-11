@@ -70,7 +70,7 @@
             scene.add(light);
 
             const extent = new maptalks.Extent(120.41015625, 31.25037814985572, 120.421142578125, 31.259769987394264);
-            const material = new THREE.MeshPhongMaterial();
+            const material = new THREE.MeshBasicMaterial();
             const terrain = threeLayer.toTerrain(extent, {
                 texture: './data/streets-satellite.png',
                 image: './data/terrain-rgb.png'
