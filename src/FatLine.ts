@@ -79,9 +79,9 @@ class FatLine extends BaseObject {
     }
 
     _setPickObject3d(ps, linewidth) {
-        if (!this._colorMap) {
-            return;
-        }
+        // if (!this._colorMap) {
+        //     return;
+        // }
         const geometry = new LineGeometry();
         geometry.setPositions(ps);
         const pick = this.getLayer().getPick();
