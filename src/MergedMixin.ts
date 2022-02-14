@@ -16,6 +16,7 @@ type Constructor<T> = new (...args: any[]) => T;
 const MergedMixin = <T extends Constructor<BaseObject>>(Base: T) => {
 
     return class extends Base {
+        _colorMap: { [key: number]: number };
         _faceMap: Array<Array<number>>;
         _baseObjects: Array<BaseObject>;
         _datas: Array<any>;
