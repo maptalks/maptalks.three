@@ -19,7 +19,7 @@ A maptalks Layer to render with three.js
 ## Incompatible changes
  * three.js >=128  the default umd package is ES6
  * Starting from version 0.16.0, the default umd package is ES6,To fit the new version of three.js [about three umd package change](https://github.com/mrdoob/three.js/issues/22025)
- * If your running environment does not support ES6, we also provide Es5 version [maptalks.three.es5.js](https://cdn.jsdelivr.net/npm/maptalks.three/dist/maptalks.three.es5.js),This requires the version of three.js < = 127,
+ * If your running environment does not support ES6, we also provide Es5 version [maptalks.three.es5.js](https://unpkg.com/maptalks.three/dist/maptalks.three.es5.js),This requires the version of three.js < = 127,
 
 ## Migration from <=v0.5.x to v0.6.0
 
