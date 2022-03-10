@@ -930,7 +930,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
             }
         }
         this._mousemoveTimeOut = now;
-        map.resetCursor('default');
+        // map.resetCursor('default');
         const identifyCountOnEvent = this.options['identifyCountOnEvent'];
         let count = Math.max(0, maptalks.Util.isNumber(identifyCountOnEvent) ? identifyCountOnEvent : 0);
         if (count === 0) {
@@ -948,9 +948,9 @@ class ThreeLayer extends maptalks.CanvasLayer {
             }
         }
         if (type === 'mousemove') {
-            if (baseObjects.length) {
-                map.setCursor('pointer');
-            }
+            // if (baseObjects.length) {
+            //     map.setCursor('pointer');
+            // }
             // mouseout objects
             const outBaseObjects: Array<THREE.Object3D | BaseObject> = [];
             if (this._baseObjects) {
