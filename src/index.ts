@@ -35,6 +35,7 @@ import LineMaterial from './util/fatline/LineMaterial';
 import { BarOptionType, BaseLayerOptionType, BaseObjectOptionType, ExtrudeLineOptionType, ExtrudeLineTrailOptionType, ExtrudePolygonOptionType, FatLineMaterialType, getBaseObjectMaterialType, HeatMapDataType, HeatMapOptionType, LineMaterialType, LineOptionType, LineStringType, PointOptionType, PolygonType, SingleLineStringType, TerrainOptionType } from './type/index';
 import { getWorkerCode, getWorkerName } from './worker/getworker';
 import { BaseObjectTaskManager } from './BaseObjectTaskManager';
+import { fetchDataWorkerKey, fetchDataWorkerCode, getFetchDataActor } from './worker/fetchdataworker';
 
 
 const options: BaseLayerOptionType = {
@@ -1320,9 +1321,11 @@ export {
     MergedMixin,
     GeoJSONUtil, MergeGeometryUtil, GeoUtil, ExtrudeUtil, LineUtil,
     IdentifyUtil, geometryExtrude,
-    LineMaterial
+    LineMaterial,
+    getFetchDataActor
 };
 
 if (maptalks.registerWorkerAdapter) {
     maptalks.registerWorkerAdapter(getWorkerName(), getWorkerCode());
+    maptalks.registerWorkerAdapter(fetchDataWorkerKey, fetchDataWorkerCode);
 }
