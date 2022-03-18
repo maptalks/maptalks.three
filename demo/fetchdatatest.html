@@ -112,6 +112,16 @@
 
         const tasks = [];
         let isEnd = false;
+        function checkTask() {
+            if (tasks.length && isEnd) {
+                const taskList = tasks.slice(0, 2);
+                taskList.forEach(text => {
+                    addBuildings(JSON.parse(text));
+                });
+                tasks.splice(0, 2);
+            }
+        }
+
         function animation() {
             // layer animation support Skipping frames
             threeLayer._needsUpdate = !threeLayer._needsUpdate;
@@ -120,13 +130,7 @@
             }
             threeLayer.loop();
             stats.update();
-            if (tasks.length && isEnd) {
-                const taskList = tasks.slice(0, 2);
-                taskList.forEach(text => {
-                    addBuildings(JSON.parse(text));
-                });
-                tasks.splice(0, 2);
-            }
+            checkTask();
             requestAnimationFrame(animation);
         }
 
