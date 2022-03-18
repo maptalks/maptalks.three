@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>osm buildings demo</title>
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.104.0/build/three.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.104.0/examples/js/libs/stats.min.js"></script>
+    <script type="text/javascript" src="../dist/maptalks.three.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            "center": [-74.01829947483418, 40.723447222207795], "zoom": 14, "pitch": 66.8, "bearing": 34.62762656250061,
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'http://{s}.tiles.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejh2N21nMzAxMmQzMnA5emRyN2lucW0ifQ.jSE-g2vsn48Ry928pqylcg',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://mapbox.com/">mapbox</a>'
+            })
+        });
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+            // animation: true
+        });
+
+        var meshs = [];
+        var material = new THREE.MeshPhongMaterial({ color: '#fff', transparent: true });
+        var stats;
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+
+            animation();
+            setTimeout(() => {
+                load();
+            }, 0);
+        };
+        threeLayer.addTo(map);
+
+
+        const total = 600;
+        function load() {
+            const urls = [];
+            const fetDataActor = maptalks.getFetchDataActor();
+            for (let i = total; i >= 0; i--) {
+                const url = maptalks.Util.getAbsoluteURL(`./data/ny/${i}.json`);
+                fetDataActor.send(url, [], (error, arrayBuffer) => {
+                    // console.log(data);
+                    const text = arrayBufferToString(arrayBuffer);
+                    tasks.push(text);
+                    if (tasks.length === total) {
+                        isEnd = true;
+                    }
+                })
+            }
+        }
+        var textDecoder = new TextDecoder("utf-8");
+        function arrayBufferToString(buffer) {
+            const array = new Uint8Array(buffer);
+            return textDecoder.decode(array);
+        }
+
+        function addBuildings(geojson) {
+            const polygons = [];
+            geojson.forEach(feature => {
+                const geometry = feature.geometry;
+                const type = feature.geometry.type;
+                if (['Polygon', 'MultiPolygon'].includes(type)) {
+                    const height = feature.height || feature.properties.height || 20;
+                    const properties = feature.properties;
+                    properties.height = height;
+                    polygons.push(feature);
+                }
+
+            });
+            if (polygons.length > 0) {
+                var mesh = threeLayer.toExtrudePolygons(polygons.slice(0, Infinity), { topColor: '#fff', interactive: false, asynchronous: true }, material);
+                threeLayer.delayAddMesh(mesh);
+
+            }
+        }
+
+        const tasks = [];
+        let isEnd = false;
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer.redraw();
+            }
+            threeLayer.loop();
+            stats.update();
+            if (tasks.length && isEnd) {
+                const taskList = tasks.slice(0, 2);
+                taskList.forEach(text => {
+                    addBuildings(JSON.parse(text));
+                });
+                tasks.splice(0, 2);
+            }
+            requestAnimationFrame(animation);
+        }
+
+
+
+
+    </script>
+</body>
+
+</html>
