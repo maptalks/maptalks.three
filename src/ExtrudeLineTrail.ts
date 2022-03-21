@@ -46,7 +46,8 @@ const OPTIONS = {
     height: 1,
     speed: 1,
     altitude: 0,
-    interactive: false
+    interactive: false,
+    heightEnable: true
 };
 
 /**
