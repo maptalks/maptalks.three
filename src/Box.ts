@@ -13,6 +13,7 @@ const OPTIONS = {
     altitude: 0,
     topColor: '',
     bottomColor: '#2d2f61',
+    heightEnable: true
 };
 
 class Box extends BaseObject {

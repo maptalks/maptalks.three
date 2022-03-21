@@ -30,7 +30,9 @@ export type BaseObjectOptionType = {
     polygon?: maptalks.Polygon,
     index?: number,
     id?: string,
-    center?: maptalks.Coordinate | Array<number>
+    center?: maptalks.Coordinate | Array<number>,
+    height?: number,
+    heightEnable?: boolean
 };
 
 export type BarOptionType = BaseObjectOptionType & {

@@ -17,6 +17,7 @@ const OPTIONS = {
     altitude: 0,
     topColor: null,
     bottomColor: '#2d2f61',
+    heightEnable: true
 };
 
 

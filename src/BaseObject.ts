@@ -199,6 +199,51 @@ class BaseObject extends maptalks.Eventable(Base) {
         return this;
     }
 
+    supportHeight(): boolean {
+        return this.getOptions().heightEnable;
+    }
+
+    getHeight(): number {
+        const { height } = this.getOptions();
+        return maptalks.Util.isNumber(height) ? height : 0;
+    }
+
+    setHeight(height: number) {
+        if (!maptalks.Util.isNumber(height) || this._baseObjects || !this.supportHeight()) {
+            return this;
+        }
+        const layer = this.getLayer();
+        if (!layer) {
+            return this;
+        }
+        const { geometry } = (this.getObject3d() as any);
+        if (geometry instanceof THREE.BufferGeometry) {
+            const { position } = geometry.attributes || {};
+            if (!position) {
+                return this;
+            }
+            const array = position.array;
+            let min = Infinity, max = -Infinity;
+            for (let i = 0, len = array.length; i < len; i += 3) {
+                const z = array[i + 2];
+                min = Math.min(z, min);
+                max = Math.max(z, max);
+            }
+            const middle = (min + max) / 2;
+            const z = layer.distanceToVector3(height, height).x;
+            for (let i = 0, len = array.length; i < len; i += 3) {
+                if (array[i + 2] > middle) {
+                    (array[i + 2] as any) = z;
+                }
+            }
+            geometry.attributes.position.needsUpdate = true;
+            geometry.computeBoundingBox();
+            geometry.computeBoundingSphere();
+            this.getOptions().height = height;
+        }
+        return this;
+    }
+
 
     show() {
         //  in zoom range
