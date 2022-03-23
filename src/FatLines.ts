@@ -72,7 +72,7 @@ class FatLines extends MergedMixin(BaseObject) {
                 }
                 // const psCount = positionsV.length + positionsV.length - 2;
                 const faceLen = psCount;
-                faceMap[i] = [faceIndex, faceIndex + faceLen];
+                // faceMap[i] = [faceIndex, faceIndex + faceLen];
                 faceIndex += faceLen;
 
                 geometriesAttributes[i] = {
@@ -106,7 +106,7 @@ class FatLines extends MergedMixin(BaseObject) {
         const v = layer.coordinateToVector3(center, z);
         this.getObject3d().position.copy(v);
 
-        this._faceMap = faceMap;
+        // this._faceMap = faceMap;
         this._baseObjects = lines;
         this._datas = lineStrings;
         this._geometriesAttributes = geometriesAttributes;
@@ -262,8 +262,8 @@ class FatLines extends MergedMixin(BaseObject) {
     }
 
     _workerLoad(result) {
-        const { faceMap, geometriesAttributes } = result;
-        this._faceMap = faceMap;
+        const { geometriesAttributes } = result;
+        // this._faceMap = faceMap;
         this._geometriesAttributes = geometriesAttributes;
         const object3d = this.getObject3d();
         const position = new Float32Array(result.position);

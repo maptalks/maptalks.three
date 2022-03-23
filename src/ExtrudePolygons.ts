@@ -84,7 +84,7 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
 
                 const { position, normal, uv, indices } = buffGeom;
                 const faceLen = indices.length / 3;
-                faceMap[i] = [faceIndex + 1, faceIndex + faceLen];
+                // faceMap[i] = [faceIndex + 1, faceIndex + faceLen];
                 faceIndex += faceLen;
                 const psCount = position.length / 3,
                     //  colorCount = buffGeom.attributes.color.count,
@@ -96,21 +96,21 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
                         start: psIndex,
                         end: psIndex + psCount * 3,
                     },
-                    normal: {
-                        count: normalCount,
-                        start: normalIndex,
-                        end: normalIndex + normalCount * 3,
-                    },
-                    // color: {
-                    //     count: colorCount,
-                    //     start: colorIndex,
-                    //     end: colorIndex + colorCount * 3,
+                    // normal: {
+                    //     count: normalCount,
+                    //     start: normalIndex,
+                    //     end: normalIndex + normalCount * 3,
                     // },
-                    uv: {
-                        count: uvCount,
-                        start: uvIndex,
-                        end: uvIndex + uvCount * 2,
-                    },
+                    // // color: {
+                    // //     count: colorCount,
+                    // //     start: colorIndex,
+                    // //     end: colorIndex + colorCount * 3,
+                    // // },
+                    // uv: {
+                    //     count: uvCount,
+                    //     start: uvIndex,
+                    //     end: uvIndex + uvCount * 2,
+                    // },
                     hide: false
                 };
                 psIndex += psCount * 3;
@@ -133,12 +133,12 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
         this.getObject3d().position.copy(v);
 
         //Face corresponding to monomer
-        this._faceMap = faceMap;
+        // this._faceMap = faceMap;
         this._baseObjects = extrudePolygons;
         this._datas = polygons;
         this._geometriesAttributes = geometriesAttributes;
         this.faceIndex = null;
-        this._geometryCache = bufferGeometry.clone();
+        this._geometryCache = generatePickBufferGeometry(bufferGeometry);
         this.isHide = false;
         this._colorMap = {};
         this._initBaseObjectsEvent(extrudePolygons);
@@ -172,8 +172,8 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
     }
 
     _workerLoad(result) {
-        const { faceMap, geometriesAttributes } = result;
-        this._faceMap = faceMap;
+        const { geometriesAttributes } = result;
+        // this._faceMap = faceMap;
         this._geometriesAttributes = geometriesAttributes;
         const bufferGeometry = generateBufferGeometry(result);
         this._geometryCache = generatePickBufferGeometry(bufferGeometry);
