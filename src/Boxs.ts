@@ -9,6 +9,7 @@ import { getDefaultBoxGeometry, initVertexColors, mergeBarGeometry } from './uti
 import { BarOptionType } from './type/index';
 import { ThreeLayer } from './index';
 import { getVertexColors } from './util/ThreeAdaptUtil';
+import { generatePickBufferGeometry } from './util/MergeGeometryUtil';
 
 const OPTIONS = {
     radius: 10,
@@ -54,7 +55,7 @@ class Boxs extends MergedMixin(BaseObject) {
             bars.push(bar);
 
             const faceLen = buffGeom.index.count / 3;
-            faceMap[i] = [faceIndex + 1, faceIndex + faceLen];
+            // faceMap[i] = [faceIndex + 1, faceIndex + faceLen];
             faceIndex += faceLen;
 
             const psCount = buffGeom.attributes.position.count,
@@ -66,21 +67,21 @@ class Boxs extends MergedMixin(BaseObject) {
                     start: psIndex,
                     end: psIndex + psCount * 3,
                 },
-                normal: {
-                    count: normalCount,
-                    start: normalIndex,
-                    end: normalIndex + normalCount * 3,
-                },
-                // color: {
-                //     count: colorCount,
-                //     start: colorIndex,
-                //     end: colorIndex + colorCount * 3,
+                // normal: {
+                //     count: normalCount,
+                //     start: normalIndex,
+                //     end: normalIndex + normalCount * 3,
                 // },
-                uv: {
-                    count: uvCount,
-                    start: uvIndex,
-                    end: uvIndex + uvCount * 2,
-                },
+                // // color: {
+                // //     count: colorCount,
+                // //     start: colorIndex,
+                // //     end: colorIndex + colorCount * 3,
+                // // },
+                // uv: {
+                //     count: uvCount,
+                //     start: uvIndex,
+                //     end: uvIndex + uvCount * 2,
+                // },
                 hide: false
             };
             psIndex += psCount * 3;
@@ -99,12 +100,12 @@ class Boxs extends MergedMixin(BaseObject) {
         v.z = z;
         this.getObject3d().position.copy(v);
 
-        this._faceMap = faceMap;
+        // this._faceMap = faceMap;
         this._baseObjects = bars;
         this._datas = points;
         this._geometriesAttributes = geometriesAttributes;
         this.faceIndex = null;
-        this._geometryCache = geometry.clone();
+        this._geometryCache = generatePickBufferGeometry(geometry);
         this.isHide = false;
         this._colorMap = {};
         this._initBaseObjectsEvent(bars);

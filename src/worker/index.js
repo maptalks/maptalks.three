@@ -180,19 +180,19 @@ function arrayBufferToArray(buffer, center, glRes, matrix) {
 
 function generateExtrude(datas, isLine = false) {
     const len = datas.length;
-    const geometriesAttributes = [], geometries = [], faceMap = [];
-    let faceIndex = 0, psIndex = 0, normalIndex = 0, uvIndex = 0;
+    const geometriesAttributes = [], geometries = [];
+    let psIndex = 0;
     for (let i = 0; i < len; i++) {
         const buffGeom = isLine ? extrudeLine(datas[i]) : extrudePolygons(datas[i]);
         const minZ = datas[i].bottomHeight || 0;
-        const { position, normal, uv, indices } = buffGeom;
+        const { position } = buffGeom;
         geometries.push(buffGeom);
-        const faceLen = indices.length / 3;
-        faceMap[i] = [faceIndex + 1, faceIndex + faceLen];
-        faceIndex += faceLen;
-        const psCount = position.length / 3,
-            //  colorCount = buffGeom.attributes.color.count,
-            normalCount = normal.length / 3, uvCount = uv.length / 2;
+        // const faceLen = indices.length / 3;
+        // faceMap[i] = [faceIndex + 1, faceIndex + faceLen];
+        // faceIndex += faceLen;
+        const psCount = position.length / 3;
+        //  colorCount = buffGeom.attributes.color.count,
+        // normalCount = normal.length / 3, uvCount = uv.length / 2;
         geometriesAttributes[i] = {
             position: {
                 middleZ: minZ + (datas[i].height || 0) / 2,
@@ -200,31 +200,31 @@ function generateExtrude(datas, isLine = false) {
                 start: psIndex,
                 end: psIndex + psCount * 3,
             },
-            normal: {
-                count: normalCount,
-                start: normalIndex,
-                end: normalIndex + normalCount * 3,
-            },
-            // color: {
-            //     count: colorCount,
-            //     start: colorIndex,
-            //     end: colorIndex + colorCount * 3,
+            // normal: {
+            //     count: normalCount,
+            //     start: normalIndex,
+            //     end: normalIndex + normalCount * 3,
             // },
-            uv: {
-                count: uvCount,
-                start: uvIndex,
-                end: uvIndex + uvCount * 2,
-            },
+            // // color: {
+            // //     count: colorCount,
+            // //     start: colorIndex,
+            // //     end: colorIndex + colorCount * 3,
+            // // },
+            // uv: {
+            //     count: uvCount,
+            //     start: uvIndex,
+            //     end: uvIndex + uvCount * 2,
+            // },
             hide: false
         };
         psIndex += psCount * 3;
-        normalIndex += normalCount * 3;
+        // normalIndex += normalCount * 3;
         // colorIndex += colorCount * 3;
-        uvIndex += uvCount * 2;
+        // uvIndex += uvCount * 2;
     }
     const geometry = mergeBufferGeometries(geometries);
     const { position, normal, uv, indices } = geometry;
-    return { position: position.buffer, normal: normal.buffer, uv: uv.buffer, indices: indices.buffer, faceMap, geometriesAttributes };
+    return { position: position.buffer, normal: normal.buffer, uv: uv.buffer, indices: indices.buffer, geometriesAttributes };
 
 }
 

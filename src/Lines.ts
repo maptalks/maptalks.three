@@ -72,7 +72,7 @@ class Lines extends MergedMixin(BaseObject) {
 
                 // const psCount = positionsV.length + positionsV.length - 2;
                 const faceLen = psCount;
-                faceMap[i] = [faceIndex, faceIndex + faceLen];
+                // faceMap[i] = [faceIndex, faceIndex + faceLen];
                 faceIndex += faceLen;
 
                 geometriesAttributes[i] = {
@@ -97,7 +97,7 @@ class Lines extends MergedMixin(BaseObject) {
         const v = layer.coordinateToVector3(center, z);
         this.getObject3d().position.copy(v);
 
-        this._faceMap = faceMap;
+        // this._faceMap = faceMap;
         this._baseObjects = lines;
         this._datas = lineStrings;
         this._geometriesAttributes = geometriesAttributes;
@@ -173,8 +173,8 @@ class Lines extends MergedMixin(BaseObject) {
     }
 
     _workerLoad(result) {
-        const { position, faceMap, geometriesAttributes } = result;
-        this._faceMap = faceMap;
+        const { position, geometriesAttributes } = result;
+        // this._faceMap = faceMap;
         this._geometriesAttributes = geometriesAttributes;
         const geometry = new THREE.BufferGeometry();
         addAttribute(geometry, 'position', new THREE.BufferAttribute(new Float32Array(position), 3));
