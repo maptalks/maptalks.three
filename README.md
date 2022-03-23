@@ -34,7 +34,7 @@ A maptalks Layer to render with three.js
 
 As a plugin, `maptalks.three` must be loaded after `maptalks.js` and `three.js` in browsers.
 ```html
-<script type="text/javascript" src="https://unpkg.com/three@0.104.0/build/three.min.js"></script>
+<script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
 <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.min.js"></script>
 <script type="text/javascript" src="https://unpkg.com/maptalks.three/dist/maptalks.three.js"></script>
 <script>
