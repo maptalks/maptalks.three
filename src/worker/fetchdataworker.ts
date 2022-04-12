@@ -43,10 +43,11 @@ export function fetchDataWorkerCode(exports) {
             const blob = new Blob([json], { type: 'application/json' });
             blob.arrayBuffer().then(arrayBuffer => {
                 task.postResponse(null, arrayBuffer, [arrayBuffer]);
+                task.abort = true;
+                loopTask(task);
             });
         }).catch(error => {
             console.error(error);
-        }).finally(() => {
             task.abort = true;
             loopTask(task);
         });
