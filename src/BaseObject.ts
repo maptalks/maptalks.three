@@ -230,7 +230,9 @@ class BaseObject extends maptalks.Eventable(Base) {
                 max = Math.max(z, max);
             }
             const middle = (min + max) / 2;
-            const z = layer.distanceToVector3(height, height).x;
+            let z = layer.distanceToVector3(height, height).x;
+            // z>0
+            z = Math.max(z, 0.000001);
             for (let i = 0, len = array.length; i < len; i += 3) {
                 if (array[i + 2] > middle) {
                     (array[i + 2] as any) = z;
