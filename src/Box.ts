@@ -22,7 +22,7 @@ class Box extends BaseObject {
         super();
         this._initOptions(options);
         const { height, radius, topColor, bottomColor, altitude } = options;
-        const h = layer.distanceToVector3(height, height).x;
+        const h = layer.altitudeToVector3(height, height).x;
         const r = layer.distanceToVector3(radius, radius).x;
         const geometry = getDefaultBoxGeometry().clone();
         geometry.scale(r * 2, r * 2, h);
@@ -31,7 +31,7 @@ class Box extends BaseObject {
             (material as any).vertexColors = getVertexColors();
         }
         this._createMesh(geometry, material);
-        const z = layer.distanceToVector3(altitude, altitude).x;
+        const z = layer.altitudeToVector3(altitude, altitude).x;
         const position = layer.coordinateToVector3(coordinate, z);
         this.getObject3d().position.copy(position);
         this.type = 'Box';

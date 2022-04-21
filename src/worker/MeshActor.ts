@@ -81,6 +81,16 @@ function getDistance(distance: number, layer: ThreeLayer, altCache = {}) {
     }
     return 0;
 }
+
+function getAltitude(altitude: number, layer: ThreeLayer, altCache = {}) {
+    if (altitude !== undefined && typeof altitude === 'number' && altitude !== 0) {
+        if (altCache[altitude] === undefined) {
+            altCache[altitude] = layer.altitudeToVector3(altitude, altitude).x;
+        }
+        return altCache[altitude];
+    }
+    return 0;
+}
 /**
  * generate extrudepolygons data for worker
  * @param {*} polygons
@@ -122,8 +132,8 @@ function gengerateExtrudePolygons(polygons: PolygonType[] = [], center: maptalks
         }
         let height = properties.height || 1;
         let bottomHeight = properties.bottomHeight || 0;
-        height = getDistance(height, layer, altCache);
-        bottomHeight = getDistance(bottomHeight, layer, altCache);
+        height = getAltitude(height, layer, altCache);
+        bottomHeight = getAltitude(bottomHeight, layer, altCache);
         const d = {
             id: properties.id,
             data,
@@ -166,7 +176,7 @@ function gengerateExtrudeLines(lineStringList: Array<Array<SingleLineStringType>
     if (center) {
         centerPt = layer.coordinateToVector3(center);
     }
-    const datas = [], transfer = [], altCache = {};
+    const datas = [], transfer = [], cache = {}, altCache = {};
     const len = lineStringList.length;
     for (let i = 0; i < len; i++) {
         const multiLineString = lineStringList[i];
@@ -177,9 +187,9 @@ function gengerateExtrudeLines(lineStringList: Array<Array<SingleLineStringType>
         let width = properties.width || 1;
         let height = properties.height || 1;
         let bottomHeight = properties.bottomHeight || 0;
-        width = getDistance(width, layer, altCache);
-        height = getDistance(height, layer, altCache);
-        bottomHeight = getDistance(bottomHeight, layer, altCache);
+        width = getDistance(width, layer, cache);
+        height = getAltitude(height, layer, altCache);
+        bottomHeight = getAltitude(bottomHeight, layer, altCache);
         const data = [];
         for (let j = 0, len1 = multiLineString.length; j < len1; j++) {
             const lineString = multiLineString[j];
@@ -243,7 +253,7 @@ function gengerateLines(lineStringList: Array<Array<SingleLineStringType>>, cent
             centerPt = layer.coordinateToVector3(properties.center);
         }
         let bottomHeight = properties.bottomHeight || 0;
-        bottomHeight = getDistance(bottomHeight, layer, altCache);
+        bottomHeight = getAltitude(bottomHeight, layer, altCache);
         const data = [];
         for (let j = 0, len1 = multiLineString.length; j < len1; j++) {
             const lineString = multiLineString[j];

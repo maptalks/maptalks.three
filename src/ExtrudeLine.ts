@@ -31,7 +31,7 @@ class ExtrudeLine extends BaseObject {
         this._initOptions(options);
 
         const { height, width, bottomColor, topColor, bottomHeight, altitude, asynchronous } = options;
-        const h = layer.distanceToVector3(height, height).x;
+        const h = layer.altitudeToVector3(height, height).x;
         const w = layer.distanceToVector3(width, width).x;
         const { lineStrings, center } = LineStringSplit(lineString);
         let geometry: THREE.BufferGeometry;
@@ -66,7 +66,7 @@ class ExtrudeLine extends BaseObject {
         this._createMesh(geometry, material);
 
         // const center = (isGeoJSON(lineString) ? getGeoJSONCenter(lineString) : lineString.getCenter());
-        const z = layer.distanceToVector3(altitude, altitude).x;
+        const z = layer.altitudeToVector3(altitude, altitude).x;
         const v = layer.coordinateToVector3(center, z);
         this.getObject3d().position.copy(v);
         this.type = 'ExtrudeLine';
@@ -79,8 +79,8 @@ class ExtrudeLine extends BaseObject {
         const material = object3d.material;
         if (topColor) {
             const layer = this.getLayer();
-            const h = layer.distanceToVector3(bottomHeight, bottomHeight).x;
-            const extrudeH = layer.distanceToVector3(height, height).x;
+            const h = layer.altitudeToVector3(bottomHeight, bottomHeight).x;
+            const extrudeH = layer.altitudeToVector3(height, height).x;
             initVertexColors(bufferGeometry, bottomColor, topColor, h + extrudeH / 2);
             (material as any).vertexColors = getVertexColors();
         }

@@ -128,7 +128,7 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
         this._initOptions(options);
 
         this._createMesh(bufferGeometry, material);
-        const z = layer.distanceToVector3(altitude, altitude).x;
+        const z = layer.altitudeToVector3(altitude, altitude).x;
         const v = layer.coordinateToVector3(center, z);
         this.getObject3d().position.copy(v);
 

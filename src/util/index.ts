@@ -9,6 +9,12 @@ export function distanceToVector3(distance: number, layer: ThreeLayer, cache: { 
     }
     return cache[distance];
 }
+export function altitudeToVector3(altitude: number, layer: ThreeLayer, cache: { [key: number]: number } = {}): number {
+    if (cache[altitude] === undefined) {
+        cache[altitude] = layer.altitudeToVector3(altitude, altitude).x;
+    }
+    return cache[altitude];
+}
 
 
 /**
@@ -52,11 +58,11 @@ export function setBottomHeight(geometry: THREE.BufferGeometry | MergeAttributeT
     if (position) {
         if (cache) {
             if (cache[bottomHeight] === undefined) {
-                cache[bottomHeight] = layer.distanceToVector3(bottomHeight, bottomHeight).x;
+                cache[bottomHeight] = layer.altitudeToVector3(bottomHeight, bottomHeight).x;
             }
             h = cache[bottomHeight];
         } else {
-            h = layer.distanceToVector3(bottomHeight, bottomHeight).x;
+            h = layer.altitudeToVector3(bottomHeight, bottomHeight).x;
         }
         const len = position.length;
         if (position[0] instanceof THREE.Vector3) {

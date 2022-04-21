@@ -50,7 +50,7 @@ class FatLine extends BaseObject {
         this._setMaterialRes(layer, material);
         this._createLine2(geometry, material);
         const { altitude } = options;
-        const z = layer.distanceToVector3(altitude, altitude).x;
+        const z = layer.altitudeToVector3(altitude, altitude).x;
         const v = layer.coordinateToVector3(center, z);
         this.getObject3d().position.copy(v);
         if (!asynchronous) {

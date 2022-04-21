@@ -45,13 +45,13 @@ class ExtrudePolygon extends BaseObject {
             geometry = getExtrudeGeometry(polygon, height, layer);
             const h = setBottomHeight(geometry, bottomHeight, layer);
             if (topColor) {
-                const extrudeH = layer.distanceToVector3(height, height).x;
+                const extrudeH = layer.altitudeToVector3(height, height).x;
                 initVertexColors(geometry, bottomColor, topColor, h + extrudeH / 2);
                 (material as any).vertexColors = getVertexColors();
             }
         }
         this._createMesh(geometry, material);
-        const z = layer.distanceToVector3(altitude, altitude).x;
+        const z = layer.altitudeToVector3(altitude, altitude).x;
         const v = layer.coordinateToVector3(center, z);
         this.getObject3d().position.copy(v);
         this.type = 'ExtrudePolygon';
@@ -64,8 +64,8 @@ class ExtrudePolygon extends BaseObject {
         const material = object3d.material;
         if (topColor) {
             const layer = this.getLayer();
-            const h = layer.distanceToVector3(bottomHeight, bottomHeight).x;
-            const extrudeH = layer.distanceToVector3(height, height).x;
+            const h = layer.altitudeToVector3(bottomHeight, bottomHeight).x;
+            const extrudeH = layer.altitudeToVector3(height, height).x;
             initVertexColors(bufferGeometry, bottomColor, topColor, h + extrudeH / 2);
             (material as any).vertexColors = getVertexColors();
         }

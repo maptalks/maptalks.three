@@ -97,12 +97,12 @@ class ExtrudeLineTrail extends BaseObject {
 
 
         const lineWidth = layer.distanceToVector3(width, width).x;
-        const depth = layer.distanceToVector3(height, height).x;
+        const depth = layer.altitudeToVector3(height, height).x;
         const params = getExtrudeLineParams(positions, lineWidth, depth, layer);
         setExtrudeLineGeometryAttribute(geometry, params.position, params.normal, params.indices);
 
         this._createMesh(geometry, material);
-        const z = layer.distanceToVector3(altitude, altitude).x;
+        const z = layer.altitudeToVector3(altitude, altitude).x;
         const v = layer.coordinateToVector3(center, z);
         this.getObject3d().position.copy(v);
 

@@ -3,7 +3,7 @@ import { ThreeLayer } from './index';
 import * as THREE from 'three';
 import BaseObject from './BaseObject';
 import { ImageType, TerrainOptionType } from './type';
-import { distanceToVector3 } from './util';
+import { altitudeToVector3, distanceToVector3 } from './util';
 import { getPlaneGeometry } from './util/GeometryUtil';
 // import { addAttribute } from './util/ThreeAdaptUtil';
 const textureLoader = new THREE.TextureLoader();
@@ -84,7 +84,7 @@ class Terrain extends BaseObject {
         super();
         this._initOptions(options);
         this._createMesh(geometry, material);
-        const z = layer.distanceToVector3(altitude, altitude).x;
+        const z = layer.altitudeToVector3(altitude, altitude).x;
         const v = layer.coordinateToVector3(extent.getCenter(), z);
         this.getObject3d().position.copy(v);
         material.transparent = true;
@@ -99,7 +99,7 @@ class Terrain extends BaseObject {
                 for (let i = 0, len = imgdata.length; i < len; i += 4) {
                     const R = imgdata[i], G = imgdata[i + 1], B = imgdata[i + 2];
                     const height = -10000 + ((R * 256 * 256 + G * 256 + B) * 0.1);
-                    const z = distanceToVector3(height, layer, cache);
+                    const z = altitudeToVector3(height, layer, cache);
                     (geometry.attributes.position.array as any)[idx * 3 + 2] = z;
                     idx++;
                 }

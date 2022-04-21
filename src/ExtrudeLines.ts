@@ -7,7 +7,7 @@ import { getExtrudeLineParams, LineStringSplit } from './util/LineUtil';
 import ExtrudeLine from './ExtrudeLine';
 import { isGeoJSON, isGeoJSONLine } from './util/GeoJSONUtil';
 import { generateBufferGeometry, generatePickBufferGeometry, getDefaultBufferGeometry, mergeBufferGeometries, mergeBufferGeometriesAttribute } from './util/MergeGeometryUtil';
-import { distanceToVector3, getCenterOfPoints, setBottomHeight } from './util/index';
+import { altitudeToVector3, distanceToVector3, getCenterOfPoints, setBottomHeight } from './util/index';
 import { ExtrudeLineOptionType, LineStringType, MergeAttributeType, SingleLineStringType } from './type/index';
 import { ThreeLayer } from './index';
 import { getVertexColors } from './util/ThreeAdaptUtil';
@@ -56,13 +56,13 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
             const geometries: MergeAttributeType[] = [];
             let faceIndex = 0, faceMap = [],
                 psIndex = 0, normalIndex = 0;
-            const cache = {};
+            const cache = {}, altCache = {};
             for (let i = 0; i < len; i++) {
                 const lineString = lineStrings[i];
                 const opts = maptalks.Util.extend({}, OPTIONS, isGeoJSON(lineString as any) ? lineString['properties'] : (lineString as any).getProperties(), { index: i });
                 const { height, width, bottomHeight } = opts;
                 const w = distanceToVector3(width, layer, cache);
-                const h = distanceToVector3(height, layer, cache);
+                const h = altitudeToVector3(height, layer, altCache);
                 const lls = lineStringList[i];
                 const extrudeParams: MergeAttributeType[] = [];
                 let minZ = 0;
@@ -124,7 +124,7 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
         this._initOptions(options);
 
         this._createMesh(bufferGeometry, material);
-        const z = layer.distanceToVector3(altitude, altitude).x;
+        const z = layer.altitudeToVector3(altitude, altitude).x;
         const v = layer.coordinateToVector3(center, z);
         this.getObject3d().position.copy(v);
 

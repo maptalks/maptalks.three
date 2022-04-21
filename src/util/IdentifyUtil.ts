@@ -2,14 +2,14 @@
 import * as maptalks from 'maptalks';
 import { ThreeLayer } from './../index';
 import * as THREE from 'three';
-import { distanceToVector3 } from './index';
+import { altitudeToVector3, distanceToVector3 } from './index';
 
 function positionsConvert(worldPoints: Array<number>, altitude: number = 0, layer: ThreeLayer): Array<THREE.Vector3> {
     const vectors: THREE.Vector3[] = [], cache = {};
     for (let i = 0, len = worldPoints.length; i < len; i += 3) {
         let x = worldPoints[i], y = worldPoints[i + 1], z = worldPoints[i + 2];
         if (altitude > 0) {
-            z += distanceToVector3(altitude, layer, cache);
+            z += altitudeToVector3(altitude, layer, cache);
         }
         vectors.push(new THREE.Vector3(x, y, z));
     }
