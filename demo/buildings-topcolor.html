@@ -83,46 +83,63 @@
             const mesh = threeLayer.toExtrudePolygons(polygons, { interactive: false }, material);
 
             const bufferGeometry = mesh.getObject3d().geometry;
-            const geometry = new THREE.Geometry().fromBufferGeometry(bufferGeometry);
-
-            const { vertices, faces, faceVertexUvs } = geometry;
-            for (let i = 0, len = faces.length; i < len; i++) {
-                const { a, b, c } = faces[i];
-                const p1 = vertices[a], p2 = vertices[b], p3 = vertices[c];
-                //top face
-                if (p1.z > 0 && p2.z > 0 && p3.z > 0) {
-                    const vertexColors = faces[i].vertexColors;
-                    for (let j = 0, len1 = vertexColors.length; j < len1; j++) {
-                        vertexColors[j].r = topColor.r;
-                        vertexColors[j].g = topColor.g;
-                        vertexColors[j].b = topColor.b;
-                    }
-                    const uvs = faceVertexUvs[0][i];
-                    for (let j = 0, len1 = uvs.length; j < len1; j++) {
-                        uvs[j].x = 0;
-                        uvs[j].y = 0;
-                    }
-                }
-            }
-            mesh.getObject3d().geometry = new THREE.BufferGeometry().fromGeometry(geometry);
-            bufferGeometry.dispose();
-            geometry.dispose();
-            // const position = geometry.attributes.position.array;
-            // const uv = geometry.attributes.uv.array;
-            // const index = geometry.index.array;
-            // for (let i = 0, len = index.length; i < len; i += 3) {
-            //     const a = index[i], b = index[i + 1], c = index[i + 2];
-            //     const z1 = position[a * 3 + 2], z2 = position[b * 3 + 2], z3 = position[c * 3 + 2];
-            //     // top vertex
-            //     if (z1 > 0 && z2 > 0 && z3 > 0) {
-            //         uv[a * 2] = 0;
-            //         uv[a * 2 + 1] =  0;
-            //         uv[b * 2] =  0;
-            //         uv[b * 2 + 2] =  0;
-            //         uv[c * 2] =  0;
-            //         uv[c * 2 + 1] =  0;
+            // const geometry = new THREE.Geometry().fromBufferGeometry(bufferGeometry);
+            //
+            // const { vertices, faces, faceVertexUvs } = geometry;
+            // for (let i = 0, len = faces.length; i < len; i++) {
+            //     const { a, b, c } = faces[i];
+            //     const p1 = vertices[a], p2 = vertices[b], p3 = vertices[c];
+            //     //top face
+            //     if (p1.z > 0 && p2.z > 0 && p3.z > 0) {
+            //         const vertexColors = faces[i].vertexColors;
+            //         for (let j = 0, len1 = vertexColors.length; j < len1; j++) {
+            //             vertexColors[j].r = topColor.r;
+            //             vertexColors[j].g = topColor.g;
+            //             vertexColors[j].b = topColor.b;
+            //         }
+            //         const uvs = faceVertexUvs[0][i];
+            //         for (let j = 0, len1 = uvs.length; j < len1; j++) {
+            //             uvs[j].x = 0;
+            //             uvs[j].y = 0;
+            //         }
             //     }
             // }
+            // mesh.getObject3d().geometry = new THREE.BufferGeometry().fromGeometry(geometry);
+            // bufferGeometry.dispose();
+            // geometry.dispose();
+
+            const position = bufferGeometry.attributes.position.array;
+            const uv =bufferGeometry.attributes.uv.array;
+            const color = bufferGeometry.attributes.color.array;
+            const index = mesh.getObject3d().geometry.index.array;
+            for (let i = 0, len = index.length; i < len; i += 3) {
+                const a = index[i], b = index[i + 1], c = index[i + 2];
+                const z1 = position[a * 3 + 2], z2 = position[b * 3 + 2], z3 = position[c * 3 + 2];
+                // top vertex
+                if (z1 > 0 && z2 > 0 && z3 > 0) {
+                    uv[a * 2] = 0;
+                    uv[a * 2 + 1] =  0;
+                    uv[b * 2] =  0;
+                    uv[b * 2 + 1] =  0;
+                    uv[c * 2] =  0;
+                    uv[c * 2 + 1] =  0;
+
+                    color[a * 3]=topColor.r;
+                    color[a * 3+1]=topColor.g;
+                    color[a * 3+2]=topColor.b;
+
+                    color[b * 3]=topColor.r;
+                    color[b * 3+1]=topColor.g;
+                    color[b * 3+2]=topColor.b;
+
+                    color[c * 3]=topColor.r;
+                    color[c * 3+1]=topColor.g;
+                    color[c * 3+2]=topColor.b;
+                }
+
+
+
+            }
             meshs.push(mesh);
             threeLayer.addMesh(meshs);
             initGui();
