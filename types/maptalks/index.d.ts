@@ -174,7 +174,7 @@ declare class Map {
   isInteracting(): boolean
   isAnimating(): boolean
   getSpatialReference(): any
-  altitudeToPoint(altitude: number, res?: number): Point
+  altitudeToPoint(altitude: number, res?: number): number
 }
 
 
