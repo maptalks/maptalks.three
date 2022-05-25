@@ -187,7 +187,7 @@
                 this._initOptions(options);
                 const { altitude, radius, height } = options;
                 //generate geometry
-                const h = layer.distanceToVector3(height, height).x;
+                const h = layer.altitudeToVector3(height, height).x;
                 const r = layer.distanceToVector3(radius, radius).x;
                 const geometry = new THREE.BoxBufferGeometry(r * 2, r * 2, h);
                 geometry.translate(0, 0, h / 2);
@@ -196,7 +196,7 @@
                 // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L140
                 this._createMesh(geometry, material);
                 //set object3d position
-                const z = layer.distanceToVector3(altitude, altitude).x;
+                const z = layer.altitudeToVector3(altitude, altitude).x;
                 const position = layer.coordinateToVector3(coordinate, z);
                 this.getObject3d().position.copy(position);
             }
@@ -226,8 +226,8 @@
                     const opts = maptalks.Util.extend({ index: i }, OPTIONS1, points[i]);
                     const { radius, altitude, topColor, bottomColor, height, coordinate } = opts;
                     const r = layer.distanceToVector3(radius, radius).x;
-                    const h = layer.distanceToVector3(height, height).x;
-                    const alt = layer.distanceToVector3(altitude, altitude).x;
+                    const h = layer.altitudeToVector3(height, height).x;
+                    const alt = layer.altitudeToVector3(altitude, altitude).x;
                     const buffGeom = defaultGeometry.clone();
                     buffGeom.scale(r * 2, r * 2, h);
                     const v = layer.coordinateToVector3(coordinate).sub(centerPt);
@@ -292,7 +292,7 @@
                 const geometry = maptalks.MergeGeometryUtil.mergeBufferGeometries(geometries);
                 this._createMesh(geometry, material);
                 const altitude = options.altitude;
-                const z = layer.distanceToVector3(altitude, altitude).x;
+                const z = layer.altitudeToVector3(altitude, altitude).x;
                 const v = centerPt.clone();
                 v.z = z;
                 this.getObject3d().position.copy(v);

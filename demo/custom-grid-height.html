@@ -328,7 +328,7 @@
                     const height = grids[i].height;
                     let z = 0;
                     if (altitude !== 0) {
-                        z = layer.distanceToVector3(altitude, altitude).x;
+                        z = layer.altitudeToVector3(altitude, altitude).x;
                     }
                     const v = layer.coordinateToVector3(center, z);
                     const v1 = v.sub(centerPt);
@@ -377,7 +377,7 @@
                 this._createMesh(bufferGeomertry, material);
 
                 //set object3d position
-                const z = layer.distanceToVector3(altitude, altitude).x;
+                const z = layer.altitudeToVector3(altitude, altitude).x;
                 const position = layer.coordinateToVector3(center, z);
                 this.getObject3d().position.copy(position);
             }

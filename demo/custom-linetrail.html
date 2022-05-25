@@ -240,7 +240,7 @@
                 this._createLine(geometry, material);
 
                 //set object3d position
-                const z = layer.distanceToVector3(altitude, altitude).x;
+                const z = layer.altitudeToVector3(altitude, altitude).x;
 
                 const center = lineString.getCenter();
                 const v = layer.coordinateToVector3(center, z);

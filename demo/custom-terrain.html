@@ -346,7 +346,7 @@
                 const height = properties.z;
                 let z = zMap[height];
                 if (z === undefined) {
-                    z = zMap[height] = layer.distanceToVector3(height, height).x;
+                    z = zMap[height] = layer.altitudeToVector3(height, height).x;
                 }
                 const v = layer.coordinateToVector3(lnglat, z);
                 positions.push(v);
@@ -354,7 +354,7 @@
             }
 
             const id = maptalks.Util.GUID();
-            const minZ = layer.distanceToVector3(minHeight, minHeight).x;
+            const minZ = layer.altitudeToVector3(minHeight, minHeight).x;
             const buffGeom = new THREE.BufferGeometry();
             const timeId = 'tin worker ' + maptalks.Util.GUID();
             geometryCacahe[id] = {
@@ -395,7 +395,7 @@
                 });
 
                 this._createMesh(buffGeom, material);
-                const z = layer.distanceToVector3(options.altitude, options.altitude).x;
+                const z = layer.altitudeToVector3(options.altitude, options.altitude).x;
                 this.getObject3d().position.z = z;
             }
 
@@ -483,7 +483,7 @@
                 this.water = water;
                 //set object3d position
                 const { altitude } = options;
-                const z = layer.distanceToVector3(altitude, altitude).x;
+                const z = layer.altitudeToVector3(altitude, altitude).x;
                 const center = polygon.getCenter();
                 const v = layer.coordinateToVector3(center, z);
                 this.getObject3d().position.copy(v);

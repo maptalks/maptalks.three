@@ -140,7 +140,7 @@
             bar.getObject3d().scale.set(scaleR, scaleR, scaleH);
             const { altitude, coordinate } = options;
             const layer = barCache.getLayer();
-            const z = layer.distanceToVector3(altitude, altitude).x;
+            const z = layer.altitudeToVector3(altitude, altitude).x;
             const position = layer.coordinateToVector3(coordinate, z);
             bar.getObject3d().position.copy(position);
             return bar;

@@ -276,7 +276,7 @@ function _getChunkLinesPosition(chunkLines, layer) {
     lnglats.forEach(lnglat => {
         const h = lnglat[2];
         if (h) {
-            z = layer.distanceToVector3(h, h).x;
+            z = layer.altitudeToVector3(h, h).x;
         }
         const v = layer.coordinateToVector3(lnglat, z);
         positionsV.push(v);

@@ -144,7 +144,7 @@
             circle.getObject3d().scale.set(scaleR, scaleR, 1);
             const { altitude } = options;
             const layer = circle.getLayer();
-            const z = layer.distanceToVector3(altitude, altitude).x;
+            const z = layer.altitudeToVector3(altitude, altitude).x;
             const position = layer.coordinateToVector3(coordinate, z);
             circle.getObject3d().position.copy(position);
             return circle;
@@ -181,7 +181,7 @@
                 this._createMesh(geometry, material);
 
                 //set object3d position
-                const z = layer.distanceToVector3(altitude, altitude).x;
+                const z = layer.altitudeToVector3(altitude, altitude).x;
                 const position = layer.coordinateToVector3(coordinate, z);
                 this.getObject3d().position.copy(position);
                 // this.getObject3d().rotation.x = -Math.PI;
