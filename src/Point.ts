@@ -24,7 +24,7 @@ class Point extends BaseObject {
             color = (color instanceof THREE.Color ? color : new THREE.Color(color));
             colors.push(color.r, color.g, color.b);
         }
-        const z = layer.distanceToVector3(height, height).x;
+        const z = layer.altitudeToVector3(height, height).x;
         const v = layer.coordinateToVector3(coordinate, z);
         vs.push(0, 0, v.z);
         const geometry = new THREE.BufferGeometry();
@@ -39,7 +39,7 @@ class Point extends BaseObject {
         (options as any).positions = v;
         this._initOptions(options);
         this._createPoints(geometry, material);
-        const z1 = layer.distanceToVector3(altitude, altitude).x;
+        const z1 = layer.altitudeToVector3(altitude, altitude).x;
         const v1 = new THREE.Vector3(v.x, v.y, z1);
         this.getObject3d().position.copy(v1);
         this.type = 'Point';
@@ -59,7 +59,7 @@ class Point extends BaseObject {
         }
         const pixel = this.getMap().coordToContainerPoint(coordinate);
 
-        const z = layer.distanceToVector3(altitude, altitude).x;
+        const z = layer.altitudeToVector3(altitude, altitude).x;
         vector.x = positions.x;
         vector.y = positions.y;
         vector.z = positions.z + z;

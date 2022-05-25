@@ -27,7 +27,7 @@ class Bar extends BaseObject {
         super();
         this._initOptions(options);
         const { height, radius, topColor, bottomColor, altitude } = options;
-        options.height = layer.distanceToVector3(height, height).x;
+        options.height = layer.altitudeToVector3(height, height).x;
         options.radius = layer.distanceToVector3(radius, radius).x;
         // Meter as unit
         options['_radius'] = this.options['radius'];
@@ -38,7 +38,7 @@ class Bar extends BaseObject {
             (material as any).vertexColors = getVertexColors();
         }
         this._createMesh(geometry, material);
-        const z = layer.distanceToVector3(altitude, altitude).x;
+        const z = layer.altitudeToVector3(altitude, altitude).x;
         const position = layer.coordinateToVector3(coordinate, z);
         this.getObject3d().position.copy(position);
         this.type = 'Bar';

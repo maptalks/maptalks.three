@@ -278,6 +278,19 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return new THREE.Vector3(x, y, 0);
     }
 
+    altitudeToVector3(altitude: number, altitude1: number, coord?: maptalks.Coordinate | Array<number>): THREE.Vector3 {
+        if ((altitude === 0) || (!maptalks.Util.isNumber(altitude))) {
+            return new THREE.Vector3(0, 0, 0);
+        }
+        const map = this.getMap();
+        if (map.altitudeToPoint) {
+            const res = getGLRes(map);
+            const z = map.altitudeToPoint(altitude, res);
+            return new THREE.Vector3(z, z, 0);
+        }
+        return this.distanceToVector3(altitude, altitude, coord);
+    }
+
     /**
      * Convert a Polygon or a MultiPolygon to THREE shape
      * @param  {maptalks.Polygon|maptalks.MultiPolygon} polygon - polygon or multipolygon
@@ -341,8 +354,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
         const shape = this.toShape(polygon);
         const center = this.coordinateToVector3(polygon.getCenter());
         height = maptalks.Util.isNumber(height) ? height : altitude;
-        height = this.distanceToVector3(height, height).x;
-        const amount = this.distanceToVector3(altitude, altitude).x;
+        height = this.altitudeToVector3(height, height).x;
+        const amount = this.altitudeToVector3(altitude, altitude).x;
         //{ amount: extrudeH, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 1, bevelThickness: 1 };
         const config: { [key: string]: any } = { 'bevelEnabled': false, 'bevelSize': 1 };
         const name = parseInt(THREE.REVISION) >= 93 ? 'depth' : 'amount';

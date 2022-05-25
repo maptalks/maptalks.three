@@ -6,7 +6,7 @@ import { vector2Pixel } from './util/IdentifyUtil';
 import MergedMixin from './MergedMixin';
 import BBox from './util/BBox';
 import { addAttribute } from './util/ThreeAdaptUtil';
-import { distanceToVector3 } from './util';
+import { altitudeToVector3, distanceToVector3 } from './util';
 import { PointOptionType } from './type';
 import { ThreeLayer } from './index';
 
@@ -73,7 +73,7 @@ class Points extends MergedMixin(BaseObject) {
                 sizes[i] = size;
                 maxSize = Math.max(maxSize, size);
             }
-            const z = distanceToVector3(height, layer, cache);
+            const z = altitudeToVector3(height, layer, cache);
             const v = layer.coordinateToVector3(coordinate, z);
             TEMP_VECTOR.x = v.x;
             TEMP_VECTOR.y = v.y;
@@ -132,7 +132,7 @@ class Points extends MergedMixin(BaseObject) {
         this._initOptions(options);
         this._createPoints(geometry, material);
         const altitude = options.altitude;
-        const z = layer.distanceToVector3(altitude, altitude).x;
+        const z = layer.altitudeToVector3(altitude, altitude).x;
         const v = centerPt.clone();
         v.z = z;
         this.getObject3d().position.copy(v);
@@ -195,7 +195,7 @@ class Points extends MergedMixin(BaseObject) {
     identify(coordinate: maptalks.Coordinate) {
         const layer = this.getLayer(), size = this.getMap().getSize(),
             camera = this.getLayer().getCamera(), altitude = this.getOptions().altitude, map = this.getMap();
-        const z = layer.distanceToVector3(altitude, altitude).x;
+        const z = layer.altitudeToVector3(altitude, altitude).x;
         let pointSize = (this.getObject3d() as any).material.size;
         const isDynamicSize = pointSize === undefined;
         const pixel = map.coordToContainerPoint(coordinate);

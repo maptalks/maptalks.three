@@ -61,11 +61,11 @@ export function getExtrudeGeometryParams(polygon: PolygonType, height: number, l
     //Reduce height and repeat calculation
     if (altCache) {
         if (altCache[height] == null) {
-            altCache[height] = layer.distanceToVector3(height, height).x;
+            altCache[height] = layer.altitudeToVector3(height, height).x;
         }
         height = altCache[height];
     } else {
-        height = layer.distanceToVector3(height, height).x;
+        height = layer.altitudeToVector3(height, height).x;
     }
     const { position, normal, uv, indices } = extrudePolygon(shapes as any, {
         depth: height
