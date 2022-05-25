@@ -320,7 +320,7 @@
                 this.getObject3d().add(textsprite);
 
                 //set object3d position
-                const z = layer.distanceToVector3(altitude, altitude).x;
+                const z = layer.altitudeToVector3(altitude, altitude).x;
                 const position = layer.coordinateToVector3(coordinate, z);
                 this.getObject3d().position.copy(position);
                 this.textRect = {
@@ -382,7 +382,7 @@
                 for (let i = 0, len = worldPoints.length; i < len; i += 3) {
                     let x = worldPoints[i], y = worldPoints[i + 1], z = worldPoints[i + 2];
                     if (altitude > 0) {
-                        z += layer.distanceToVector3(altitude, altitude).x;
+                        z += layer.altitudeToVector3(altitude, altitude).x;
                     }
                     vectors.push(new THREE.Vector3(x, y, z));
                 }

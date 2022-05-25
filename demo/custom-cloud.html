@@ -442,7 +442,7 @@
                 const { altitude, width, height } = options;
                 //generate geometry
                 const w = layer.distanceToVector3(width, width).x;
-                const h = layer.distanceToVector3(width, width).x;
+                const h = layer.altitudeToVector3(width, width).x;
                 const geometry = new THREE.PlaneBufferGeometry(w, h);
 
                 //Initialize internal object3d
@@ -453,7 +453,7 @@
                 this.getObject3d().add(mesh);
 
                 //set object3d position
-                const z = layer.distanceToVector3(altitude, altitude).x;
+                const z = layer.altitudeToVector3(altitude, altitude).x;
                 const position = layer.coordinateToVector3(coordinate, z);
                 this.getObject3d().position.copy(position);
 
@@ -511,7 +511,7 @@
                 const { altitude, radius, height } = options;
                 //generate geometry
                 const r = layer.distanceToVector3(radius, radius).x;
-                const h = layer.distanceToVector3(height, height).x;
+                const h = layer.altitudeToVector3(height, height).x;
                 // const a = w;
                 const geometry = new THREE.BoxBufferGeometry(r * 2, r * 2, h, 1, 1, 1);
 
@@ -527,7 +527,7 @@
                 this._createMesh(geometry, material);
 
                 //set object3d position
-                const z = layer.distanceToVector3(altitude, altitude).x;
+                const z = layer.altitudeToVector3(altitude, altitude).x;
                 const v = layer.coordinateToVector3(coordinate, z);
                 this.getObject3d().position.copy(v);
                 this._init(h / 2);

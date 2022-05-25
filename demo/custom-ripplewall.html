@@ -201,14 +201,14 @@
                 this._createMesh(geometry, material);
 
                 //set object3d position
-                const z = layer.distanceToVector3(altitude, altitude).x;
+                const z = layer.altitudeToVector3(altitude, altitude).x;
                 const position = layer.coordinateToVector3(polygon.getCenter(), z);
                 this.getObject3d().position.copy(position);
             }
 
 
             createGeometry(polygon, layer, height) {
-                height = layer.distanceToVector3(height, height).x;
+                height = layer.altitudeToVector3(height, height).x;
                 const centerPt = layer.coordinateToVector3(polygon.getCenter());
                 const wall = polygon.getShell();
                 const positionsV = [];

@@ -291,7 +291,7 @@
                 this.getObject3d().add(textsprite);
 
                 //set object3d position
-                const z = layer.distanceToVector3(altitude, altitude).x;
+                const z = layer.altitudeToVector3(altitude, altitude).x;
                 const position = layer.coordinateToVector3(coordinate, z);
                 this.getObject3d().position.copy(position);
 
@@ -348,7 +348,7 @@
                 // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L135
                 this._initOptions(options);
                 const { altitude, height } = options;
-                const h = layer.distanceToVector3(height, height).x;
+                const h = layer.altitudeToVector3(height, height).x;
                 const geometry = new THREE.BufferGeometry();
                 const positions = [0, 0, 0, 0, 0, h];
 
@@ -362,7 +362,7 @@
 
 
                 //set object3d position
-                const z = layer.distanceToVector3(altitude, altitude).x;
+                const z = layer.altitudeToVector3(altitude, altitude).x;
                 const position = layer.coordinateToVector3(coordinate, z);
                 this.getObject3d().position.copy(position);
             }
@@ -376,7 +376,7 @@
                 for (let i = 0, len = worldPoints.length; i < len; i += 3) {
                     let x = worldPoints[i], y = worldPoints[i + 1], z = worldPoints[i + 2];
                     if (altitude > 0) {
-                        z += layer.distanceToVector3(altitude, altitude).x;
+                        z += layer.altitudeToVector3(altitude, altitude).x;
                     }
                     vectors.push(new THREE.Vector3(x, y, z));
                 }

@@ -92,7 +92,7 @@
             threeLayer.addMesh(cube);
 
 
-            const z = threeLayer.distanceToVector3(height, height).x;
+            const z = threeLayer.altitudeToVector3(height, height).x;
             const v = threeLayer.coordinateToVector3(lnglat, z);
 
 
@@ -461,7 +461,7 @@
                 light.shadow.camera.updateProjectionMatrix();
             });
             lightF.add(params, 'lightHeight', 0, 20000).onChange(function () {
-                const z = threeLayer.distanceToVector3(params.lightHeight, params.lightHeight).x;
+                const z = threeLayer.altitudeToVector3(params.lightHeight, params.lightHeight).x;
                 light.position.z = z;
             });
 
@@ -487,7 +487,7 @@
                 spotLight.angle = params.spotLightAngle;
             });
             spotLightF.add(params, 'spotLightHeight', 0, 20000).onChange(function () {
-                const z = threeLayer.distanceToVector3(params.spotLightHeight, params.spotLightHeight).x;
+                const z = threeLayer.altitudeToVector3(params.spotLightHeight, params.spotLightHeight).x;
                 spotLight.position.z = z;
             });
             // spotLightF.add(params, 'spotLightMapScale', 0, 10).onChange(function () {
@@ -525,7 +525,7 @@
                 this._createMesh(geometry, material);
 
                 //set object3d position
-                const z = layer.distanceToVector3(altitude, altitude).x + h / 2;
+                const z = layer.altitudeToVector3(altitude, altitude).x + h / 2;
                 const position = layer.coordinateToVector3(coordinate, z);
                 this.getObject3d().position.copy(position);
                 this.getObject3d().castShadow = true;
@@ -555,7 +555,7 @@
                 this._createMesh(geometry, material);
 
                 //set object3d position
-                const z = layer.distanceToVector3(altitude, altitude).x;
+                const z = layer.altitudeToVector3(altitude, altitude).x;
                 const position = layer.coordinateToVector3(coordinate, z);
                 this.getObject3d().position.copy(position);
                 this.getObject3d().receiveShadow = true;

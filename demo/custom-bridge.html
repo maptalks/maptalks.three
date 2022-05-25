@@ -643,7 +643,7 @@
 
                 const { altitude } = options;
                 //set object3d position
-                const z = layer.distanceToVector3(altitude, altitude).x;
+                const z = layer.altitudeToVector3(altitude, altitude).x;
                 centerPt.z = z;
                 this.getObject3d().position.copy(centerPt);
             }
@@ -677,7 +677,7 @@
                 const xykeys = {};
                 for (let i = 0, len = coordinates.length; i < len; i++) {
                     const altitude = coordinates[i][2];
-                    const z = layer.distanceToVector3(altitude, altitude).x;
+                    const z = layer.altitudeToVector3(altitude, altitude).x;
                     const p = layer.coordinateToVector3(coordinates[i]).sub(centerPt);
                     const xy = [p.x.toFixed(4), p.y.toFixed(4)].join('-').toString();
                     xykeys[xy] = z;
@@ -733,7 +733,7 @@
                 //generate geometry
 
                 const r = threeLayer.distanceToVector3(radius, radius).x;
-                const h = threeLayer.distanceToVector3(height, height).x;
+                const h = threeLayer.altitudeToVector3(height, height).x;
                 const geometry = new THREE.BoxBufferGeometry(r * 2, r * 2, h);
                 geometry.translate(0, 0, h / 2);
 
@@ -742,7 +742,7 @@
                 this._createMesh(geometry, material);
 
                 //set object3d position
-                const z = layer.distanceToVector3(altitude, altitude).x;
+                const z = layer.altitudeToVector3(altitude, altitude).x;
                 const position = layer.coordinateToVector3(coordinate, z);
                 this.getObject3d().position.copy(position);
             }
@@ -778,7 +778,7 @@
                 this._createLine(geometry, material);
 
                 //set object3d position
-                const z = layer.distanceToVector3(altitude, altitude).x;
+                const z = layer.altitudeToVector3(altitude, altitude).x;
                 const position = layer.coordinateToVector3(lineString.getCenter(), z);
                 this.getObject3d().position.copy(position);
             }
@@ -789,7 +789,7 @@
                 const centerPt = layer.coordinateToVector3(lineString.getCenter());
                 const position = [];
                 for (let i = 0, len = coordinates.length; i < len; i++) {
-                    const z = layer.distanceToVector3(altitudes[i], altitudes[i]).x;
+                    const z = layer.altitudeToVector3(altitudes[i], altitudes[i]).x;
                     const p = layer.coordinateToVector3(coordinates[i]).sub(centerPt);
                     position.push(p.x, p.y, z);
                 }
