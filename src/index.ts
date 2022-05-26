@@ -1294,7 +1294,8 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         //https://github.com/mrdoob/three.js/commit/d52afdd2ceafd690ac9e20917d0c968ff2fa7661
         if (this.matrix4.invert) {
             camera.projectionMatrixInverse.elements = this.matrix4.copy(camera.projectionMatrix).invert().elements;
-        } else {
+            //r95 no projectionMatrixInverse properties
+        } else if (camera.projectionMatrixInverse) {
             camera.projectionMatrixInverse.elements = this.matrix4.getInverse(camera.projectionMatrix).elements;
         }
     }
