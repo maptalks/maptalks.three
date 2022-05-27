@@ -285,7 +285,10 @@ class ThreeLayer extends maptalks.CanvasLayer {
         const map = this.getMap();
         if (map.altitudeToPoint) {
             const res = getGLRes(map);
-            const z = map.altitudeToPoint(altitude, res);
+            let z = map.altitudeToPoint(altitude, res);
+            if (altitude < 0) {
+                z = -z;
+            }
             return new THREE.Vector3(z, z, 0);
         }
         return this.distanceToVector3(altitude, altitude, coord);
