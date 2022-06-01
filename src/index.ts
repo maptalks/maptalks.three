@@ -34,7 +34,7 @@ import * as geometryExtrude from 'deyihu-geometry-extrude';
 import LineMaterial from './util/fatline/LineMaterial';
 import { BarOptionType, BaseLayerOptionType, BaseObjectOptionType, ExtrudeLineOptionType, ExtrudeLineTrailOptionType, ExtrudePolygonOptionType, FatLineMaterialType, getBaseObjectMaterialType, HeatMapDataType, HeatMapOptionType, LineMaterialType, LineOptionType, LineStringType, PointOptionType, PolygonType, SingleLineStringType, TerrainOptionType } from './type/index';
 import { getWorkerCode, getWorkerName } from './worker/getworker';
-import { BaseObjectTaskManager } from './BaseObjectTaskManager';
+import { BaseObjectTaskManager, BaseObjectTask } from './BaseObjectTaskManager';
 import { fetchDataWorkerKey, fetchDataWorkerCode, getFetchDataActor } from './worker/fetchdataworker';
 
 
@@ -1339,7 +1339,9 @@ export {
     GeoJSONUtil, MergeGeometryUtil, GeoUtil, ExtrudeUtil, LineUtil,
     IdentifyUtil, geometryExtrude,
     LineMaterial,
-    getFetchDataActor
+    getFetchDataActor,
+    BaseObjectTaskManager,
+    BaseObjectTask
 };
 
 if (maptalks.registerWorkerAdapter) {
