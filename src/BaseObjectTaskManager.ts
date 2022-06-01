@@ -26,7 +26,7 @@ function getOptions(queues: Array<TaskQueue>) {
     });
 }
 
-class BaseObjectTask {
+export class BaseObjectTask {
     queueMap: { [key: string]: TaskQueue };
     tempQueue: Array<TaskQueue>;
     time: number;
@@ -39,6 +39,10 @@ class BaseObjectTask {
         this.time = this.getCurrentTime();
         this.deQueueCount = 5;
         this.resultQueue = [];
+    }
+
+    getActor() {
+        return getActor();
     }
 
     getCurrentTime() {
@@ -318,6 +322,15 @@ export const FatLinesTaskIns = new FatLinesTask();
 
 export const BaseObjectTaskManager = {
     isRunning: false,
+    tasks: [],
+    addTask: (taskIns) => {
+        if (taskIns) {
+            BaseObjectTaskManager.tasks.push(taskIns);
+        }
+    },
+    removeTask: (taskIns) => {
+        BaseObjectTaskManager.tasks.splice(BaseObjectTaskManager.tasks.indexOf(taskIns), 1);
+    },
     loop() {
         ExtrudePolygonTaskIns.loop();
         ExtrudePolygonsTaskIns.loop();
@@ -327,6 +340,11 @@ export const BaseObjectTaskManager = {
         LinesTaskIns.loop();
         FatLineTaskIns.loop();
         FatLinesTaskIns.loop();
+        BaseObjectTaskManager.tasks.forEach(taskIns => {
+            if (taskIns && taskIns.loop) {
+                taskIns.loop();
+            }
+        });
         maptalks.Util.requestAnimFrame(BaseObjectTaskManager.loop);
     },
     star() {

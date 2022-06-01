@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>custom BaseObjectTask</title>
+    <script type="text/javascript" src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            center: [13.414049129456203, 52.53160987202452],
+            zoom: 17,
+            pitch: 70,
+            bearing: 180,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+            // animation: true
+        });
+
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            camera.add(new THREE.PointLight('#fff', 2));
+        };
+        threeLayer.addTo(map);
+
+
+        function simulationWorker(datas, callback) {
+            //reslove data for worker
+            datas = datas.map(d => {
+                delete d.layer;
+                delete d.polygon;
+                delete baseObject;
+                // ....
+                return d;
+            });
+            setTimeout(() => {
+                // reslove datas by worker
+                datas = datas.map(d => {
+                    const result = Object.assign({}, d);
+                    result.position = new Float32Array(Math.ceil(Math.random() * 3000));
+                    result.uv = new Float32Array(Math.ceil(Math.random() * 2000));
+                    // ....
+                    return result;
+                })
+                callback && callback(datas)
+            }, Math.random() * 100);
+        }
+
+        //custom a baseobject
+        class CustomBaseObject {
+
+            _workerLoad(workerResult) {
+                console.log(workerResult);
+            }
+        }
+
+        class CustomBaseObjectTask extends maptalks.BaseObjectTask {
+            loop() {
+                const t = this.getCurrentTime();
+                if ((t - this.time >= 100 || this.tempQueue.length >= 1000) && this.tempQueue.length) {
+                    //do somethings
+                    const datas = this.tempQueue.map(d => {
+                        return d;
+                    });
+                    simulationWorker(datas, (result) => {
+                        this.pushResult(result);
+                    })
+                    this.reset();
+                }
+                super.loop();
+            }
+        }
+
+        const customTaskIns = new CustomBaseObjectTask();
+        maptalks.BaseObjectTaskManager.addTask(customTaskIns);
+
+
+
+        function animation() {
+            const count = Math.ceil(Math.random() * 30);
+            // production data
+            for (let i = 0; i < count; i++) {
+                customTaskIns.push({
+                    id: maptalks.Util.GUID(),
+                    layer: threeLayer,
+                    polygon: null,
+                    baseObject: new CustomBaseObject()
+                    // ....
+                });
+            }
+            requestAnimationFrame(animation);
+        }
+        animation();
+
+
+
+    </script>
+</body>
+
+</html>
