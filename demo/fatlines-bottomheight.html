@@ -7,6 +7,7 @@
     <script type="text/javascript" src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.min.js"></script>
     <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
     <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
     <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
     <!--fatline script-->
     <!-- https://threejs.org/examples/#webgl_lines_fat -->
@@ -72,15 +73,22 @@
             scene.add(light);
             addLines();
         };
-        threeLayer.addTo(map);
+        const sceneConfig = {
+            postProcess: {
+                enable: true,
+                antialias: { enable: true }
+            }
+        };
+        const groupLayer = new maptalks.GroupGLLayer('group', [threeLayer], { sceneConfig });
+        groupLayer.addTo(map);
 
         var highlightmaterial = new THREE.LineMaterial({
             linewidth: 4,
             // side: THREE.BackSide,
-            color: 'yellow',
+            color: 'red',
             dashSize: 0.1,
             gapSize: 0.1,
-            dashed: true
+            // dashed: true
             // opacity: 0.8,
         });
         // highlightmaterial.defines.USE_DASH = '';

@@ -6,9 +6,9 @@
     <script type="text/javascript" src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.min.js"></script>
     <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
     <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
     <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
-    <script type="text/javascript"
-        src="https://unpkg.com/three@0.138.0/examples/js/libs/stats.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/examples/js/libs/stats.min.js"></script>
     <script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
     <style>
         html,
@@ -31,21 +31,21 @@
     <script>
 
         var map = new maptalks.Map("map", {
-            center: [-108.5775989012804, 41.46405744551359],
-            zoom: 3.478337137999542,
+            center: [109.02177505847749, 32.15109908207964],
+            zoom: 4.478337137999542,
             pitch: 42.79999999999998,
             bearing: 0.9000000000005457,
             // bearing: 180,
 
             centerCross: true,
             doubleClickZoom: false,
-            baseLayer: new maptalks.TileLayer("tile", {
-                urlTemplate:
-                    "https://{s}.tiles.mapbox.com/v3/diccfish.map-fwz7rlzv/{z}/{x}/{y}.png",
-                subdomains: ["a", "b", "c", "d"],
-                attribution:
-                    '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
-            })
+            // baseLayer: new maptalks.TileLayer("tile", {
+            //     urlTemplate:
+            //         "https://{s}.tiles.mapbox.com/v3/diccfish.map-fwz7rlzv/{z}/{x}/{y}.png",
+            //     subdomains: ["a", "b", "c", "d"],
+            //     attribution:
+            //         '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            // })
         });
 
         // the ThreeLayer to draw buildings
@@ -67,13 +67,20 @@
 
             // camera.add(new THREE.PointLight(0xffffff, 1));
             fetch(
-                "https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_110m_admin_1_states_provinces_shp.geojson"
+                "./data/china.json"
             ).then((res) => res.json())
                 .then((geojson) => {
                     addExtrudePolygon(geojson);
                 });
         };
-        threeLayer.addTo(map);
+        const sceneConfig = {
+            postProcess: {
+                enable: true,
+                antialias: { enable: true }
+            }
+        };
+        const groupLayer = new maptalks.GroupGLLayer('group', [threeLayer], { sceneConfig });
+        groupLayer.addTo(map);
 
         var extrudepolygons = [];
         const material = new THREE.MeshPhongMaterial({});
@@ -93,14 +100,14 @@
                 }
                 const polygon = threeLayer.toExtrudePolygon(
                     f,
-                    { height: 1000000, interactive: false, topColor: "#fff" },
+                    { height: 100000, interactive: false, topColor: "#fff" },
                     material
                 );
                 extrudepolygons.push(polygon);
                 lineStrings.forEach((lineString) => {
                     const line = threeLayer.toLine(
                         lineString,
-                        { altitude: 1000000, interactive: false },
+                        { altitude: 100000 * 1.0001, interactive: false },
                         lineMaterial
                     );
                     extrudepolygons.push(line);
