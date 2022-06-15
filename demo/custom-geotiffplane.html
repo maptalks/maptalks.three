@@ -8,6 +8,7 @@
         src="https://unpkg.com/geotiff@1.0.0-beta.16/dist-browser/geotiff.js"></script>
     <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
     <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
     <script type="text/javascript" src="./accesstoken.js"></script>
     <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
     <script type="text/javascript"
@@ -97,7 +98,14 @@
             animation();
             initGui();
         }
-        threeLayer.addTo(map);
+        const sceneConfig = {
+            postProcess: {
+                enable: true,
+                antialias: { enable: true }
+            }
+        };
+        const groupLayer = new maptalks.GroupGLLayer('group', [threeLayer], { sceneConfig });
+        groupLayer.addTo(map);
 
         function animation() {
             // layer animation support Skipping frames

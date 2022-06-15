@@ -22,6 +22,7 @@
 <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.min.js"></script>
 <!-- <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script> -->
 <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
+<script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
 <script type="text/javascript" src="https://unpkg.com/maptalks.three/dist/maptalks.three.min.js"></script>
 <script type="text/javascript" src="https://unpkg.com/geojsondataset/dist/geojsondataset.js"></script>
 
@@ -73,7 +74,14 @@
             }, 100);
 
         };
-        threeLayer.addTo(map);
+        const sceneConfig = {
+            postProcess: {
+                enable: true,
+                antialias: { enable: true }
+            }
+        };
+        const groupLayer = new maptalks.GroupGLLayer('group', [threeLayer], { sceneConfig });
+        groupLayer.addTo(map);
 
         function animate() {
             requestAnimationFrame(animate);

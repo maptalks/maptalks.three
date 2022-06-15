@@ -7,6 +7,7 @@
     <script type="text/javascript" src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.min.js"></script>
     <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
     <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
     <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
     <script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
     <script type="text/javascript" src="https://unpkg.com/turf@7.0.0-alpha.1/dist/turf.js"></script>
@@ -31,18 +32,21 @@
     <script>
 
         const baseLayer = new maptalks.TileLayer('base', {
-            'urlTemplate': 'https://mt2.google.cn/maps/vt?lyrs=s&hl=zh-CN&gl=CN&x={x}&y={y}&z={z}',
-            'subdomains': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-        });
+            urlTemplate:
+                'https://webst04.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',
+            subdomains: ['a', 'b', 'c', 'd'],
+            attribution: '&copy; <a href="https://www.amap.com">amap</a>',
+            maxAvailableZoom: 18
+        })
 
-        baseLayer.getTileUrl = function (x, y, z) {
-            //replace with your own
-            //e.g. return a url pointing to your sqlite database
-            if (z > 20) {
-                return 'https://mt2.google.cn/maps/vt?lyrs=s&hl=zh-CN&gl=CN&x=3481&y=1675&z=12';
-            }
-            return maptalks.TileLayer.prototype.getTileUrl.call(this, x, y, z);
-        };
+        // baseLayer.getTileUrl = function (x, y, z) {
+        //     //replace with your own
+        //     //e.g. return a url pointing to your sqlite database
+        //     if (z > 20) {
+        //         return 'https://mt2.google.cn/maps/vt?lyrs=s&hl=zh-CN&gl=CN&x=3481&y=1675&z=12';
+        //     }
+        //     return maptalks.TileLayer.prototype.getTileUrl.call(this, x, y, z);
+        // };
 
         // A complete customized TileLayer
         var resolutions = [];
@@ -535,7 +539,14 @@
             initGui();
             animation();
         };
-        threeLayer.addTo(map);
+        const sceneConfig = {
+            postProcess: {
+                enable: true,
+                antialias: { enable: true }
+            }
+        };
+        const groupLayer = new maptalks.GroupGLLayer('group', [threeLayer], { sceneConfig });
+        groupLayer.addTo(map);
 
 
         function addLine(lnglats, name, width = 8) {

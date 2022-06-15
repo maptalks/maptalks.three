@@ -6,6 +6,7 @@
     <script type="text/javascript" src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.min.js"></script>
     <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
     <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
     <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
     <script type="text/javascript"
         src="https://unpkg.com/three@0.138.0/examples/js/libs/stats.min.js"></script>
@@ -82,7 +83,14 @@
             threeLayer.addMesh(meshs);
             addLines();
         };
-        threeLayer.addTo(map);
+        const sceneConfig = {
+            postProcess: {
+                enable: true,
+                antialias: { enable: true }
+            }
+        };
+        const groupLayer = new maptalks.GroupGLLayer('group', [threeLayer], { sceneConfig });
+        groupLayer.addTo(map);
 
         var material = new THREE.MeshBasicMaterial({ color: 0xd3887, transparent: true });
         var highlightmaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true });

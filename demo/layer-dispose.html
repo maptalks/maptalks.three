@@ -7,11 +7,10 @@
     <script type="text/javascript" src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.min.js"></script>
     <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
     <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
     <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
-    <script type="text/javascript"
-        src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
-    <script type="text/javascript"
-        src="https://unpkg.com/three@0.138.0/examples/js/libs/stats.min.js"></script>
+    <script type="text/javascript" src="../dist/maptalks.three.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/examples/js/libs/stats.min.js"></script>
     <style>
         html,
         body {
@@ -46,13 +45,22 @@
                 attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
             })
         });
+        const sceneConfig = {
+            postProcess: {
+                enable: true,
+                antialias: { enable: true }
+            }
+        };
+        const groupLayer = new maptalks.GroupGLLayer('group', [], { sceneConfig });
+        groupLayer.addTo(map);
+
         var threeLayer;
         var material = new THREE.MeshLambertMaterial({ color: '#fff', transparent: true });
         function createLayer() {
             if (threeLayer) {
                 console.log('dispose threelayer');
-                threeLayer.getThreeRenderer().dispose();
-                threeLayer.getThreeRenderer().forceContextLoss();;
+                // threeLayer.getThreeRenderer().dispose();
+                // threeLayer.getThreeRenderer().forceContextLoss();;
                 const object3ds = threeLayer.getMeshes();
                 threeLayer.clear();
                 object3ds.forEach(object3d => {
@@ -69,7 +77,7 @@
                 pickingTexture.dispose();
                 pickingTexture = null;
                 pickingScene = null;
-                threeLayer.remove();
+                groupLayer.removeLayer(threeLayer);
             }
             // the ThreeLayer to draw buildings
             threeLayer = new maptalks.ThreeLayer(maptalks.Util.GUID(), {
@@ -91,9 +99,9 @@
 
                 setTimeout(() => {
                     createLayer();
-                }, 10);
+                }, 20);
             };
-            threeLayer.addTo(map);
+            threeLayer.addTo(groupLayer);
         }
         createLayer();
 
