@@ -873,10 +873,14 @@ class ThreeLayer extends maptalks.CanvasLayer {
         if (intersects && Array.isArray(intersects) && intersects.length) {
             baseObjects = intersects.map(intersect => {
                 let object: any = intersect.object;
+                const instanceId = intersect.instanceId;
                 object = this._recursionMesh(object) || {};
                 const baseObject = object['__parent'] || object;
                 baseObject.faceIndex = intersect.faceIndex;
                 baseObject.index = intersect.index;
+                if (maptalks.Util.isNumber(instanceId)) {
+                    baseObject.instanceId = instanceId;
+                }
                 return baseObject;
             });
         }
