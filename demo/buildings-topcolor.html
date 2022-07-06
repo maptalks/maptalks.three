@@ -60,14 +60,18 @@
 
         var meshs = [];
         var material = getBuildingsMaterial();
-        material.vertexColors = THREE.VertexColors;
+        var topMaterial = new THREE.MeshPhongMaterial({ color: 'red' });
+        // material.vertexColors = THREE.VertexColors;
         const topColor = new THREE.Color('red');
 
         threeLayer.prepareToDraw = function (gl, scene, camera) {
             var light = new THREE.DirectionalLight(0xffffff);
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
-            camera.add(new THREE.PointLight('#fff', 2));
+
+            const ambientLight = new THREE.AmbientLight('#FFF', 0.5);
+            scene.add(ambientLight);
+            // camera.add(new THREE.PointLight('#fff', 2));
 
             var heightPerLevel = 10;
             var polygons = features.map(f => {
@@ -80,9 +84,22 @@
             });
 
 
+
             const mesh = threeLayer.toExtrudePolygons(polygons, { interactive: false }, material);
 
-            const bufferGeometry = mesh.getObject3d().geometry;
+            var polygons1 = polygons.map(p => {
+                const p1 = p.copy();
+                const height = p.getProperties().height;
+                p1.setProperties({
+                    height: 0.1,
+                    bottomHeight: height
+                });
+                return p1;
+            })
+            const mesh1 = threeLayer.toExtrudePolygons(polygons1, { interactive: false, }, topMaterial);
+            mesh1.isTop = true;
+
+            // const bufferGeometry = mesh.getObject3d().geometry;
             // const geometry = new THREE.Geometry().fromBufferGeometry(bufferGeometry);
             //
             // const { vertices, faces, faceVertexUvs } = geometry;
@@ -108,39 +125,39 @@
             // bufferGeometry.dispose();
             // geometry.dispose();
 
-            const position = bufferGeometry.attributes.position.array;
-            const uv =bufferGeometry.attributes.uv.array;
-            const color = bufferGeometry.attributes.color.array;
-            const index = mesh.getObject3d().geometry.index.array;
-            for (let i = 0, len = index.length; i < len; i += 3) {
-                const a = index[i], b = index[i + 1], c = index[i + 2];
-                const z1 = position[a * 3 + 2], z2 = position[b * 3 + 2], z3 = position[c * 3 + 2];
-                // top vertex
-                if (z1 > 0 && z2 > 0 && z3 > 0) {
-                    uv[a * 2] = 0;
-                    uv[a * 2 + 1] =  0;
-                    uv[b * 2] =  0;
-                    uv[b * 2 + 1] =  0;
-                    uv[c * 2] =  0;
-                    uv[c * 2 + 1] =  0;
+            // const position = bufferGeometry.attributes.position.array;
+            // const uv =bufferGeometry.attributes.uv.array;
+            // const color = bufferGeometry.attributes.color.array;
+            // const index = mesh.getObject3d().geometry.index.array;
+            // for (let i = 0, len = index.length; i < len; i += 3) {
+            //     const a = index[i], b = index[i + 1], c = index[i + 2];
+            //     const z1 = position[a * 3 + 2], z2 = position[b * 3 + 2], z3 = position[c * 3 + 2];
+            //     // top vertex
+            //     if (z1 > 0 && z2 > 0 && z3 > 0) {
+            //         uv[a * 2] = 0;
+            //         uv[a * 2 + 1] =  0;
+            //         uv[b * 2] =  0;
+            //         uv[b * 2 + 1] =  0;
+            //         uv[c * 2] =  0;
+            //         uv[c * 2 + 1] =  0;
 
-                    color[a * 3]=topColor.r;
-                    color[a * 3+1]=topColor.g;
-                    color[a * 3+2]=topColor.b;
+            //         color[a * 3]=topColor.r;
+            //         color[a * 3+1]=topColor.g;
+            //         color[a * 3+2]=topColor.b;
 
-                    color[b * 3]=topColor.r;
-                    color[b * 3+1]=topColor.g;
-                    color[b * 3+2]=topColor.b;
+            //         color[b * 3]=topColor.r;
+            //         color[b * 3+1]=topColor.g;
+            //         color[b * 3+2]=topColor.b;
 
-                    color[c * 3]=topColor.r;
-                    color[c * 3+1]=topColor.g;
-                    color[c * 3+2]=topColor.b;
-                }
+            //         color[c * 3]=topColor.r;
+            //         color[c * 3+1]=topColor.g;
+            //         color[c * 3+2]=topColor.b;
+            //     }
 
 
 
-            }
-            meshs.push(mesh);
+            // }
+            meshs.push(mesh, mesh1);
             threeLayer.addMesh(meshs);
             initGui();
             animation();
@@ -149,11 +166,11 @@
 
 
         function getBuildingsMaterial(color = 'red') {
-            const texture = new THREE.TextureLoader().load('./data/building.png');
+            const texture = new THREE.TextureLoader().load('./data/a.png');
             texture.needsUpdate = true; //使用贴图时进行更新
             texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
             // texture.repeat.set(0.002, 0.002);
-            texture.repeat.set(1, 4);
+            texture.repeat.set(4, 10);
             const material = new THREE.MeshPhongMaterial({
                 map: texture,
                 transparent: true,
@@ -176,6 +193,7 @@
             var params = {
                 add: true,
                 color: material.color.getStyle(),
+                topColor: topMaterial.color.getStyle(),
                 show: true,
                 opacity: 1,
                 altitude: 0,
@@ -192,13 +210,25 @@
             gui.addColor(params, 'color').name('building color').onChange(function () {
                 material.color.set(params.color);
                 meshs.forEach(function (mesh) {
-                    mesh.setSymbol(material);
+                    if (!mesh.isTop) {
+                        mesh.setSymbol(material);
+                    }
                 });
+            });
+            gui.addColor(params, 'topColor').name('building top color').onChange(function () {
+                topMaterial.color.set(params.topColor);
+                // meshs.forEach(function (mesh) {
+                //     if (!mesh.isTop) {
+                //         mesh.setSymbol(material);
+                //     }
+                // });
             });
             gui.add(params, 'opacity', 0, 1).onChange(function () {
                 material.opacity = params.opacity;
                 meshs.forEach(function (mesh) {
-                    mesh.setSymbol(material);
+                    if (!mesh.isTop) {
+                        mesh.setSymbol(material);
+                    }
                 });
             });
             gui.add(params, 'altitude', 0, 300).onChange(function () {
