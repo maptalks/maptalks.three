@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as maptalks from 'maptalks';
-import { extrudePolyline } from 'deyihu-geometry-extrude';
+import { extrudePolylines } from 'poly-extrude';
 import { isGeoJSON, getGeoJSONCoordinates, getGeoJSONCenter, isGeoJSONMulti, spliteGeoJSONMulti, isGeoJSONLine } from './GeoJSONUtil';
 import { addAttribute } from './ThreeAdaptUtil';
 import { ThreeLayer } from './../index';
@@ -177,7 +177,7 @@ export function getExtrudeLineParams(lineString: SingleLineStringType | Array<TH
         position,
         normal,
         uv
-    } = extrudePolyline([ps], {
+    } = extrudePolylines([ps], {
         lineWidth: lineWidth,
         depth: depth
     });

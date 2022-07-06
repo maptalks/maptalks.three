@@ -47,6 +47,7 @@
     "typescript": "^4.5.4"
   },
   "dependencies": {
-    "deyihu-geometry-extrude": "0.1.10"
+    "deyihu-geometry-extrude": "0.1.10",
+    "poly-extrude": "^0.0.6"
   }
 }
