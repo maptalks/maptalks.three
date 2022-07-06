@@ -60,7 +60,7 @@
 
         var meshs = [];
         var material = getBuildingsMaterial();
-        var topMaterial = new THREE.MeshPhongMaterial({ color: 'red' });
+        var topMaterial = new THREE.MeshPhongMaterial({ color: 'red', transparent: true, });
         // material.vertexColors = THREE.VertexColors;
         const topColor = new THREE.Color('red');
 
@@ -225,6 +225,7 @@
             });
             gui.add(params, 'opacity', 0, 1).onChange(function () {
                 material.opacity = params.opacity;
+                topMaterial.opacity = params.opacity;
                 meshs.forEach(function (mesh) {
                     if (!mesh.isTop) {
                         mesh.setSymbol(material);
