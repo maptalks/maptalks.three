@@ -1,4 +1,4 @@
-import { extrudePolygon, extrudePolyline } from 'deyihu-geometry-extrude';
+import { extrudePolygons as _extrudePolygons, extrudePolylines as _extrudePolylines } from 'poly-extrude';
 
 export const initialize = function () {
 };
@@ -231,7 +231,7 @@ function generateExtrude(datas, isLine = false) {
 
 function extrudePolygons(d) {
     const { data, height, bottomHeight } = d;
-    const { position, normal, uv, indices } = extrudePolygon(
+    const { position, normal, uv, indices } = _extrudePolygons(
         // polygons same with coordinates of MultiPolygon type geometry in GeoJSON
         // See http://wiki.geojson.org/GeoJSON_draft_version_6#MultiPolygon
         data,
@@ -248,7 +248,7 @@ function extrudePolygons(d) {
 
 function extrudeLine(d) {
     const { data, height, width, bottomHeight } = d;
-    const { position, normal, uv, indices } = extrudePolyline(data, {
+    const { position, normal, uv, indices } = _extrudePolylines(data, {
         lineWidth: width,
         depth: height
     });

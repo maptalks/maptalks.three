@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as maptalks from 'maptalks';
 import { isGeoJSONPolygon, spliteGeoJSONMulti, getGeoJSONCenter, isGeoJSONMulti, getGeoJSONCoordinates } from './GeoJSONUtil';
-import { extrudePolygon } from 'deyihu-geometry-extrude';
+import { extrudePolygons } from 'poly-extrude';
 import { addAttribute } from './ThreeAdaptUtil';
 import { ThreeLayer } from './../index';
 import { MergeAttributeType, PolygonType, SinglePolygonType } from './../type/index';
@@ -67,7 +67,7 @@ export function getExtrudeGeometryParams(polygon: PolygonType, height: number, l
     } else {
         height = layer.altitudeToVector3(height, height).x;
     }
-    const { position, normal, uv, indices } = extrudePolygon(shapes as any, {
+    const { position, normal, uv, indices } = extrudePolygons(shapes as any, {
         depth: height
     });
     return {
