@@ -813,6 +813,10 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return this;
     }
 
+    getRaycaster() {
+        return this._raycaster;
+    }
+
     /**
      *
      * @param {Coordinate} coordinate
@@ -835,6 +839,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         this._containerPoint = p;
         const { x, y } = p;
         this._initRaycaster();
+        this.fire('identify', { coordinate, options });
         const raycaster = this._raycaster,
             mouse = this._mouse,
             camera = this.getCamera(),
