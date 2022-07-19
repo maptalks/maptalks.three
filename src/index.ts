@@ -879,6 +879,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 const baseObject = object['__parent'] || object;
                 baseObject.faceIndex = intersect.faceIndex;
                 baseObject.index = intersect.index;
+                baseObject.intersect = intersect;
                 if (maptalks.Util.isNumber(instanceId)) {
                     baseObject.instanceId = instanceId;
                 }
