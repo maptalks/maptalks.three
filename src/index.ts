@@ -1244,12 +1244,13 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
     }
 
     renderScene(context) {
-        const time = maptalks.Util.now();
+        // const time = maptalks.Util.now();
         // Make sure to execute only once in a frame
-        if (time - this._renderTime >= 16) {
-            this.layer._callbackBaseObjectAnimation();
-            this._renderTime = time;
-        }
+        // if (time - this._renderTime >= 16) {
+        //     this.layer._callbackBaseObjectAnimation();
+        //     this._renderTime = time;
+        // }
+        this.layer._callbackBaseObjectAnimation();
         this._syncCamera();
         // 把 WebglRenderTarget 中的 framebuffer 替换为 GroupGLLayer 中的 fbo
         // 参考: https://stackoverflow.com/questions/55082573/use-webgl-texture-as-a-three-js-texture-map
