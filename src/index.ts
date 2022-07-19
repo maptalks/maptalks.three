@@ -813,6 +813,10 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return this;
     }
 
+    getRaycaster() {
+        return this._raycaster;
+    }
+
     /**
      *
      * @param {Coordinate} coordinate
@@ -835,6 +839,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         this._containerPoint = p;
         const { x, y } = p;
         this._initRaycaster();
+        this.fire('identify', { coordinate, options });
         const raycaster = this._raycaster,
             mouse = this._mouse,
             camera = this.getCamera(),
@@ -879,6 +884,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 const baseObject = object['__parent'] || object;
                 baseObject.faceIndex = intersect.faceIndex;
                 baseObject.index = intersect.index;
+                baseObject.intersect = intersect;
                 if (maptalks.Util.isNumber(instanceId)) {
                     baseObject.instanceId = instanceId;
                 }
@@ -1244,12 +1250,13 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
     }
 
     renderScene(context) {
-        const time = maptalks.Util.now();
+        // const time = maptalks.Util.now();
         // Make sure to execute only once in a frame
-        if (time - this._renderTime >= 16) {
-            this.layer._callbackBaseObjectAnimation();
-            this._renderTime = time;
-        }
+        // if (time - this._renderTime >= 16) {
+        //     this.layer._callbackBaseObjectAnimation();
+        //     this._renderTime = time;
+        // }
+        this.layer._callbackBaseObjectAnimation();
         this._syncCamera();
         // 把 WebglRenderTarget 中的 framebuffer 替换为 GroupGLLayer 中的 fbo
         // 参考: https://stackoverflow.com/questions/55082573/use-webgl-texture-as-a-three-js-texture-map
