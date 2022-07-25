@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>bar test World Population Visualization</title>
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
+    <script type="text/javascript" src="../dist/maptalks.three.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        // test for https://github.com/maptalks/maptalks.three/issues/474
+        var map = new maptalks.Map("map", {
+            center: [19.06325670775459, 42.16842479475318],
+            zoom: 3,
+            pitch: 60,
+            // bearing: 180,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+            // animation: true
+        });
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            setTimeout(() => {
+                addBars(scene);
+            }, 1000);
+            camera.layers.enableAll()
+        };
+        const sceneConfig = {
+            postProcess: {
+                enable: true,
+                antialias: { enable: true },
+                bloom: {
+                    enable: true,
+                    threshold: 0,
+                    factor: 1,
+                    radius: 0.02,
+                },
+            }
+        };
+        const groupLayer = new maptalks.GroupGLLayer('group', [threeLayer], { sceneConfig });
+        groupLayer.addTo(map);
+
+
+        var bars;
+        var material0 = new THREE.MeshLambertMaterial({ color: '#fff', transparent: true });
+        var material1 = new THREE.MeshLambertMaterial({ color: '#ff0000', transparent: true });
+        var highlightmaterial = new THREE.MeshBasicMaterial({ color: 'yellow', transparent: true });
+        function addBars(scene) {
+            fetch('./data/population.json').then((function (res) {
+                return res.json();
+            })).then(function (json) {
+                const time = 'time';
+                console.time(time);
+                bars = json.filter(function (dataItem) {
+                    return dataItem[2] > 500;
+                }).slice(0, Infinity).map(function (dataItem) {
+                    return {
+                        coordinate: dataItem.slice(0, 2),
+                        height: dataItem[2]
+                    }
+                }).map(function (d, index) {
+                    var bar = threeLayer.toBar(d.coordinate, {
+                        height: d.height * 400,
+                        radius: 15000,
+                        bloom: index % 2 == 0
+                        // topColor: '#fff',
+                        // radialSegments: 4
+                    }, (index % 2 == 0 ? material0 : material1));
+
+
+                    //event test
+                    ['click', 'mouseout', 'mouseover', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].forEach(function (eventType) {
+                        bar.on(eventType, function (e) {
+                            // console.log(e.type, e);
+                            // console.log(this);
+                            if (e.type === 'mouseout') {
+
+                                this.setSymbol(this.raw);
+                            }
+                            if (e.type === 'mouseover') {
+                                this.raw = this.getSymbol()
+                                this.setSymbol(highlightmaterial);
+                            }
+                        });
+                    });
+
+
+                    bar.getObject3d().traverse(function (item) {
+                        item.layers.set(index % 2)
+                    })
+                    return bar;
+                });
+
+                console.log(bars);
+                console.timeEnd(time);
+                threeLayer.addMesh(bars);
+                // initGui();
+                threeLayer.config('animation', true);
+            })
+        }
+
+
+
+        function animateShow() {
+            bars.forEach(function (mesh) {
+                mesh.animateShow({
+                    duration: 3000
+                });
+            });
+        }
+
+    </script>
+</body>
+
+</html>
