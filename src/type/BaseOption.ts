@@ -32,7 +32,8 @@ export type BaseObjectOptionType = {
     id?: string,
     center?: maptalks.Coordinate | Array<number>,
     height?: number,
-    heightEnable?: boolean
+    heightEnable?: boolean,
+    bloom?: boolean
 };
 
 export type BarOptionType = BaseObjectOptionType & {

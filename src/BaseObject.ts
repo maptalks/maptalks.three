@@ -10,7 +10,8 @@ const OPTIONS = {
     altitude: 0,
     minZoom: 0,
     maxZoom: 30,
-    asynchronous: false
+    asynchronous: false,
+    bloom: false
 };
 
 /**
@@ -415,6 +416,10 @@ class BaseObject extends maptalks.Eventable(Base) {
 
     isAsynchronous(): boolean {
         return this.getOptions().asynchronous;
+    }
+
+    get bloom() {
+        return this.getOptions().bloom;
     }
 
     fire(eventType: string, param: any) {

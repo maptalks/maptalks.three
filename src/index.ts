@@ -854,6 +854,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         mouse.x = (x / width) * 2 - 1;
         mouse.y = -(y / height) * 2 + 1;
         raycaster.setFromCamera(mouse, camera);
+        raycaster.layers.enableAll();
         //set linePrecision for THREE.Line
         setRaycasterLinePrecision(raycaster, this._getLinePrecision(this.getMap().getResolution()));
         const children: Array<THREE.Object3D> = [], hasidentifyChildren: Array<BaseObject> = [];
@@ -1248,7 +1249,6 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         this.layer.fire('renderstart', { 'context': this.context });
         return null;
     }
-
     renderScene(context) {
         // const time = maptalks.Util.now();
         // Make sure to execute only once in a frame
@@ -1283,6 +1283,39 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
             // 用GroupGLLayer的webgl fbo对象替换WebglRenderTarget的fbo对象
             renderTargetProps[KEY_FBO] = context.renderTarget.getFramebuffer(context.renderTarget.fbo);
             this.context.setRenderTarget(this._renderTarget);
+            const bloomEnable = context.bloom === 1 && context.sceneFilter;
+            const object3ds = this.scene.children || [];
+            //reset all object3ds layers
+            for (let i = 0, len = object3ds.length; i < len; i++) {
+                if (!object3ds[i] || !object3ds[i].layers) {
+                    continue;
+                }
+                object3ds[i].layers.set(0);
+            }
+            if (bloomEnable) {
+                const sceneFilter = context.sceneFilter;
+                //符合当前渲染帧的条件的分组到layer=1
+                for (let i = 0, len = object3ds.length; i < len; i++) {
+                    if (!object3ds[i] || !object3ds[i].layers) {
+                        continue;
+                    }
+                    const parent = object3ds[i]['__parent'];
+                    object3ds[i]['bloom'] = false;
+                    //判断当前ojbect3d是否开启bloom
+                    if (parent) {
+                        object3ds[i]['bloom'] = parent.bloom;
+                    }
+                    let layer = 0;
+                    //当object3d找不到parent(baseobject)时，也加入当前渲染帧，这种情况的一般都是灯光对象
+                    //sceneFilter 用来过滤符合当前模式的meshes
+                    if (object3ds[i] && sceneFilter(object3ds[i]) || !parent) {
+                        layer = 1;
+                    }
+                    object3ds[i].layers.set(layer);
+                }
+            }
+            this.camera.layers.set(bloomEnable ? 1 : 0);
+
             this.context.render(this.scene, this.camera);
             renderTargetProps[KEY_FBO] = threeCreatedFBO;
         } else {
