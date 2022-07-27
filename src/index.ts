@@ -976,6 +976,21 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 }
             }
         }
+
+        function showInfoWindow(baseObject: BaseObject, eventType?: string) {
+            eventType = eventType || type;
+            const infoWindow = baseObject.getInfoWindow();
+            if (infoWindow && (!infoWindow._owner)) {
+                infoWindow.addTo(baseObject);
+            }
+
+            const infoOptions = infoWindow ? (infoWindow as any).options : {};
+            const autoOpenOn = infoOptions['autoOpenOn'] || 'click';
+            if (autoOpenOn === eventType) {
+                baseObject.openInfoWindow(coordinate);
+                baseObject.fire('showinfowindow', { infoWindow });
+            }
+        }
         if (type === 'mousemove') {
             // if (baseObjects.length) {
             //     map.setCursor('pointer');
@@ -1017,6 +1032,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                     if (!baseObject._mouseover) {
                         baseObject.fire('mouseover', Object.assign({}, e, { target: baseObject, type: 'mouseover', selectMesh: (baseObject.getSelectMesh ? baseObject.getSelectMesh() : null) }));
                         baseObject._mouseover = true;
+                        showInfoWindow(baseObject, 'mouseover');
                     }
                     baseObject.fire(type, Object.assign({}, e, { target: baseObject, selectMesh: (baseObject.getSelectMesh ? baseObject.getSelectMesh() : null) }));
                     // tooltip
@@ -1025,6 +1041,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                         tooltip.addTo(baseObject);
                     }
                     baseObject.openToolTip(coordinate);
+                    showInfoWindow(baseObject);
                 }
             });
             this._baseObjects = baseObjects as any;
@@ -1032,18 +1049,13 @@ class ThreeLayer extends maptalks.CanvasLayer {
             baseObjects.forEach(baseObject => {
                 if (baseObject instanceof BaseObject) {
                     baseObject.fire(type, Object.assign({}, e, { target: baseObject, selectMesh: (baseObject.getSelectMesh ? baseObject.getSelectMesh() : null) }));
-                    if (type === 'click') {
-                        const infoWindow = baseObject.getInfoWindow();
-                        if (infoWindow && (!infoWindow._owner)) {
-                            infoWindow.addTo(baseObject);
-                        }
-                        baseObject.openInfoWindow(coordinate);
-                    }
+                    showInfoWindow(baseObject);
                 }
             });
         }
         return this;
     }
+
 
     /**
      *map zoom event
