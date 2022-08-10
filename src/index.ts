@@ -951,7 +951,9 @@ class ThreeLayer extends maptalks.CanvasLayer {
         if (map.isInteracting() || !map.options.geometryEvents || map._ignoreEvent(e)) {
             return this;
         }
+        const eventType = e.type;
         e = map._getEventParams ? map._getEventParams(e) : this._getEventParams(e);
+        e.type = eventType;
         const { type, coordinate } = e;
         const now = maptalks.Util.now();
         if (this._mousemoveTimeOut && type === 'mousemove') {
@@ -1060,8 +1062,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
     _getEventParams(e) {
         const map = this.getMap();
         const eventParam = {
-            domEvent: e,
-            type: e.type
+            domEvent: e
+            // type: e.type
         };
         if (!map) {
             return eventParam;
