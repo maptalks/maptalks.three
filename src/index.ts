@@ -948,9 +948,10 @@ class ThreeLayer extends maptalks.CanvasLayer {
         }
         const map = this.map || this.getMap();
         //When map interaction, do not carry out mouse movement detection, which can have better performance
-        if (map.isInteracting() || !map.options.geometryEvents) {
+        if (map.isInteracting() || !map.options.geometryEvents || map._ignoreEvent(e)) {
             return this;
         }
+        e = map._getEventParams ? map._getEventParams(e) : this._getEventParams(e);
         const { type, coordinate } = e;
         const now = maptalks.Util.now();
         if (this._mousemoveTimeOut && type === 'mousemove') {
@@ -1056,6 +1057,27 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return this;
     }
 
+    _getEventParams(e) {
+        const map = this.getMap();
+        const eventParam = {
+            domEvent: e,
+            type: e.type
+        };
+        if (!map) {
+            return eventParam;
+        }
+        const actual = e.touches && e.touches.length > 0 ? e.touches[0] : e.changedTouches && e.changedTouches.length > 0 ? e.changedTouches[0] : e;
+        if (actual) {
+            const getEventContainerPoint = maptalks.DomUtil.getEventContainerPoint;
+            const containerPoint = getEventContainerPoint(actual, (map as any)._containerDOM);
+            eventParam['coordinate'] = map.containerPointToCoordinate(containerPoint);
+            eventParam['containerPoint'] = containerPoint;
+            eventParam['viewPoint'] = map.containerPointToViewPoint(containerPoint);
+            eventParam['pont2d'] = map._containerPointToPoint(containerPoint);
+        }
+        return eventParam;
+    }
+
 
     /**
      *map zoom event
@@ -1089,14 +1111,19 @@ class ThreeLayer extends maptalks.CanvasLayer {
         });
     }
 
+    _getGeometryEventMapPanel() {
+        const map = this.map || this.getMap();
+        const dom = (map as any)._panels.allLayers || (map as any)._containerDOM;
+        return dom;
+    }
+
 
     onAdd() {
         super.onAdd();
         const map = this.map || this.getMap();
         if (!map) return this;
-        EVENTS.forEach(event => {
-            map.on(event, this._identifyBaseObjectEvents, this);
-        });
+        const dom = this._getGeometryEventMapPanel();
+        maptalks.DomUtil.on(dom, EVENTS.join(' '), this._identifyBaseObjectEvents, this);
         this._needsUpdate = true;
         if (!this._animationBaseObjectMap) {
             this._animationBaseObjectMap = {};
@@ -1109,9 +1136,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
         super.onRemove();
         const map = this.map || this.getMap();
         if (!map) return this;
-        EVENTS.forEach(event => {
-            map.off(event, this._identifyBaseObjectEvents, this);
-        });
+        const dom = this._getGeometryEventMapPanel();
+        maptalks.DomUtil.off(dom, EVENTS.join(' '), this._identifyBaseObjectEvents, this);
         map.off('zooming zoomend', this._zoomend, this);
         return this;
     }

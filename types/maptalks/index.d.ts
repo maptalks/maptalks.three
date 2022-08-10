@@ -29,6 +29,11 @@ declare namespace Util {
   function now(): number
   function requestAnimFrame(params: Function)
 }
+declare namespace DomUtil {
+  function on(dom: HTMLElement, events: string, handler: Function, context: any)
+  function off(dom: HTMLElement, events: string, handler: Function, context: any)
+  function getEventContainerPoint(mouseEvent: MouseEvent, dom: HTMLElement): Point
+}
 
 declare const animation: {
   Animation: {
@@ -175,6 +180,11 @@ declare class Map {
   isAnimating(): boolean
   getSpatialReference(): any
   altitudeToPoint(altitude: number, res?: number): number
+  containerPointToCoordinate(containerPoint: Point): Point
+  containerPointToViewPoint(containerPoint: Point): Point
+  _containerPointToPoint(containerPoint: Point): Point
+  _ignoreEvent(domEvent: MouseEvent): boolean
+  _getEventParams(domEvent: MouseEvent): any
 }
 
 
@@ -212,6 +222,7 @@ export {
   registerWorkerAdapter,
   Eventable,
   Util,
+  DomUtil,
   worker,
   ui,
   animation,
