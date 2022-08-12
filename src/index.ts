@@ -70,6 +70,7 @@ const LINEPRECISIONS = [
 ];
 
 const EVENTS = [
+    'mouseout',
     'mousemove',
     'click',
     'mousedown',
@@ -122,6 +123,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
     _mousemoveTimeOut: number = 0;
     _baseObjects: Array<BaseObject> = [];
     _delayMeshes: Array<BaseObject> = [];
+    _identifyBaseObjectEventsThis: Function;
+    _zoomendThis: Function
 
     constructor(id: string, options: BaseLayerOptionType) {
         super(id, options);
@@ -968,37 +971,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
         if (count === 0) {
             count = Infinity;
         }
-        const baseObjects = this.identify(coordinate, { count });
-        const scene = this.getScene();
-        if (baseObjects.length === 0 && scene) {
-            for (let i = 0, len = scene.children.length; i < len; i++) {
-                const child = scene.children[i] || {};
-                const parent = child['__parent'];
-                if (parent) {
-                    (parent as BaseObject).fire('empty', Object.assign({}, e, { target: parent }));
-                }
-            }
-        }
 
-        function showInfoWindow(baseObject: BaseObject, eventType?: string) {
-            eventType = eventType || type;
-            const infoWindow = baseObject.getInfoWindow();
-            if (infoWindow && (!infoWindow._owner)) {
-                infoWindow.addTo(baseObject);
-            }
-
-            const infoOptions = infoWindow ? (infoWindow as any).options : {};
-            const autoOpenOn = infoOptions['autoOpenOn'] || 'click';
-            if (autoOpenOn === eventType) {
-                baseObject.openInfoWindow(coordinate);
-                baseObject.fire('showinfowindow', { infoWindow });
-            }
-        }
-        if (type === 'mousemove') {
-            // if (baseObjects.length) {
-            //     map.setCursor('pointer');
-            // }
-            // mouseout objects
+        const outBaseObjectsFunc = (baseObjects: Array<BaseObject | THREE.Object3D>) => {
             const outBaseObjects: Array<THREE.Object3D | BaseObject> = [];
             if (this._baseObjects) {
                 this._baseObjects.forEach(baseObject => {
@@ -1030,6 +1004,44 @@ class ThreeLayer extends maptalks.CanvasLayer {
                     }
                 }
             });
+        }
+        if (type === 'mouseout') {
+            outBaseObjectsFunc([]);
+            this._baseObjects = [];
+            return this;
+        }
+        const baseObjects = this.identify(coordinate, { count });
+        const scene = this.getScene();
+        if (baseObjects.length === 0 && scene) {
+            for (let i = 0, len = scene.children.length; i < len; i++) {
+                const child = scene.children[i] || {};
+                const parent = child['__parent'];
+                if (parent) {
+                    (parent as BaseObject).fire('empty', Object.assign({}, e, { target: parent }));
+                }
+            }
+        }
+
+        function showInfoWindow(baseObject: BaseObject, eventType?: string) {
+            eventType = eventType || type;
+            const infoWindow = baseObject.getInfoWindow();
+            if (infoWindow && (!infoWindow._owner)) {
+                infoWindow.addTo(baseObject);
+            }
+
+            const infoOptions = infoWindow ? (infoWindow as any).options : {};
+            const autoOpenOn = infoOptions['autoOpenOn'] || 'click';
+            if (autoOpenOn === eventType) {
+                baseObject.openInfoWindow(coordinate);
+                baseObject.fire('showinfowindow', { infoWindow });
+            }
+        }
+        if (type === 'mousemove') {
+            // if (baseObjects.length) {
+            //     map.setCursor('pointer');
+            // }
+            // mouseout objects
+            outBaseObjectsFunc(baseObjects);
             baseObjects.forEach(baseObject => {
                 if (baseObject instanceof BaseObject) {
                     if (!baseObject._mouseover) {
@@ -1125,12 +1137,18 @@ class ThreeLayer extends maptalks.CanvasLayer {
         const map = this.map || this.getMap();
         if (!map) return this;
         const dom = this._getGeometryEventMapPanel();
-        maptalks.DomUtil.on(dom, EVENTS.join(' '), this._identifyBaseObjectEvents, this);
+        if (!this._identifyBaseObjectEventsThis) {
+            this._identifyBaseObjectEventsThis = this._identifyBaseObjectEvents.bind(this);
+        }
+        if (!this._zoomendThis) {
+            this._zoomendThis = this._zoomend.bind(this);
+        }
+        maptalks.DomUtil.on(dom, EVENTS.join(' '), this._identifyBaseObjectEventsThis, this);
         this._needsUpdate = true;
         if (!this._animationBaseObjectMap) {
             this._animationBaseObjectMap = {};
         }
-        map.on('zooming zoomend', this._zoomend, this);
+        map.on('zooming zoomend', this._zoomendThis, this);
         return this;
     }
 
@@ -1139,8 +1157,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
         const map = this.map || this.getMap();
         if (!map) return this;
         const dom = this._getGeometryEventMapPanel();
-        maptalks.DomUtil.off(dom, EVENTS.join(' '), this._identifyBaseObjectEvents, this);
-        map.off('zooming zoomend', this._zoomend, this);
+        maptalks.DomUtil.off(dom, EVENTS.join(' '), this._identifyBaseObjectEventsThis, this);
+        map.off('zooming zoomend', this._zoomendThis, this);
         return this;
     }
 
