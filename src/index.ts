@@ -72,7 +72,7 @@ const LINEPRECISIONS = [
 const EVENTS = [
     'mouseout',
     'mousemove',
-    'click',
+    // 'click',
     'mousedown',
     'mouseup',
     'dblclick',
@@ -121,6 +121,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
     _mouse: THREE.Vector2;
     _containerPoint: maptalks.Point;
     _mousemoveTimeOut: number = 0;
+    _mousedownTime: number = 0;
     _baseObjects: Array<BaseObject> = [];
     _delayMeshes: Array<BaseObject> = [];
     _identifyBaseObjectEventsThis: Function;
@@ -945,17 +946,17 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * fire baseObject events
      * @param {*} e
      */
-    _identifyBaseObjectEvents(e: any) {
+    _identifyBaseObjectEvents(event: MouseEvent) {
         if (!this.options.geometryEvents) {
             return this;
         }
         const map = this.map || this.getMap();
         //When map interaction, do not carry out mouse movement detection, which can have better performance
-        if (map.isInteracting() || !map.options.geometryEvents || map._ignoreEvent(e)) {
+        if (map.isInteracting() || !map.options.geometryEvents || map._ignoreEvent(event)) {
             return this;
         }
-        const eventType = e.type;
-        e = map._getEventParams ? map._getEventParams(e) : this._getEventParams(e);
+        const eventType = event.type;
+        const e = map._getEventParams ? map._getEventParams(event) : this._getEventParams(event);
         e.type = eventType;
         const { type, coordinate } = e;
         const now = maptalks.Util.now();
@@ -965,6 +966,14 @@ class ThreeLayer extends maptalks.CanvasLayer {
             }
         }
         this._mousemoveTimeOut = now;
+        if (type === 'mousedown') {
+            this._mousedownTime = maptalks.Util.now();
+        }
+        let isClick = false;
+        if (type === 'mouseup') {
+            const clickTimeThreshold = map.options.clickTimeThreshold || 280;
+            isClick = (maptalks.Util.now() - this._mousedownTime < clickTimeThreshold);
+        }
         // map.resetCursor('default');
         const identifyCountOnEvent = this.options['identifyCountOnEvent'];
         let count = Math.max(0, maptalks.Util.isNumber(identifyCountOnEvent) ? identifyCountOnEvent : 0);
@@ -1067,6 +1076,9 @@ class ThreeLayer extends maptalks.CanvasLayer {
                     showInfoWindow(baseObject);
                 }
             });
+        }
+        if (isClick) {
+            this._identifyBaseObjectEvents(maptalks.Util.extend({}, event, { type: 'click' }));
         }
         return this;
     }
