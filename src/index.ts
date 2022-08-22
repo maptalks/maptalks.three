@@ -858,7 +858,9 @@ class ThreeLayer extends maptalks.CanvasLayer {
         mouse.x = (x / width) * 2 - 1;
         mouse.y = -(y / height) * 2 + 1;
         raycaster.setFromCamera(mouse, camera);
-        raycaster.layers.enableAll();
+        if (raycaster.layers && raycaster.layers.enableAll) {
+            raycaster.layers.enableAll();
+        }
         //set linePrecision for THREE.Line
         setRaycasterLinePrecision(raycaster, this._getLinePrecision(this.getMap().getResolution()));
         const children: Array<THREE.Object3D> = [], hasidentifyChildren: Array<BaseObject> = [];
