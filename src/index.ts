@@ -72,7 +72,7 @@ const LINEPRECISIONS = [
 const EVENTS = [
     'mouseout',
     'mousemove',
-    // 'click',
+    'click',
     'mousedown',
     'mouseup',
     'dblclick',
@@ -968,13 +968,18 @@ class ThreeLayer extends maptalks.CanvasLayer {
             }
         }
         this._mousemoveTimeOut = now;
-        if (type === 'mousedown') {
+        // record mousedown/touchstart time
+        if (type === 'mousedown' || type === 'touchstart') {
             this._mousedownTime = maptalks.Util.now();
         }
         let isClick = false;
-        if (type === 'mouseup') {
+        if (type === 'click' || type === 'touchend') {
             const clickTimeThreshold = map.options.clickTimeThreshold || 280;
             isClick = (maptalks.Util.now() - this._mousedownTime < clickTimeThreshold);
+        }
+        //ignore click event
+        if (type === 'click' && !isClick) {
+            return this;
         }
         // map.resetCursor('default');
         const identifyCountOnEvent = this.options['identifyCountOnEvent'];
@@ -1079,8 +1084,15 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 }
             });
         }
-        if (isClick) {
-            this._identifyBaseObjectEvents(maptalks.Util.extend({}, event, { type: 'click' }));
+        //simulation mouse click on mobile device
+        if (type === 'touchend' && isClick) {
+            const eventParam = maptalks.Util.extend({}, e, { domEvent: event });
+            baseObjects.forEach(baseObject => {
+                if (baseObject instanceof BaseObject) {
+                    baseObject.fire('click', Object.assign({}, eventParam, { target: baseObject, selectMesh: (baseObject.getSelectMesh ? baseObject.getSelectMesh() : null) }));
+                    showInfoWindow(baseObject, 'click');
+                }
+            });
         }
         return this;
     }
