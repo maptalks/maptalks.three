@@ -6,10 +6,26 @@
     <script type="text/javascript" src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.min.js"></script>
     <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
     <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
-    <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
-    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.104.0/build/three.min.js"></script>
+    <script type="text/javascript"
+        src="https://unpkg.com/three@0.104.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script type="text/javascript"
+        src="https://unpkg.com/three@0.104.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script type="text/javascript"
+        src="https://unpkg.com/three@0.104.0/examples/js/shaders/CopyShader.js"></script>
+    <script type="text/javascript"
+        src="https://unpkg.com/three@0.104.0/examples/js/postprocessing/ShaderPass.js"></script>
 
-    <script type="text/javascript" src="https://unpkg.com/three@0.104.0/examples/js/libs/stats.min.js"></script>
+    <script type="text/javascript"
+        src="https://unpkg.com/three@0.104.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+
+    <!-- issue  https://github.com/mrdoob/three.js/issues/14104  -->
+    <!-- <script type="text/javascript"
+        src="https://unpkg.com/three@0.104.0/examples/js/postprocessing/UnrealBloomPass.js"></script> -->
+    <script type="text/javascript" src="./js/UnrealBloomPass.js"></script>
+
+    <script type="text/javascript"
+        src="https://unpkg.com/three@0.104.0/examples/js/libs/stats.min.js"></script>
     <script type="text/javascript" src="https://unpkg.com/lz-string@1.4.4/libs/lz-string.min.js"></script>
     <script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
     <script type="text/javascript" src="js/geoutil.js"></script>
@@ -60,23 +76,8 @@
             // animation: true
         });
         var stats;
-
-        const texture = new THREE.TextureLoader().load('./data/building-texture-dark2.jpg');
-        texture.needsUpdate = true; //使用贴图时进行更新
-        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-        // texture.repeat.set(0.002, 0.002);
-        texture.repeat.set(1, 1);
-
-        var buildingMaterial = new THREE.MeshBasicMaterial({ color: 'rgb(255,255,255)', map: texture });
-        var buildingTopMaterial = new THREE.MeshBasicMaterial({ color: 'rgb(85,83,83)' });
-        var buildingMeshes = [], buildingRoof;
-
-        function cloeData(data) {
-            if (window.ststructuredClone) {
-                return window.ststructuredClone(data);
-            }
-            return JSON.parse(JSON.stringify(data));
-        }
+        var buildingMaterial = new THREE.MeshBasicMaterial({ color: 'rgb(19,19,38)' });
+        var buildingMeshes = [];
 
         threeLayer.prepareToDraw = function (gl, scene, camera) {
             stats = new Stats();
@@ -87,45 +88,95 @@
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
 
-            const topData = [];
+            this.initBloom();
+            this.setRendererRenderScene();
 
             features.forEach(function (g) {
                 var heightPerLevel = 10;
                 var levels = g.properties.levels || 1;
-                const height = heightPerLevel * levels;
-                g.properties.height = height;
-                var mesh = threeLayer.toExtrudePolygon(g, {
-                    height,
+                var mesh = threeLayer.toExtrudePolygon(maptalks.GeoJSON.toGeometry(g), {
+                    height: heightPerLevel * levels,
                     topColor: '#fff',
-                    asynchronous: true,
-                    interactive: false
+                    // interactive: false
                 }, buildingMaterial);
                 buildingMeshes.push(mesh);
-                const f = cloeData(g);
-                f.properties.height = 0.1;
-                f.properties.bottomHeight = height;
-                topData.push(f);
             });
             threeLayer.addMesh(buildingMeshes);
-            buildingRoof = threeLayer.toExtrudePolygons(topData, { asynchronous: true, interactive: false }, buildingTopMaterial);
-            threeLayer.addMesh(buildingRoof);
             addLines();
 
         };
-        const sceneConfig = {
-            postProcess: {
-                enable: true,
-                antialias: { enable: true },
-                bloom: {
-                    enable: true,
-                    threshold: 0,
-                    factor: 1,
-                    radius: 0.02,
-                },
+        threeLayer.addTo(map);
+
+        /**
+         * initBloom
+         * */
+        maptalks.ThreeLayer.prototype.initBloom = function () {
+            const params = {
+                exposure: 1,
+                bloomStrength: 4.5,
+                bloomThreshold: 0,
+                bloomRadius: 0,
+                debug: false
+            };
+            const renderer = this.getThreeRenderer();
+            const size = this.getMap().getSize();
+            this.composer = new THREE.EffectComposer(renderer);
+            this.composer.setSize(size.width, size.height);
+
+            const scene = this.getScene(), camera = this.getCamera();
+            this.renderPass = new THREE.RenderPass(scene, camera);
+
+            this.composer.addPass(this.renderPass);
+
+            const bloomPass = this.bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(size.width, size.height));
+            bloomPass.renderToScreen = true;
+            bloomPass.threshold = params.bloomThreshold;
+            bloomPass.strength = params.bloomStrength;
+            bloomPass.radius = params.bloomRadius;
+
+            // composer.setSize(size.width, size.height);
+            // composer.addPass(renderPass);
+            this.composer.addPass(bloomPass);
+            this.bloomEnable = true;
+        }
+
+        /*
+           @override  renderer.renderScene
+
+        */
+
+        maptalks.ThreeLayer.prototype.setRendererRenderScene = function () {
+            this.getRenderer().renderScene = function () {
+                const layer = this.layer;
+                layer._callbackBaseObjectAnimation();
+                this._syncCamera();
+
+                const renderer = this.context, camera = this.camera, scene = this.scene;
+                if (layer.bloomEnable && layer.composer && layer.composer.passes.length > 1) {
+                    if (renderer.autoClear) {
+                        renderer.autoClear = false;
+                    }
+                    if (layer.bloomPass) {
+                        camera.layers.set(1);
+                    }
+                    if (layer && layer.composer) {
+                        layer.composer.render(0);
+                    }
+                    renderer.clearDepth();
+                    camera.layers.set(0);
+                    renderer.render(scene, camera);
+                } else {
+                    if (!renderer.autoClear) {
+                        renderer.autoClear = true;
+                    }
+                    renderer.render(scene, camera);
+                }
+
+                this.completeRender();
             }
-        };
-        const groupLayer = new maptalks.GroupGLLayer('group', [threeLayer], { sceneConfig });
-        groupLayer.addTo(map);
+        }
+
+
 
         var baseLineMaterial = new THREE.LineBasicMaterial({
             linewidth: 1,
@@ -167,7 +218,8 @@
                 });
 
                 baseLines = data.slice(0, 200).map(function (d) {
-                    var line = threeLayer.toLine(d.lineString, { bloom: true, interactive: false }, baseLineMaterial);
+                    var line = threeLayer.toLine(d.lineString, {}, baseLineMaterial);
+                    line.getObject3d().layers.enable(1);
                     return line;
                 });
                 threeLayer.addMesh(baseLines);
@@ -198,11 +250,13 @@
             });
 
             lines = lineStrings.slice(0, 1000).map(d => {
-                var line = threeLayer.toExtrudeLine(d.lineString, { altitude: 0, width: 4, height: 1, bloom: true, interactive: false }, material);
+                var line = threeLayer.toExtrudeLine(d.lineString, { altitude: 0, width: 4, height: 1 }, material);
+                line.getObject3d().layers.enable(1);
                 return line;
             });
             lineTrails = lineStrings.slice(0, 300).map(function (d) {
-                var line = threeLayer.toExtrudeLineTrail(d.lineString, { altitude: 0, width: 5, height: 2, chunkLength: d.len / 40, speed: 1, trail: 6, bloom: true, interactive: false }, highlightmaterial);
+                var line = threeLayer.toExtrudeLineTrail(d.lineString, { altitude: 0, width: 5, height: 2, chunkLength: d.len / 40, speed: 1, trail: 6 }, highlightmaterial);
+                line.getObject3d().layers.enable(1);
                 return line;
             });
 
@@ -240,8 +294,6 @@
                         });
                     });
                 },
-                buildingRoofAdd: true,
-                buildingRoofColor: buildingTopMaterial.color.getStyle(),
 
                 lineAdd: true,
                 lineColor: baseLineMaterial.color.getStyle(),
@@ -253,9 +305,9 @@
                 extrudeLineTrailColor: highlightmaterial.color.getStyle(),
 
                 bloom: true,
-                // threshold: bloomPass.threshold,
-                // strength: bloomPass.strength,
-                // radius: bloomPass.radius,
+                threshold: bloomPass.threshold,
+                strength: bloomPass.strength,
+                radius: bloomPass.radius,
 
                 color: highlightmaterial.color.getStyle(),
                 show: true,
@@ -291,18 +343,7 @@
                     mesh.setSymbol(buildingMaterial);
                 });
             });
-
-            buildingsF.add(params, 'buildingRoofAdd').name('roof').onChange(function () {
-                if (params.buildingRoofAdd) {
-                    threeLayer.addMesh(buildingRoof);
-                } else {
-                    threeLayer.removeMesh(buildingRoof);
-                }
-            });
-            buildingsF.addColor(params, 'buildingRoofColor').name('roof color').onChange(function () {
-                buildingTopMaterial.color.set(params.buildingRoofColor);
-            });
-            // buildingsF.add(params, 'buildingAnimation').name('animation');
+            buildingsF.add(params, 'buildingAnimation').name('animation');
 
 
             var baseLineF = gui.addFolder('line');
@@ -354,20 +395,20 @@
                 });
             });
 
-            // var bloomF = gui.addFolder('bloom');
-            // bloomF.open();
-            // bloomF.add(params, 'bloom').name('enable').onChange(function () {
-            //     threeLayer.bloomEnable = params.bloom;
-            // });
-            // bloomF.add(params, 'threshold', -5, 5).onChange(function () {
-            //     bloomPass.threshold = params.threshold;
-            // });
-            // bloomF.add(params, 'strength', 0, 8).onChange(function () {
-            //     bloomPass.strength = params.strength;
-            // });
-            // bloomF.add(params, 'radius', 0, 5).onChange(function () {
-            //     bloomPass.radius = params.radius;
-            // });
+            var bloomF = gui.addFolder('bloom');
+            bloomF.open();
+            bloomF.add(params, 'bloom').name('enable').onChange(function () {
+                threeLayer.bloomEnable = params.bloom;
+            });
+            bloomF.add(params, 'threshold', -5, 5).onChange(function () {
+                bloomPass.threshold = params.threshold;
+            });
+            bloomF.add(params, 'strength', 0, 8).onChange(function () {
+                bloomPass.strength = params.strength;
+            });
+            bloomF.add(params, 'radius', 0, 5).onChange(function () {
+                bloomPass.radius = params.radius;
+            });
         }
     </script>
 </body>
