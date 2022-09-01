@@ -633,8 +633,10 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 const parent = child['__parent'];
                 if (parent && parent instanceof BaseObject) {
                     parent.isAdd = false;
+                    parent.options.layer = null;
                     parent._fire('remove', { target: parent });
                     delete this._animationBaseObjectMap[child.uuid];
+                    parent._hideUI();
                 }
             }
         }
@@ -748,6 +750,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 scene.add(mesh.getObject3d());
                 if (!mesh.isAdd) {
                     mesh.isAdd = true;
+                    mesh.options.layer = this;
                     mesh._fire('add', { target: mesh });
                 }
                 if (mesh._animation && maptalks.Util.isFunction(mesh._animation)) {
@@ -782,7 +785,9 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 scene.remove(mesh.getObject3d());
                 if (mesh.isAdd) {
                     mesh.isAdd = false;
+                    mesh.options.layer = null;
                     mesh._fire('remove', { target: mesh });
+                    mesh._hideUI();
                 }
                 if (mesh._animation && maptalks.Util.isFunction(mesh._animation)) {
                     delete this._animationBaseObjectMap[mesh.getObject3d().uuid];
@@ -1185,6 +1190,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         const dom = this._getGeometryEventMapPanel();
         maptalks.DomUtil.off(dom, EVENTS.join(' '), this._identifyBaseObjectEventsThis, this);
         map.off('zooming zoomend', this._zoomendThis, this);
+        this.clear();
         return this;
     }
 
