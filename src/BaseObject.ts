@@ -263,6 +263,7 @@ class BaseObject extends maptalks.Eventable(Base) {
         this.getObject3d().visible = false;
         this._fire('hide');
         this._visible = false;
+        this._hideUI();
         return this;
     }
 
@@ -367,6 +368,12 @@ class BaseObject extends maptalks.Eventable(Base) {
             this.toolTip.remove();
             delete this.toolTip;
         }
+        return this;
+    }
+
+    _hideUI() {
+        this.closeInfoWindow();
+        this.closeToolTip();
         return this;
     }
 
