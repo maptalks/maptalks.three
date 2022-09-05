@@ -20,13 +20,10 @@ export function getLinePosition(lineString: SingleLineStringType | Array<THREE.V
         positionsV: THREE.Vector3[];
         arrayBuffer: ArrayBuffer
     } {
-    const positionsV: THREE.Vector3[] = [];
+    let positionsV: THREE.Vector3[] = [];
     let positions: Float32Array, positions2d: Float32Array;
     if (Array.isArray(lineString) && lineString[0] instanceof THREE.Vector3) {
-        for (let i = 0, len = lineString.length; i < len; i++) {
-            const v = lineString[i];
-            positionsV.push(v);
-        }
+        positionsV = lineString;
     } else {
         if (Array.isArray(lineString)) {
             lineString = new maptalks.LineString(lineString);
@@ -121,39 +118,57 @@ export function getExtrudeLineGeometry(lineString: SingleLineStringType, lineWid
 export function getChunkLinesPosition(chunkLines: Array<Array<Array<number>>>, layer: ThreeLayer, positionMap: { [key: string]: any }, centerPt: THREE.Vector3) {
     const positions: Array<number> = [],
         positionsV: Array<THREE.Vector3> = [], lnglats: Array<Array<number>> = [];
+    let preKey;
+    let v;
     for (let i = 0, len = chunkLines.length; i < len; i++) {
         const line = chunkLines[i];
         for (let j = 0, len1 = line.length; j < len1; j++) {
             const lnglat = line[j];
-            if (lnglats.length > 0) {
-                const key = lnglat.join(COMMA).toString();
-                const key1 = lnglats[lnglats.length - 1].join(COMMA).toString();
-                if (key !== key1) {
-                    lnglats.push(lnglat);
-                }
-            } else {
+            const key = lnglat.join(COMMA).toString();
+            if (!preKey) {
+                lnglats.push(lnglat);
+                preKey = key;
+                v = layer.coordinateToVector3(lnglat, 0).sub(centerPt);
+                positions.push(v.x, v.y, v.z);
+                positionsV.push(v);
+                continue;
+            }
+            if (key !== preKey) {
+                v = layer.coordinateToVector3(lnglat, 0).sub(centerPt);
+                positions.push(v.x, v.y, v.z);
+                positionsV.push(v);
                 lnglats.push(lnglat);
             }
+            preKey = key;
         }
-    }
-    const z = 0;
-    for (let i = 0, len = lnglats.length; i < len; i++) {
-        const lnglat = lnglats[i];
-        let v;
-        const key = lnglat.join(COMMA).toString();
-        if (positionMap && positionMap[key]) {
-            v = positionMap[key];
-        } else {
-            v = layer.coordinateToVector3(lnglat, z).sub(centerPt);
-        }
-        positionsV.push(v);
-        positions.push(v.x, v.y, v.z);
     }
     return {
         positions: positions,
         positionsV: positionsV,
         lnglats: lnglats
     };
+}
+
+export function mergeChunkLineCoordinates(chunkLines: Array<Array<Array<number>>>): Array<Array<number>> {
+    let preKey;
+    const lnglats: Array<Array<number>> = [];
+    for (let i = 0, len = chunkLines.length; i < len; i++) {
+        const line = chunkLines[i];
+        for (let j = 0, len1 = line.length; j < len1; j++) {
+            const lnglat = line[j];
+            const key = lnglat.join(COMMA).toString();
+            if (!preKey) {
+                lnglats.push(lnglat);
+                preKey = key;
+                continue;
+            }
+            if (key !== preKey) {
+                lnglats.push(lnglat);
+            }
+            preKey = key;
+        }
+    }
+    return lnglats;
 }
 
 
