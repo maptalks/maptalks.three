@@ -5,7 +5,7 @@ import * as maptalks from 'maptalks';
 
 const PI = Math.PI / 180;
 const R = 6378137;
-const MINLENGTH = 1;
+const MINLENGTH = 0.1;
 
 
 function formatLineArray(polyline: maptalks.LineString): Array<Array<number>> {

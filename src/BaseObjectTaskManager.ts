@@ -11,7 +11,8 @@ type TaskQueue = {
     key?: string,
     center?: any,
     lineStrings?: any,
-    lineString?: any
+    lineString?: any,
+    option?: any
 }
 
 function getDatas(queues: Array<TaskQueue>) {
@@ -22,7 +23,7 @@ function getDatas(queues: Array<TaskQueue>) {
 
 function getOptions(queues: Array<TaskQueue>) {
     return queues.map(q => {
-        return q.baseObject.getOptions();
+        return q.option || q.baseObject.getOptions();
     });
 }
 

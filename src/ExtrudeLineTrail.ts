@@ -3,11 +3,12 @@ import * as THREE from 'three';
 import BaseObject from './BaseObject';
 
 import { lineSlice } from './util/GeoUtil';
-import { getExtrudeLineParams, getChunkLinesPosition } from './util/LineUtil';
+import { getExtrudeLineParams, getChunkLinesPosition, mergeChunkLineCoordinates } from './util/LineUtil';
 import { isGeoJSON, getGeoJSONCenter, getGeoJSONCoordinates } from './util/GeoJSONUtil';
 import { addAttribute } from './util/ThreeAdaptUtil';
 import { ExtrudeLineTrailOptionType, SingleLineStringType } from './type';
 import { ThreeLayer } from './index';
+import { ExtrudeLineTaskIns } from './BaseObjectTaskManager';
 
 const MAX_POINTS = 1000;
 
@@ -72,19 +73,9 @@ class ExtrudeLineTrail extends BaseObject {
 
         const centerPt = layer.coordinateToVector3(center);
         //cache position for  faster computing,reduce double counting
-        const positionMap: { [key: string]: THREE.Vector3 } = {};
-        for (let i = 0, len = chunkLines.length; i < len; i++) {
-            const chunkLine = chunkLines[i];
-            for (let j = 0, len1 = chunkLine.length; j < len1; j++) {
-                const lnglat = chunkLine[j];
-                const key = lnglat.join(',').toString();
-                if (!positionMap[key]) {
-                    positionMap[key] = layer.coordinateToVector3(lnglat).sub(centerPt);
-                }
-            }
-        }
+        // const positionMap: { [key: string]: THREE.Vector3 } = {};
 
-        const positions = getChunkLinesPosition(chunkLines.slice(0, 1), layer, positionMap, centerPt).positionsV;
+        // const positions = getChunkLinesPosition(chunkLines.slice(0, 1), layer, positionMap, centerPt).positionsV;
 
         //generate geometry
         const geometry = new THREE.BufferGeometry();
@@ -98,8 +89,8 @@ class ExtrudeLineTrail extends BaseObject {
 
         const lineWidth = layer.distanceToVector3(width, width).x;
         const depth = layer.altitudeToVector3(height, height).x;
-        const params = getExtrudeLineParams(positions, lineWidth, depth, layer);
-        setExtrudeLineGeometryAttribute(geometry, params.position, params.normal, params.indices);
+        // const params = getExtrudeLineParams(positions, lineWidth, depth, layer);
+        // setExtrudeLineGeometryAttribute(geometry, params.position, params.normal, params.indices);
 
         this._createMesh(geometry, material);
         const z = layer.altitudeToVector3(altitude, altitude).x;
@@ -116,9 +107,11 @@ class ExtrudeLineTrail extends BaseObject {
             depth,
             speed: Math.min(1, speed),
             idx: 0,
-            loaded: false,
-            positionMap,
-            centerPt
+            loaded: true,
+            center,
+            // positionMap,
+            centerPt,
+            workerInitCount: 0
         };
         this._init(this._params);
         this.type = 'ExtrudeLineTrail';
@@ -130,15 +123,42 @@ class ExtrudeLineTrail extends BaseObject {
      * @param {*} params
      */
     _init(params) {
-        const { layer, trail, lineWidth, depth, chunkLines, positionMap, centerPt } = params;
+        const { layer, trail, lineWidth, depth, chunkLines, positionMap, centerPt, center } = params;
         const len = chunkLines.length, geometries = [];
-        for (let i = 0; i < len; i++) {
-            const lines = chunkLines.slice(i, i + trail);
-            const ps = getChunkLinesPosition(lines, layer, positionMap, centerPt).positionsV;
-            geometries.push(getExtrudeLineParams(ps, lineWidth, depth, layer));
+        if (this.options.asynchronous) {
+            params.loaded = false;
+            const parentId = maptalks.Util.GUID();
+            for (let i = 0; i < len; i++) {
+                const lines = chunkLines.slice(i, i + trail);
+                const coordinates = mergeChunkLineCoordinates(lines);
+                const lineString = {
+                    type: 'Feature',
+                    geometry: {
+                        type: "LineString",
+                        coordinates
+                    }
+                };
+                const id = `${parentId}-${i}`;
+                const option = maptalks.Util.extend({}, this.options);
+                option.id = id;
+                option.center = center;
+                ExtrudeLineTaskIns.push({
+                    id,
+                    data: [lineString],
+                    layer,
+                    center,
+                    lineString,
+                    baseObject: this,
+                    option
+                });
+            }
+        } else {
+            for (let i = 0; i < len; i++) {
+                const lines = chunkLines.slice(i, i + trail);
+                const ps = getChunkLinesPosition(lines, layer, positionMap, centerPt).positionsV;
+                geometries.push(getExtrudeLineParams(ps, lineWidth, depth, layer));
+            }
         }
-        this._params.geometries = geometries;
-        this._params.loaded = true;
     }
 
 
@@ -167,6 +187,33 @@ class ExtrudeLineTrail extends BaseObject {
             this._params.idx = -1;
         }
         this._params.index += speed;
+    }
+
+    _workerLoad(result) {
+        if (!result) {
+            return this;
+        }
+        const { id, indices, position, normal, uv } = result;
+        if (!id || !indices || !position || !normal || !uv) {
+            return;
+        }
+        let index = id.split('-')[1];
+        index = parseInt(index);
+        if (maptalks.Util.isNumber(index)) {
+            const geometries = this._params.geometries;
+            geometries[index] = {
+                indices: new Uint32Array(indices),
+                position: new Float32Array(position),
+                uv: new Float32Array(uv),
+                normal: new Float32Array(normal)
+            };
+            this._params.workerInitCount++;
+        }
+        if (this._params.workerInitCount === this._params.chunkLines.length) {
+            this._params.loaded = true;
+            this._fire('workerload', { target: this });
+        }
+
     }
 }
 
