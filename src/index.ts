@@ -1380,7 +1380,8 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
                 if (!object3ds[i] || !object3ds[i].layers) {
                     continue;
                 }
-                object3ds[i].layers.set(0);
+                // object3ds[i].layers.set(0);
+                recursionObject3dLayer(object3ds[i], 0);
             }
             if (bloomEnable) {
                 const sceneFilter = context.sceneFilter;
@@ -1401,7 +1402,8 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
                     if (object3ds[i] && sceneFilter(object3ds[i]) || !parent) {
                         layer = 1;
                     }
-                    object3ds[i].layers.set(layer);
+                    // object3ds[i].layers.set(layer);
+                    recursionObject3dLayer(object3ds[i], layer);
                 }
             }
             this.camera.layers.set(bloomEnable ? 1 : 0);
@@ -1457,6 +1459,20 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
 
 ThreeLayer.registerRenderer('gl', ThreeRenderer);
 
+function recursionObject3dLayer(object3d, layer) {
+    if (!object3d) {
+        return;
+    }
+    if (object3d.layers) {
+        object3d.layers.set(layer);
+    }
+    const children = object3d.children;
+    if (children && children.length) {
+        for (let i = 0, len = children.length; i < len; i++) {
+            recursionObject3dLayer(children[i], layer);
+        }
+    }
+}
 function getGLRes(map: maptalks.Map) {
     return map.getGLRes ? map.getGLRes() : map.getGLZoom();
 }
