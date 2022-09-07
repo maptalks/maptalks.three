@@ -198,11 +198,11 @@
             });
 
             lines = lineStrings.slice(0, 1000).map(d => {
-                var line = threeLayer.toExtrudeLine(d.lineString, { altitude: 0, width: 4, height: 1, bloom: true, interactive: false }, material);
+                var line = threeLayer.toExtrudeLine(d.lineString, { altitude: 0, width: 4, height: 1, bloom: true, interactive: false, asynchronous: true }, material);
                 return line;
             });
             lineTrails = lineStrings.slice(0, 300).map(function (d) {
-                var line = threeLayer.toExtrudeLineTrail(d.lineString, { altitude: 0, width: 5, height: 2, chunkLength: d.len / 40, speed: 1, trail: 6, bloom: true, interactive: false }, highlightmaterial);
+                var line = threeLayer.toExtrudeLineTrail(d.lineString, { altitude: 0, width: 5, height: 2, chunkLength: d.len / 40, speed: 1, trail: 6, bloom: true, interactive: false, asynchronous: true }, highlightmaterial);
                 return line;
             });
 
@@ -218,7 +218,7 @@
         function animation() {
             // layer animation support Skipping frames
             threeLayer._needsUpdate = !threeLayer._needsUpdate;
-            if (threeLayer._needsUpdate) {
+            if (threeLayer._needsUpdate && !threeLayer.isRendering()) {
                 threeLayer.redraw();
             }
             stats.update();
