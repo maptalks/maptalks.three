@@ -30,6 +30,69 @@
     <div id="map"></div>
     <script>
 
+        const eventDispatch = {
+            layers: [],
+            _sortLayers: function () {
+                this.layers = this.layers.sort((d1, d2) => {
+                    return d2.zindex - d1.zindex;
+                });
+            },
+            addLayer: function (layer, zindex = 0) {
+                if (this.layers.filter(d => {
+                    return d.layer === layer;
+                }).length > 0) {
+                    return;
+                }
+                this.layers.push({
+                    layer,
+                    zindex,
+                    click: false
+                });
+                this._sortLayers();
+            },
+            removeLayer: function (layer) {
+                //   todo
+            },
+            test: function (target) {
+                if (!target || !target.getLayer) {
+                    console.error('not find target layer');
+                    return;
+                }
+                const layer = target.getLayer();
+                const layers = this.layers.filter(d => {
+                    return d.layer === layer;
+                });
+                if (layers.length === 0) {
+                    console.error('not find layer from eventDispatch');
+                    return;
+                }
+                const d = layers[0];
+                d.click = true;
+                const zindex = d.zindex;
+                return new Promise((resolve, reject) => {
+                    setTimeout(() => {
+                        let isClick = false;
+                        this.layers.forEach(d => {
+                            if (d.zindex > zindex && d.click) {
+                                isClick = true;
+                            }
+                        });
+                        if (isClick) {
+                            // console.warn('high zindex layers is clicked', target);
+                            return;
+                        }
+                        this.layers.forEach(d => {
+                            if (d.layer === layer) {
+                                d.click = false;
+                            }
+                        })
+                        resolve();
+                    }, zindex * 16);
+                })
+            }
+
+        }
+
         var map = new maptalks.Map("map", {
             "center": [108.70296180227058, 32.44563434720479], "zoom": 5.717254596370028, "pitch": 58.40000000000007, "bearing": 0.8533528124999066,
 
@@ -44,7 +107,8 @@
         // the ThreeLayer to draw buildings
         var threeLayer = new maptalks.ThreeLayer('t', {
             forceRenderOnMoving: true,
-            forceRenderOnRotating: true
+            forceRenderOnRotating: true,
+            identifyCountOnEvent: 1
             // animation: true
         });
 
@@ -69,10 +133,20 @@
                 });
                 console.timeEnd(time);
                 threeLayer.addMesh(meshs);
+                meshs.forEach(mesh => {
+                    mesh.on('click', e => {
+                        eventDispatch.test(e.target).then(() => {
+                            console.log('extrudepolygon');
+                            console.log(e.target);
+                        })
+                    })
+                });
             })
 
             threeLayer.config('animation', true);
         };
+        eventDispatch.addLayer(threeLayer, 1);
+
         const sceneConfig = {
             postProcess: {
                 enable: true,
@@ -81,6 +155,40 @@
         };
         const groupLayer = new maptalks.GroupGLLayer('group', [threeLayer], { sceneConfig });
         groupLayer.addTo(map);
+
+        const layer = new maptalks.VectorLayer('layer').addTo(map);
+        const point = new maptalks.Marker(map.getCenter(), {
+            symbol: {
+                markerType: 'ellipse',
+                markerWidth: 100,
+                markerHeight: 100
+            }
+        }).addTo(layer);
+
+        eventDispatch.addLayer(layer, 2);
+        point.on('click', e => {
+            eventDispatch.test(e.target).then(() => {
+                console.log('point');
+                console.log(e.target);
+            })
+        })
+        const layer1 = new maptalks.VectorLayer('layer1').addTo(map);
+        const point1 = new maptalks.Marker(map.getCenter(), {
+            symbol: {
+                markerType: 'ellipse',
+                markerWidth: 20,
+                markerHeight: 20,
+                markerFill: "red"
+            }
+        }).addTo(layer1);
+
+        eventDispatch.addLayer(layer1, 3);
+        point1.on('click', e => {
+            eventDispatch.test(e.target).then(() => {
+                console.log('point1');
+                console.log(e.target);
+            })
+        })
 
 
     </script>
