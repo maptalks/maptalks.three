@@ -1322,6 +1322,9 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
             canvas.style.width = cssWidth;
             canvas.style.height = cssHeight;
         }
+        if (canvas.width === width && canvas.height === height) {
+            return this;
+        }
         //retina support
         canvas.height = width;
         canvas.width = height;
