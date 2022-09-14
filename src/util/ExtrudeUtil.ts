@@ -48,7 +48,7 @@ export function getExtrudeGeometry(polygon: PolygonType, height: number, layer: 
     addAttribute(bufferGeomertry, 'normal', new THREE.BufferAttribute(normal, 3));
     addAttribute(bufferGeomertry, 'position', new THREE.BufferAttribute(position, 3));
     addAttribute(bufferGeomertry, 'uv', new THREE.BufferAttribute(uv, 2));
-    bufferGeomertry.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
+    bufferGeomertry.setIndex(new THREE.BufferAttribute(indices, 1));
     return bufferGeomertry;
 }
 
