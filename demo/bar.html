@@ -3,13 +3,13 @@
 
 <head>
     <title>bar test World Population Visualization</title>
-    <script type="text/javascript" src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.min.js"></script>
     <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
     <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
     <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
     <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
     <script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
     <script type="text/javascript" src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/examples/js/libs/stats.min.js"></script>
     <style>
         html,
         body {
@@ -48,17 +48,23 @@
         // the ThreeLayer to draw buildings
         var threeLayer = new maptalks.ThreeLayer('t', {
             forceRenderOnMoving: true,
-            forceRenderOnRotating: true
+            forceRenderOnRotating: true,
+            identifyCountOnEvent: 1
             // animation: true
         });
         threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
             var light = new THREE.DirectionalLight(0xffffff);
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
-            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            scene.add(new THREE.AmbientLight(0xffffff, 0.2));
             setTimeout(() => {
                 addBars(scene);
             }, 1000);
+            animation();
 
         };
         const sceneConfig = {
@@ -73,7 +79,7 @@
 
         var bars;
         var material = new THREE.MeshLambertMaterial({ color: '#fff', transparent: true });
-        var highlightmaterial = new THREE.MeshBasicMaterial({ color: 'yellow', transparent: true });
+        var highlightmaterial = new THREE.MeshLambertMaterial({ color: 'red', transparent: true });
         function addBars(scene) {
             fetch('./data/population.json').then((function (res) {
                 return res.json();
@@ -81,7 +87,7 @@
                 const time = 'time';
                 console.time(time);
                 bars = json.filter(function (dataItem) {
-                    return dataItem[2] > 500;
+                    return dataItem[2] > 200;
                 }).slice(0, Infinity).map(function (dataItem) {
                     return {
                         coordinate: dataItem.slice(0, 2),
@@ -89,10 +95,11 @@
                     }
                 }).map(function (d) {
                     var bar = threeLayer.toBar(d.coordinate, {
-                        height: d.height * 400,
+                        height: d.height * 200,
                         radius: 15000,
                         topColor: '#fff',
-                        // radialSegments: 4
+                        radialSegments: 20,
+                        asynchronous: true
                     }, material);
 
                     // // tooltip test
@@ -133,8 +140,17 @@
                 console.timeEnd(time);
                 threeLayer.addMesh(bars);
                 initGui();
-                threeLayer.config('animation', true);
             })
+        }
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer.redraw();
+            }
+            stats.update();
+            requestAnimationFrame(animation);
         }
 
         function initGui() {
