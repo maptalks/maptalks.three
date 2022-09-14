@@ -177,7 +177,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * @param {Number} [z=0] z value
      * @return {THREE.Vector3}
      */
-    coordinateToVector3(coordinate: maptalks.Coordinate | Array<number>, z: number = 0): THREE.Vector3 {
+    coordinateToVector3(coordinate: maptalks.Coordinate | Array<number>, z: number = 0, out?: THREE.Vector3): THREE.Vector3 {
         const map = this.getMap();
         if (!map) {
             return null;
@@ -191,6 +191,11 @@ class ThreeLayer extends maptalks.CanvasLayer {
         }
         const res = getGLRes(map);
         const p = coordinateToPoint(map, isArray ? TEMP_COORD : coordinate, res, TEMP_POINT);
+        if (out) {
+            out.x = p.x;
+            out.y = p.y;
+            out.z = z;
+        }
         return new THREE.Vector3(p.x, p.y, z);
     }
 
