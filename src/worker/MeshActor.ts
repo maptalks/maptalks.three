@@ -30,6 +30,8 @@ if (maptalks.worker) {
                 params = gengerateLines(data, center, layer, lineStrings);
             } else if (type === 'ExtrudeLine') {
                 params = gengerateExtrudeLines(data, center, layer, lineStrings, options);
+            } else if (type === 'Bar' || type === 'Bars') {
+                params = generateBars(data);
             }
             if (!params) {
                 console.error(`not support '${type}' worker`);
@@ -286,5 +288,28 @@ function gengerateLines(lineStringList: Array<Array<SingleLineStringType>>, cent
     };
 }
 
+
+function generateBars(data) {
+    const len = data.length;
+    const datas = new Float32Array(len * 7);
+    let idx = 0;
+    for (let i = 0; i < len; i++) {
+        let { center, radialSegments, radius, height, altitude, id } = data[i];
+        center = center || [0, 0];
+
+        datas[idx] = center[0];
+        datas[idx + 1] = center[1];
+        datas[idx + 2] = radialSegments || 6;
+        datas[idx + 3] = radius || 1;
+        datas[idx + 4] = height;
+        datas[idx + 5] = altitude || 0;
+        datas[idx + 6] = id;
+        idx += 7;
+    }
+    const buffer = datas.buffer;
+    return {
+        datas: buffer, transfer: [buffer]
+    };
+}
 
 

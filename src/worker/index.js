@@ -1,4 +1,4 @@
-import { extrudePolygons as _extrudePolygons, extrudePolylines as _extrudePolylines } from 'poly-extrude';
+import { extrudePolygons as _extrudePolygons, extrudePolylines as _extrudePolylines, cylinder as _cylinder } from 'poly-extrude';
 
 export const initialize = function () {
 };
@@ -117,6 +117,29 @@ export const onmessage = function (message, postResponse) {
             transfer.push(position, normal, uv, indices);
         });
         postResponse(null, lines, transfer);
+    } else if (type === 'Bar') {
+        datas = new Float32Array(datas);
+        const bars = [], transfer = [];
+        const dataCount = datas.length / 7;
+        let idx = 0;
+        while (idx < dataCount) {
+            const seg = datas.slice(idx * 7, (idx + 1) * 7);
+            const { position, normal, uv, indices } = cylinder(seg);
+            bars.push({
+                id: parseInt(seg[6]),
+                position,
+                normal,
+                uv,
+                indices
+            });
+            transfer.push(position, normal, uv, indices);
+            idx++;
+        }
+        postResponse(null, bars, transfer);
+    } else if (type === 'Bars') {
+        datas = new Float32Array(datas);
+        const result = cylinder(datas);
+        postResponse(null, result, [result.position, result.normal, result.uv, result.indices]);
     }
 };
 
@@ -311,6 +334,53 @@ function setBottomHeight(position, bottomHeight) {
             position[i + 2] += bottomHeight;
         }
     }
+}
+
+function cylinder(typeArray) {
+    const datas = [];
+    for (let i = 0, len = typeArray.length; i < len; i += 7) {
+        const x = typeArray[i];
+        const y = typeArray[i + 1];
+        const radialSegments = typeArray[i + 2];
+        const radius = typeArray[i + 3];
+        const height = typeArray[i + 4];
+        const altitude = typeArray[i + 5];
+        datas.push({
+            radialSegments,
+            radius,
+            height,
+            altitude,
+            center: [x, y]
+        });
+    }
+    const len = datas.length;
+    const geometriesAttributes = [], geometries = [];
+    let psIndex = 0;
+    for (let i = 0; i < len; i++) {
+        const buffGeom = _cylinder(datas[i].center || [0, 0], datas[i]);
+        const { position } = buffGeom;
+        if (datas[i].altitude) {
+            const alt = datas[i].altitude;
+            for (let j = 0, len1 = position.length; j < len1; j += 3) {
+                buffGeom[j + 2] += alt;
+            }
+        }
+        geometries.push(buffGeom);
+        const psCount = position.length / 3;
+        geometriesAttributes[i] = {
+            position: {
+                middleZ: datas[i].height / 2,
+                count: psCount,
+                start: psIndex,
+                end: psIndex + psCount * 3,
+            },
+            hide: false
+        };
+        psIndex += psCount * 3;
+    }
+    const geometry = mergeBufferGeometries(geometries);
+    const { position, normal, uv, indices } = geometry;
+    return { position: position.buffer, normal: normal.buffer, uv: uv.buffer, indices: indices.buffer, geometriesAttributes };
 }
 
 
