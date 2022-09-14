@@ -60,7 +60,7 @@
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
 
-            scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
             // camera.add(new THREE.PointLight(0xffffff, 1));
 
@@ -112,13 +112,14 @@
                 const data = json.filter(function (dataItem) {
                     return dataItem[2] > 0;
                 }).map(function (dataItem) {
-                    dataItem[2] *= 400;
+                    dataItem[2] *= 200;
                     min = Math.min(min, dataItem[2]);
                     max = Math.max(max, dataItem[2]);
                     return {
                         coordinate: dataItem.slice(0, 2),
                         height: dataItem[2],
                         radius: 15000,
+                        radialSegments: 20
                         // topColor: '#fff'
                     }
                 }).slice(0, Infinity);
@@ -141,8 +142,15 @@
                 console.time(time);
                 for (let color in colorMap) {
                     const { data, material } = colorMap[color];
-                    const mesh = threeLayer.toBars(data, { interactive: false }, material);
-                    bars.push(mesh);
+                    const segSize = 500;
+                    const segs = Math.ceil(data.length / segSize);
+                    for (let i = 0; i <= segs; i++) {
+                        const list = data.slice(segSize * i, (i + 1) * segSize);
+                        if (list.length) {
+                            const mesh = threeLayer.toBars(list, { interactive: false, asynchronous: true, topColor: "#fff" }, material);
+                            bars.push(mesh);
+                        }
+                    }
                 }
                 console.timeEnd(time);
                 bars.forEach(mesh => {
@@ -182,7 +190,7 @@
                             }
 
 
-                            if (selectMesh.length > 20) {
+                            if (selectMesh.length > 1) {
                                 threeLayer.removeMesh(selectMesh);
                                 selectMesh = [];
                             }
