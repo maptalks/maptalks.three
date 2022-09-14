@@ -1317,13 +1317,14 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         // const r = maptalks.Browser.retina ? 2 : 1;
         const r = map.getDevicePixelRatio ? map.getDevicePixelRatio() : (maptalks.Browser.retina ? 2 : 1);
         const canvas = this.canvas;
-        //retina support
-        canvas.height = r * size['height'];
-        canvas.width = r * size['width'];
-        if (this.layer._canvas && canvas.style) {
-            canvas.style.width = size.width + 'px';
-            canvas.style.height = size.height + 'px';
+        const { width, height, cssWidth, cssHeight } = maptalks.Util.calCanvasSize(size, r);
+        if (this.layer._canvas && (canvas.style.width !== cssWidth || canvas.style.height !== cssHeight)) {
+            canvas.style.width = cssWidth;
+            canvas.style.height = cssHeight;
         }
+        //retina support
+        canvas.height = width;
+        canvas.width = height;
         this.context.setSize(canvas.width, canvas.height);
     }
 

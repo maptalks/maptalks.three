@@ -28,6 +28,7 @@ declare namespace Util {
   function sign(params: number): number
   function now(): number
   function requestAnimFrame(params: Function)
+  function calCanvasSize(obj: any, dpr: number): any
 }
 declare namespace DomUtil {
   function on(dom: HTMLElement, events: string, handler: Function, context: any)
