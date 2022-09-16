@@ -100,6 +100,9 @@ class GPUPick {
         // render the scene
         renderer.setRenderTarget(pickingTexture);
         renderer.clear();
+        if (camera && camera.layers) {
+            this.camera.layers.set(0);
+        }
         renderer.render(pickingScene, camera);
 
         // clear the view offset so rendering returns to normal
