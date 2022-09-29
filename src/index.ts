@@ -1225,6 +1225,10 @@ class ThreeLayer extends maptalks.CanvasLayer {
 
 ThreeLayer.mergeOptions(options);
 
+const TEMPMESH = {
+    bloom: true
+};
+
 class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
     scene: THREE.Scene;
     camera: THREE.Camera;
@@ -1384,17 +1388,12 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
             this.context.setRenderTarget(this._renderTarget);
             const bloomEnable = context.bloom === 1 && context.sceneFilter;
             const object3ds = this.scene.children || [];
-            //reset all object3ds layers
-            for (let i = 0, len = object3ds.length; i < len; i++) {
-                if (!object3ds[i] || !object3ds[i].layers) {
-                    continue;
-                }
-                // object3ds[i].layers.set(0);
-                recursionObject3dLayer(object3ds[i], 0);
-            }
+            //是否是bloom渲染帧
+            let isBloomFrame = false;
             if (bloomEnable) {
                 const sceneFilter = context.sceneFilter;
-                //符合当前渲染帧的条件的分组到layer=1
+                // test 是否是bloom渲染帧
+                isBloomFrame = sceneFilter(TEMPMESH);
                 for (let i = 0, len = object3ds.length; i < len; i++) {
                     if (!object3ds[i] || !object3ds[i].layers) {
                         continue;
@@ -1409,14 +1408,31 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
                     //当object3d找不到parent(baseobject)时，也加入当前渲染帧，这种情况的一般都是灯光对象
                     //sceneFilter 用来过滤符合当前模式的meshes
                     if (object3ds[i] && sceneFilter(object3ds[i]) || !parent) {
-                        layer = 1;
+                        //当时bloom渲染帧时，将meshes分组到layer=1
+                        if (isBloomFrame) {
+                            layer = 1;
+                        }
                     }
                     // object3ds[i].layers.set(layer);
-                    recursionObject3dLayer(object3ds[i], layer);
+                    if ((object3ds[i] as any).__layer !== layer) {
+                        recursionObject3dLayer(object3ds[i], layer);
+                        (object3ds[i] as any).__layer = layer;
+                    }
+                }
+            } else {
+                //reset all object3ds layers
+                for (let i = 0, len = object3ds.length; i < len; i++) {
+                    if (!object3ds[i] || !object3ds[i].layers) {
+                        continue;
+                    }
+                    // object3ds[i].layers.set(0);
+                    if ((object3ds[i] as any).__layer !== 0) {
+                        recursionObject3dLayer(object3ds[i], 0);
+                        (object3ds[i] as any).__layer = 0;
+                    }
                 }
             }
-            this.camera.layers.set(bloomEnable ? 1 : 0);
-
+            this.camera.layers.set(isBloomFrame ? 1 : 0);
             this.context.render(this.scene, this.camera);
             renderTargetProps[KEY_FBO] = threeCreatedFBO;
         } else {
