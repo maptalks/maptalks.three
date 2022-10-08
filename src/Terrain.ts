@@ -39,6 +39,44 @@ function generateImage(image: ImageType): HTMLImageElement {
     return img;
 }
 
+const heightCache = new Map();
+
+function updateGeometryPosition(image, geometry: THREE.BufferGeometry, layer, options: any) {
+    if (!geometry || !layer) {
+        return;
+    }
+    const { imageWidth, imageHeight } = options;
+    let imgdata;
+    if (image instanceof Uint32Array || image instanceof Uint8ClampedArray) {
+        imgdata = image;
+    } else {
+        imgdata = getRGBData(image, imageWidth, imageHeight);
+    }
+    if (!imgdata) {
+        console.error('image is error type data', image);
+        return;
+    }
+    let idx = 0;
+    const out = new THREE.Vector3();
+    const cache = heightCache;
+    //rgb to height  https://docs.mapbox.com/help/troubleshooting/access-elevation-data/
+    for (let i = 0, len = imgdata.length; i < len; i += 4) {
+        const R = imgdata[i], G = imgdata[i + 1], B = imgdata[i + 2];
+        const height = -10000 + ((R * 256 * 256 + G * 256 + B) * 0.1);
+        let z = 0;
+        const value = cache.get(height);
+        if (value !== undefined) {
+            z = value;
+        } else {
+            z = layer.altitudeToVector3(height, height, null, out).x;
+            cache.set(height, z);
+        }
+        (geometry.attributes.position.array as any)[idx * 3 + 2] = z;
+        idx++;
+    }
+    geometry.attributes.position.needsUpdate = true;
+}
+
 const OPTIONS = {
     interactive: false,
     altitude: 0,
@@ -55,9 +93,9 @@ class Terrain extends BaseObject {
     constructor(extent: maptalks.Extent, options: TerrainOptionType, material: THREE.Material, layer: ThreeLayer) {
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, extent });
         const { texture, image, altitude, imageHeight, imageWidth } = options;
-        if (!image) {
-            console.error('not find image');
-        }
+        // if (!image) {
+        //     console.error('not find image');
+        // }
         if (!(extent instanceof maptalks.Extent)) {
             extent = new maptalks.Extent(extent);
         }
@@ -89,36 +127,31 @@ class Terrain extends BaseObject {
         this.getObject3d().position.copy(v);
         material.transparent = true;
         if (rgbImg) {
-            material.opacity = 0;
             rgbImg.onload = () => {
-                const width = imageWidth, height = imageHeight;
-                const imgdata = getRGBData(rgbImg, width, height);
-                let idx = 0;
-                const cache = {};
-                //rgb to height  https://docs.mapbox.com/help/troubleshooting/access-elevation-data/
-                for (let i = 0, len = imgdata.length; i < len; i += 4) {
-                    const R = imgdata[i], G = imgdata[i + 1], B = imgdata[i + 2];
-                    const height = -10000 + ((R * 256 * 256 + G * 256 + B) * 0.1);
-                    const z = altitudeToVector3(height, layer, cache);
-                    (geometry.attributes.position.array as any)[idx * 3 + 2] = z;
-                    idx++;
-                }
-                geometry.attributes.position.needsUpdate = true;
-                if (img) {
-                    textureLoader.load(img.src, (texture) => {
-                        (material as any).map = texture;
-                        material.opacity = 1;
-                        material.needsUpdate = true;
-                    });
-                } else {
-                    material.opacity = 1;
-                }
+                updateGeometryPosition(rgbImg, geometry, layer, { imageWidth, imageHeight });
             };
             rgbImg.onerror = function () {
                 console.error(`not load ${rgbImg.src}`);
             };
         }
+        if (img) {
+            material.opacity = 0;
+            textureLoader.load(img.src, (texture) => {
+                (material as any).map = texture;
+                material.opacity = 1;
+                material.needsUpdate = true;
+            });
+        } else {
+            material.opacity = 1;
+        }
         this.type = 'Terrain';
+    }
+
+    updateData(image) {
+        const geometry = (this.getObject3d() as THREE.Mesh).geometry;
+        const layer = this.getLayer();
+        updateGeometryPosition(image, geometry, layer, this.getOptions());
+        return this;
     }
 }
 

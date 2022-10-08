@@ -288,7 +288,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return new THREE.Vector3(x, y, 0);
     }
 
-    altitudeToVector3(altitude: number, altitude1: number, coord?: maptalks.Coordinate | Array<number>): THREE.Vector3 {
+    altitudeToVector3(altitude: number, altitude1: number, coord?: maptalks.Coordinate | Array<number>, out?: THREE.Vector3): THREE.Vector3 {
         if ((altitude === 0) || (!maptalks.Util.isNumber(altitude))) {
             return new THREE.Vector3(0, 0, 0);
         }
@@ -298,6 +298,12 @@ class ThreeLayer extends maptalks.CanvasLayer {
             let z = map.altitudeToPoint(altitude, res);
             if (altitude < 0 && z > 0) {
                 z = -z;
+            }
+            if (out) {
+                out.x = z;
+                out.y = z;
+                out.z = 0;
+                return out;
             }
             return new THREE.Vector3(z, z, 0);
         }
