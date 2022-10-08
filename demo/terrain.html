@@ -7,13 +7,13 @@
     <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
     <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
     <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
-    <script type="text/javascript" src="./accesstoken.js"></script>
+    <script type="text/javascript" src="./js/accesstoken.js"></script>
     <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
     <!-- <script type="text/javascript" src="https://unpkg.com/lz-string@1.4.4/libs/lz-string.min.js"></script> -->
     <script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
-       <!-- <script type="text/javascript" src="./https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script> -->
-    <script type="text/javascript"
-        src="https://unpkg.com/three@0.109.0/examples/js/libs/stats.min.js"></script>
+    <!-- <script type="text/javascript" src="./https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script> -->
+    <script type="text/javascript" src="https://unpkg.com/three@0.109.0/examples/js/libs/stats.min.js"></script>
+    <script type="text/javascript" src="./js/tilebelt.js"></script>
     <style>
         html,
         body {
@@ -25,7 +25,7 @@
         #map {
             width: 100%;
             height: 100%;
-            background-color: #000;
+            /* background-color: #000; */
         }
     </style>
 </head>
@@ -34,9 +34,57 @@
     <div id="map"></div>
     <script>
 
+        const workerKey = 'terraindata'
+        maptalks.registerWorkerAdapter(workerKey, function (exports, global) {
+
+            let canvas;
+            const TILESIZE = 256;
+
+            function getCanvas() {
+                if (canvas) {
+                    return canvas;
+                }
+                canvas = new OffscreenCanvas(TILESIZE, TILESIZE);
+                return canvas;
+            }
+            //will be called only for once when loaded in worker thread
+            exports.initialize = function () {
+                // console.log('terraindata worker initialized');
+            };
+            //to receive message from main thread sent by maptalks.worker.Actor
+            exports.onmessage = function (message, postResponse) {
+                const data = message.data;
+                const { url } = data;
+                fetch(url).then(res => res.blob()).then(blob => createImageBitmap(blob)).then(bitmap => {
+                    const canvas = getCanvas();
+                    const offCtx = canvas.getContext('2d');
+                    offCtx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+                    var imgData = offCtx.getImageData(0, 0, canvas.width, canvas.height).data;
+                    bitmap.close();
+                    const data = new Uint32Array(imgData).buffer;
+                    postResponse(null, { data: data }, [data]);
+                }).catch(error => {
+                    postResponse(null, {}, []);
+                });
+                //send message back to main thread
+                //the parameters:
+                //error, data, buffers (arraybuffers in data)
+                // postResponse(null, 'message from worker thread', null);
+            };
+        })
+        const actor = new maptalks.worker.Actor(workerKey);
+        actor.test = function (params, callback) {
+            const { url, tile } = params;
+            this.send({ url }, null, (err, message) => {
+                message.tile = tile;
+                callback(message);
+            });
+        }
+
+
         var baseLayer = new maptalks.TileLayer('tile', {
             // urlTemplate: 'https://mt2.google.cn/maps/vt?lyrs=s&hl=zh-CN&gl=CN&x={x}&y={y}&z={z}',
-            urlTemplate: 'https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}.png?access_token='+accesstoken,
+            urlTemplate: 'https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}.png?access_token=' + accesstoken,
             subdomains: ['a', 'b', 'c', 'd'],
             debug: true,
             debugOutline: 'red'
@@ -45,13 +93,16 @@
 
 
         var map = new maptalks.Map("map", {
-            "center": [120.41947212380751, 31.24961113775865], "zoom": 15, "pitch": 58.40000000000002, "bearing": -0.6000000000000227,
+            "center": [107.58032190999756, 33.87946033063278], "zoom": 11.5, "pitch": 58.40000000000002, "bearing": -0.6000000000000227,
             // bearing: 180,
 
             centerCross: true,
             doubleClickZoom: false,
-            baseLayer: baseLayer
+            baseLayer: baseLayer,
+            zoomControl: true,
+            heightFactor: 1.4
         });
+        baseLayer.hide();
 
         // the ThreeLayer to draw buildings
         var threeLayer = new maptalks.ThreeLayer('t', {
@@ -70,14 +121,70 @@
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
 
-            const extent = new maptalks.Extent(120.41015625, 31.25037814985572, 120.421142578125, 31.259769987394264);
-            const material = new THREE.MeshBasicMaterial();
-            const terrain = threeLayer.toTerrain(extent, {
-                texture: './data/streets-satellite.png',
-                image: './data/terrain-rgb.png'
-            }, material);
-            threeLayer.addMesh(terrain);
+            // const extent = new maptalks.Extent(120.41015625, 31.25037814985572, 120.421142578125, 31.259769987394264);
+            // const material = new THREE.MeshBasicMaterial();
+            // const terrain = threeLayer.toTerrain(extent, {
+            //     texture: './data/streets-satellite.png',
+            //     image: './data/terrain-rgb.png'
+            // }, material);
+            // threeLayer.addMesh(terrain);
+            addTerrain();
             animation();
+            initGui();
+        }
+
+        const tileData = [];
+        function addTerrain() {
+            const TILESIZE = 256;
+            const minx = 3268, maxx = 3277, miny = 1632, maxy = 1641;
+            const tiles = [];
+            for (let x = minx; x <= maxx; x++) {
+                for (let y = miny; y <= maxy; y++) {
+                    tiles.push([x, y, 12]);
+                }
+            }
+            tiles.forEach(tile => {
+                const [x, y, z] = tile;
+                const bbox = tilebelt.tileToBBOX(tile);
+                const texture = `https://api.mapbox.com/v4/mapbox.satellite/${z}/${x}/${y}.png?access_token=${accesstoken}`;
+                const terrain = threeLayer.toTerrain(bbox, { texture, imageWidth: TILESIZE, imageHeight: TILESIZE }, new THREE.MeshBasicMaterial());
+                // const sclae = 1.005;
+                // terrain.getObject3d().scale.set(sclae, sclae, 1);
+                threeLayer.addMesh(terrain);
+                tileData.push({
+                    tile,
+                    terrain
+                });
+            });
+            setTimeout(() => {
+                updateTerrainData();
+            }, 2000);
+
+        }
+
+        const taskQueue = [];
+        function updateTerrainData() {
+            tileData.forEach(d => {
+                const { tile, terrain } = d;
+                const [x, y, z] = tile;
+                const url = `https://a.tiles.mapbox.com/v4/mapbox.terrain-rgb/${z}/${x}/${y}.pngraw?access_token=${accesstoken}`;
+                actor.test({ tile, url }, (message) => {
+                    if (message.data) {
+                        taskQueue.push({
+                            data: new Uint32Array(message.data),
+                            terrain
+                        })
+                    }
+                })
+            });
+        }
+
+        function loopQueue() {
+            if (taskQueue.length) {
+                const { data, terrain } = taskQueue[0];
+                terrain.updateData(data);
+                taskQueue.splice(0, 1);
+            }
         }
         const sceneConfig = {
             postProcess: {
@@ -91,17 +198,25 @@
         function animation() {
             // layer animation support Skipping frames
             threeLayer._needsUpdate = !threeLayer._needsUpdate;
-            if (threeLayer._needsUpdate) {
+            if (threeLayer._needsUpdate && !threeLayer.isRendering()) {
                 threeLayer.redraw();
+                loopQueue();
             }
             stats.update();
             requestAnimationFrame(animation);
 
         }
 
+        function getTerrains() {
+            return tileData.map(d => {
+                return d.terrain;
+            })
+        }
+
 
         function initGui() {
             var params = {
+                baseLayer: baseLayer.isVisible(),
                 add: true,
                 color: 0x00ffff,
                 show: true,
@@ -109,27 +224,30 @@
                 altitude: 0
             };
             var gui = new dat.GUI();
+            gui.add(params, 'baseLayer').onChange(function () {
+                baseLayer[params.baseLayer ? 'show' : 'hide']();
+            });
             gui.add(params, 'add').onChange(function () {
                 if (params.add) {
-                    threeLayer.addMesh(lines);
+                    threeLayer.addMesh(getTerrains());
                 } else {
-                    threeLayer.removeMesh(lines);
+                    threeLayer.removeMesh(getTerrains());
                 }
             });
-            gui.addColor(params, 'color').name('line color').onChange(function () {
-                material.color.set(params.color);
-                lines.forEach(function (mesh) {
-                    mesh.setSymbol(material);
-                });
-            });
-            gui.add(params, 'opacity', 0, 1).onChange(function () {
-                material.opacity = params.opacity;
-                lines.forEach(function (mesh) {
-                    mesh.setSymbol(material);
-                });
-            });
+            // gui.addColor(params, 'color').name('line color').onChange(function () {
+            //     material.color.set(params.color);
+            //     lines.forEach(function (mesh) {
+            //         mesh.setSymbol(material);
+            //     });
+            // });
+            // gui.add(params, 'opacity', 0, 1).onChange(function () {
+            //     material.opacity = params.opacity;
+            //     lines.forEach(function (mesh) {
+            //         mesh.setSymbol(material);
+            //     });
+            // });
             gui.add(params, 'show').onChange(function () {
-                lines.forEach(function (mesh) {
+                getTerrains().forEach(function (mesh) {
                     if (params.show) {
                         mesh.show();
                     } else {
@@ -137,8 +255,8 @@
                     }
                 });
             });
-            gui.add(params, 'altitude', 0, 300).onChange(function () {
-                lines.forEach(function (mesh) {
+            gui.add(params, 'altitude', 0, 3000).onChange(function () {
+                getTerrains().forEach(function (mesh) {
                     mesh.setAltitude(params.altitude);
                 });
             });

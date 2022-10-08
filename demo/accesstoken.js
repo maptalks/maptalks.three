@@ -1,1 +1,0 @@
-let accesstoken = 'pk.eyJ1IjoicG9sb25nIiwiYSI6ImNrOGZka3JteTAxcGozZ2w1NmoyZmN6M2EifQ.Jv3ngQNWb1Jg1w4zbXquZA';
