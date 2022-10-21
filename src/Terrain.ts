@@ -56,7 +56,10 @@ function updateGeometryPosition(image, geometry: THREE.BufferGeometry, layer, op
         console.error('image is error type data', image);
         return;
     }
-    let idx = 0;
+    let idx = 0, row = 0, rowIndex = 0;
+    const isBoundary = () => {
+        return (row === 0 || (row + 1) === imageHeight || rowIndex === 0 || (rowIndex + 1) === imageWidth);
+    }
     const out = new THREE.Vector3();
     const cache = heightCache;
     //rgb to height  https://docs.mapbox.com/help/troubleshooting/access-elevation-data/
@@ -64,15 +67,23 @@ function updateGeometryPosition(image, geometry: THREE.BufferGeometry, layer, op
         const R = imgdata[i], G = imgdata[i + 1], B = imgdata[i + 2];
         const height = -10000 + ((R * 256 * 256 + G * 256 + B) * 0.1);
         let z = 0;
-        const value = cache.get(height);
-        if (value !== undefined) {
-            z = value;
-        } else {
-            z = layer.altitudeToVector3(height, height, null, out).x;
-            cache.set(height, z);
+        if (!isBoundary()) {
+            const value = cache.get(height);
+            if (value !== undefined) {
+                z = value;
+            } else {
+                z = layer.altitudeToVector3(height, height, null, out).x;
+                cache.set(height, z);
+            }
         }
+
         (geometry.attributes.position.array as any)[idx * 3 + 2] = z;
         idx++;
+        rowIndex++;
+        if (rowIndex === imageWidth) {
+            row++;
+            rowIndex = 0;
+        }
     }
     geometry.attributes.position.needsUpdate = true;
 }
@@ -115,6 +126,13 @@ class Terrain extends BaseObject {
             vxmax = Math.max(x, vxmax);
             vymax = Math.max(y, vymax);
         });
+        const dx = vxmax - vxmin, dy = vymax - vymin;
+        const ax = dx / imageWidth, ay = dy / imageHeight;
+        //buffer 1px
+        vxmin -= ax;
+        vxmax += ax;
+        vymin -= ay;
+        vymax += ay;
         const w = Math.abs(vxmax - vxmin), h = Math.abs(vymax - vymin);
         const rgbImg = generateImage(image), img = generateImage(texture);
         // const geometry = new THREE.PlaneBufferGeometry(w, h, imageWidth - 1, imageHeight - 1);
