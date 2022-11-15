@@ -31,9 +31,8 @@ export function setRaycasterLinePrecision(raycaster: THREE.Raycaster, linePrecis
 }
 
 export function getVertexColors(): number | boolean {
-    const vertexColors = THREE?.VertexColors ?? false
-    if (vertexColors) {
-        return vertexColors;
+    if (THREE['VertexColors']) {
+        return 2;
     }
     return true;
 
