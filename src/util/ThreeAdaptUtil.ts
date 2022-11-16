@@ -1,4 +1,3 @@
-
 import * as THREE from 'three';
 
 /**
@@ -31,7 +30,7 @@ export function setRaycasterLinePrecision(raycaster: THREE.Raycaster, linePrecis
 }
 
 export function getVertexColors(): number | boolean {
-    const vertexColors = THREE?.VertexColors ?? false
+    const vertexColors = THREE?.['VertexColors'] ?? false
     if (vertexColors) {
         return vertexColors;
     }
