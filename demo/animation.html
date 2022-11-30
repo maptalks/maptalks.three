@@ -8,11 +8,9 @@
     <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
     <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
     <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
-    <script type="text/javascript"
-        src="https://unpkg.com/three@0.138.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/examples/js/loaders/GLTFLoader.js"></script>
     <script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
-    <script type="text/javascript"
-        src="https://unpkg.com/three@0.138.0/examples/js/libs/stats.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/examples/js/libs/stats.min.js"></script>
     <style>
         html,
         body {
@@ -86,10 +84,10 @@
             loader.load('./data/RobotExpressive.glb', function (gltf) {
 
                 model = gltf.scene;
-                model.rotation.x = Math.PI / 2;
                 model.scale.set(100, 100, 100);
-                model.position.copy(threeLayer.coordinateToVector3(map.getCenter()));
-                threeLayer.addMesh(model);
+                const modelContainer = threeLayer.toModel(model, { coordinate: map.getCenter(), interactive: false, bloom: false });
+                modelContainer.getObject3d().rotation.x = Math.PI / 2;
+                threeLayer.addMesh(modelContainer);
 
                 createGUI(model, gltf.animations);
                 animate();
