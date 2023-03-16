@@ -115,7 +115,11 @@ class GPUPick {
 
         //read the pixel
         const { x, y } = pixel;
-        const devicePixelRatio = window.devicePixelRatio;
+        let devicePixelRatio = window.devicePixelRatio;
+        const map = layer.getMap();
+        if (map) {
+            devicePixelRatio = map.getDevicePixelRatio ? map.getDevicePixelRatio() : map.options.devicePixelRatio;
+        }
         const offsetX = (x * devicePixelRatio), offsetY = (pickingTexture.height - y * devicePixelRatio);
         renderer.readRenderTargetPixels(pickingTexture, Math.round(offsetX), Math.round(offsetY), 1, 1, pixelBuffer);
 
