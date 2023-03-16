@@ -11,7 +11,8 @@ const OPTIONS = {
     minZoom: 0,
     maxZoom: 30,
     asynchronous: false,
-    bloom: false
+    bloom: false,
+    pickWeight: -1
 };
 
 /**

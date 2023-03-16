@@ -18,6 +18,7 @@ export type BaseLayerOptionType = {
 };
 
 export type BaseObjectOptionType = {
+    pickWeight?: number,
     interactive?: boolean,
     altitude?: number,
     minZoom?: number,

@@ -933,9 +933,20 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 }
             }
         }
+        let pickResult = baseObjects.filter(mesh => {
+            return mesh instanceof BaseObject;
+        });
+        pickResult = pickResult.sort((a, b) => {
+            return a['options'].pickWeight - b['options'].pickWeight;
+        });
+        baseObjects.forEach(mesh => {
+            if (!(mesh instanceof BaseObject)) {
+                pickResult.push(mesh);
+            }
+        })
         options = maptalks.Util.extend({}, options);
         const count = options['count'];
-        return (maptalks.Util.isNumber(count) && count > 0 ? baseObjects.slice(0, count) : baseObjects);
+        return (maptalks.Util.isNumber(count) && count > 0 ? pickResult.slice(0, count) : baseObjects);
     }
 
     /**
