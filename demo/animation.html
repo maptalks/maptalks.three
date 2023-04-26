@@ -8,11 +8,9 @@
     <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
     <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
     <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
-    <script type="text/javascript"
-        src="https://unpkg.com/three@0.138.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/examples/js/loaders/GLTFLoader.js"></script>
     <script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
-    <script type="text/javascript"
-        src="https://unpkg.com/three@0.138.0/examples/js/libs/stats.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/examples/js/libs/stats.min.js"></script>
     <style>
         html,
         body {
@@ -66,7 +64,13 @@
         const sceneConfig = {
             postProcess: {
                 enable: true,
-                antialias: { enable: true }
+                antialias: { enable: true },
+                bloom: {
+                    enable: true,
+                    threshold: 0,
+                    factor: 1,
+                    radius: 0.02,
+                },
             }
         };
         const groupLayer = new maptalks.GroupGLLayer('group', [threeLayer], { sceneConfig, onlyWebGL1: true });
@@ -74,8 +78,8 @@
 
 
         var stats, clock, gui, mixer, actions, activeAction, previousAction;
-        var model, face;
-        var api = { state: 'Walking' };
+        var model, face, baseObjectModel;
+        var api = { state: 'Walking', bloom: false };
 
 
         function addGltf() {
@@ -88,8 +92,10 @@
                 model = gltf.scene;
                 model.rotation.x = Math.PI / 2;
                 model.scale.set(100, 100, 100);
-                model.position.copy(threeLayer.coordinateToVector3(map.getCenter()));
-                threeLayer.addMesh(model);
+
+                baseObjectModel = threeLayer.toModel(model, { center: map.getCenter() });
+                // model.position.copy(threeLayer.coordinateToVector3(map.getCenter()));
+                threeLayer.addMesh(baseObjectModel);
 
                 createGUI(model, gltf.animations);
                 animate();
@@ -108,6 +114,9 @@
             var emotes = ['Jump', 'Yes', 'No', 'Wave', 'Punch', 'ThumbsUp'];
 
             gui = new dat.GUI();
+            gui.add(api, 'bloom').onChange(() => {
+                baseObjectModel.options.bloom = api.bloom;
+            });
 
             mixer = new THREE.AnimationMixer(model);
 
