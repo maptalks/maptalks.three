@@ -166,7 +166,8 @@ class ExtrudeLineTrail extends BaseObject {
         const { index, geometries, speed, idx, chunkLines, trail, lineWidth, depth, loaded, layer, positionMap, centerPt } = this._params;
         if (!loaded) return;
         const i = Math.round(index);
-        if (i > idx) {
+        if (i > idx && i <= chunkLines.length - 1) {
+            // console.log(i, geometries.length);
             this._params.idx++;
             let p = geometries[i];
             //if not init, this is will running
