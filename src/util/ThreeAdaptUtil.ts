@@ -29,11 +29,18 @@ export function setRaycasterLinePrecision(raycaster: THREE.Raycaster, linePrecis
     }
 }
 
-export function getVertexColors(): number | boolean {
-    const vertexColors = THREE?.['VertexColors'] ?? false
-    if (vertexColors) {
-        return vertexColors;
+function _getThreeVertexColors(threeNameSpace) {
+    if (threeNameSpace['VertexColors']) {
+        return threeNameSpace['VertexColors'];
     }
-    return true;
+    return 2;
+}
+export function getVertexColors(): number | boolean {
+    // const vertexColors = THREE?.['VertexColors'] ?? false
+    // if (vertexColors) {
+    //     return vertexColors;
+    // }
+    // return true;
+    return _getThreeVertexColors(THREE);
 
 }

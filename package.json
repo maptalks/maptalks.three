@@ -42,7 +42,7 @@
     "eslint-plugin-mocha": "^5.0.0",
     "rollup": "^2.64.0",
     "rollup-plugin-terser": "^7.0.2",
-    "three": "^0.125.1",
+    "three": "^0.151.0",
     "tslib": "^2.1.0",
     "typescript": "^4.5.4"
   },
