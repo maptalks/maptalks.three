@@ -8,7 +8,8 @@
     "url": "https://github.com/maptalks/maptalks.three.js.git"
   },
   "files": [
-    "dist/"
+    "dist/",
+    "src/"
   ],
   "main": "dist/maptalks.three.js",
   "types": "dist/index.d.ts",

@@ -971,6 +971,80 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return 0.01;
     }
 
+    _fireGeoEvent(baseObject, event: MouseEvent, type) {
+        if (!(baseObject instanceof BaseObject)) {
+            return this;
+        }
+        type = type || event.type;
+        const e = this._getEventParams(event);
+        const { coordinate } = (e as any);
+        function showInfoWindow(baseObject: BaseObject, eventType?: string) {
+            eventType = eventType || type;
+            const infoWindow = baseObject.getInfoWindow();
+            if (infoWindow && (!infoWindow._owner)) {
+                infoWindow.addTo(baseObject);
+            }
+
+            const infoOptions = infoWindow ? (infoWindow as any).options : {};
+            const autoOpenOn = infoOptions['autoOpenOn'] || 'click';
+            if (autoOpenOn === eventType) {
+                baseObject.openInfoWindow(coordinate);
+                baseObject.fire('showinfowindow', { infoWindow });
+            }
+        }
+        if (type === 'mousemove') {
+            baseObject.fire(type, Object.assign({}, e, { target: baseObject, selectMesh: (baseObject.getSelectMesh ? baseObject.getSelectMesh() : null) }));
+            // tooltip
+            const tooltip = baseObject.getToolTip();
+            if (tooltip && (!tooltip._owner)) {
+                tooltip.addTo(baseObject);
+            }
+            baseObject.openToolTip(coordinate);
+            showInfoWindow(baseObject);
+        } else if (type === 'mouseover') {
+            if (!baseObject._mouseover) {
+                baseObject.fire('mouseover', Object.assign({}, e, { target: baseObject, type: 'mouseover', selectMesh: (baseObject.getSelectMesh ? baseObject.getSelectMesh() : null) }));
+                baseObject._mouseover = true;
+                showInfoWindow(baseObject, 'mouseover');
+            }
+        } else if (type === 'mouseout') {
+            if (baseObject.getSelectMesh) {
+                if (!baseObject.isHide) {
+                    baseObject._mouseover = false;
+                    baseObject.fire('mouseout', Object.assign({}, e, { target: baseObject, type: 'mouseout', selectMesh: null }));
+                    baseObject.closeToolTip();
+                }
+            } else {
+                baseObject._mouseover = false;
+                baseObject.fire('mouseout', Object.assign({}, e, { target: baseObject, type: 'mouseout' }));
+                baseObject.closeToolTip();
+            }
+        } else {
+            baseObject.fire(type, Object.assign({}, e, { target: baseObject, selectMesh: (baseObject.getSelectMesh ? baseObject.getSelectMesh() : null) }));
+            showInfoWindow(baseObject);
+        }
+
+    }
+
+    _emptyIdentify(event: MouseEvent) {
+        const scene = this.getScene();
+        if (!scene) {
+            return this;
+        }
+        const map = this.map || this.getMap();
+        if (!map) {
+            return this;
+        }
+        const e = map._getEventParams ? map._getEventParams(event) : this._getEventParams(event);
+        for (let i = 0, len = scene.children.length; i < len; i++) {
+            const child = scene.children[i] || {};
+            const parent = child['__parent'];
+            if (parent) {
+                (parent as BaseObject).fire('empty', Object.assign({}, e, { target: parent }));
+            }
+        }
+    }
+
     /**
      * fire baseObject events
      * @param {*} e
@@ -1196,7 +1270,9 @@ class ThreeLayer extends maptalks.CanvasLayer {
         if (!this._zoomendThis) {
             this._zoomendThis = this._zoomend.bind(this);
         }
-        maptalks.DomUtil.on(dom, EVENTS.join(' '), this._identifyBaseObjectEventsThis, this);
+        if (!map.options._supportPluginEvent) {
+            maptalks.DomUtil.on(dom, EVENTS.join(' '), this._identifyBaseObjectEventsThis, this);
+        }
         this._needsUpdate = true;
         if (!this._animationBaseObjectMap) {
             this._animationBaseObjectMap = {};
@@ -1210,7 +1286,9 @@ class ThreeLayer extends maptalks.CanvasLayer {
         const map = this.map || this.getMap();
         if (!map) return this;
         const dom = this._getGeometryEventMapPanel();
-        maptalks.DomUtil.off(dom, EVENTS.join(' '), this._identifyBaseObjectEventsThis, this);
+        if (!map.options._supportPluginEvent) {
+            maptalks.DomUtil.off(dom, EVENTS.join(' '), this._identifyBaseObjectEventsThis, this);
+        }
         map.off('zooming zoomend', this._zoomendThis, this);
         this.clear();
         return this;
