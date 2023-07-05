@@ -1,14 +1,14 @@
 import * as THREE from 'three';
 import { MergeAttributeType } from '../type/BaseAttribute';
 import { mergeBufferGeometries } from './MergeGeometryUtil';
-import { addAttribute } from './ThreeAdaptUtil';
+import { addAttribute, getBoxGeometry } from './ThreeAdaptUtil';
 import { cylinder } from 'poly-extrude';
 // type Cache = {
 //     [key: number]: THREE.BufferGeometry
 // }
 // const barGeometryCache: Cache = {};
 
-const defaultBoxGeometry: THREE.BoxBufferGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
+const defaultBoxGeometry: THREE.BufferGeometry = getBoxGeometry(1, 1, 1);
 defaultBoxGeometry.translate(0, 0, 0.5);
 
 const topColor: THREE.Color = new THREE.Color('#fff'),
