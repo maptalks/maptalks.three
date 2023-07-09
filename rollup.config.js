@@ -6,6 +6,7 @@ import { terser } from 'rollup-plugin-terser';
 import json from '@rollup/plugin-json';
 import typescript from '@rollup/plugin-typescript';
 const pkg = require('./package.json');
+const dev = process.env.BUILD === 'dev';
 
 const banner = `/*!\n * ${pkg.name} v${pkg.version}\n * LICENSE : ${pkg.license}\n * (c) 2016-${new Date().getFullYear()} maptalks.org\n */`;
 
@@ -76,8 +77,7 @@ const es5BasePlugins = [
     }),
     removeGlobal()
 ];
-
-module.exports = [
+let bundleList = [
     {
         input: 'src/index.ts',
         plugins: basePlugins,
@@ -168,3 +168,7 @@ module.exports = [
     //     }
     // }
 ];
+if (dev) {
+    bundleList = bundleList.slice(0, 1);
+}
+module.exports = bundleList;
