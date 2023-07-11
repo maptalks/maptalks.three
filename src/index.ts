@@ -125,7 +125,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
     _baseObjects: Array<BaseObject> = [];
     _delayMeshes: Array<BaseObject> = [];
     _identifyBaseObjectEventsThis: Function;
-    _zoomendThis: Function
+    _zoomendThis: Function;
+    _emptyIdentifyThis: Function;
 
     constructor(id: string, options: BaseLayerOptionType) {
         super(id, options);
@@ -971,7 +972,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return 0.01;
     }
 
-    _fireGeoEvent(baseObject, event: MouseEvent, type) {
+    fireGeoEvent(baseObject, event: MouseEvent, type) {
         if (!(baseObject instanceof BaseObject)) {
             return this;
         }
@@ -1026,7 +1027,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
 
     }
 
-    _emptyIdentify(event: MouseEvent) {
+    _emptyIdentify(options: any = {}) {
+        const event = options.domEvent;
         const scene = this.getScene();
         if (!scene) {
             return this;
@@ -1270,8 +1272,14 @@ class ThreeLayer extends maptalks.CanvasLayer {
         if (!this._zoomendThis) {
             this._zoomendThis = this._zoomend.bind(this);
         }
-        if (!map.options._supportPluginEvent) {
+        if (!this._emptyIdentifyThis) {
+            this._emptyIdentifyThis = this._emptyIdentify.bind(this);
+        }
+        if (!map.options.supportPluginEvent) {
             maptalks.DomUtil.on(dom, EVENTS.join(' '), this._identifyBaseObjectEventsThis, this);
+        } else {
+            // @ts-ignore
+            this.on('identifyempty', this._emptyIdentifyThis);
         }
         this._needsUpdate = true;
         if (!this._animationBaseObjectMap) {
@@ -1286,8 +1294,11 @@ class ThreeLayer extends maptalks.CanvasLayer {
         const map = this.map || this.getMap();
         if (!map) return this;
         const dom = this._getGeometryEventMapPanel();
-        if (!map.options._supportPluginEvent) {
+        if (!map.options.supportPluginEvent) {
             maptalks.DomUtil.off(dom, EVENTS.join(' '), this._identifyBaseObjectEventsThis, this);
+        } else {
+            // @ts-ignore
+            this.off('identifyempty', this._emptyIdentifyThis);
         }
         map.off('zooming zoomend', this._zoomendThis, this);
         this.clear();
