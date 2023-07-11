@@ -2,7 +2,7 @@
 import { MergeAttributeType } from './../type/index';
 import * as THREE from 'three';
 import { TypedArray } from 'three';
-import { addAttribute } from './ThreeAdaptUtil';
+import { addAttribute, getBoxGeometry } from './ThreeAdaptUtil';
 
 export function mergeBufferGeometries(geometries: Array<MergeAttributeType>): THREE.BufferGeometry {
     const { position, normal, uv, indices } = mergeBufferGeometriesAttribute(geometries);
@@ -99,7 +99,7 @@ let defaultBufferGeometry: THREE.BufferGeometry;
 export function getDefaultBufferGeometry(): THREE.BufferGeometry {
     if (!defaultBufferGeometry) {
         const SIZE = 0.000001;
-        defaultBufferGeometry = new THREE.BoxBufferGeometry(SIZE, SIZE, SIZE);
+        defaultBufferGeometry = getBoxGeometry(SIZE, SIZE, SIZE);
     }
     return defaultBufferGeometry;
 }
