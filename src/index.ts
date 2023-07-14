@@ -844,7 +844,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * @param {Object} options
      * @return {Array}
      */
-    identify(coordinate: maptalks.Coordinate, options: object): Array<BaseObject | THREE.Object3D> {
+    identify(coordinate: maptalks.Coordinate | maptalks.Point, options: object): Array<BaseObject | THREE.Object3D> {
         if (!coordinate) {
             console.error('coordinate is null,it should be Coordinate');
             return [];
@@ -948,6 +948,15 @@ class ThreeLayer extends maptalks.CanvasLayer {
         options = maptalks.Util.extend({}, options);
         const count = options['count'];
         return (maptalks.Util.isNumber(count) && count > 0 ? pickResult.slice(0, count) : baseObjects);
+    }
+
+    identifyAtPoint(point:maptalks.Point, options = {}) {
+        const map = this.getMap();
+        if (!map) {
+            return [];
+        }
+        const coordinate = map.containerPointToCoordinate(point);
+        return this.identify(coordinate, options);
     }
 
     /**
