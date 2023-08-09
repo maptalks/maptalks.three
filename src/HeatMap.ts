@@ -50,7 +50,7 @@ class HeatMap extends BaseObject {
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, points: data });
 
         // Calculate canvas width and height
-        let { gridScale, altitude } = options;
+        let { gridScale, altitude, size } = options;
         const offsetX = Math.abs(maxX - minX), offsetY = Math.abs(maxY - minY);
         const maxOffset = Math.max((offsetX * gridScale), (offsetY * gridScale));
         if (maxOffset > CANVAS_MAX_SIZE) {
@@ -58,9 +58,10 @@ class HeatMap extends BaseObject {
             const offset = maxOffset / gridScale;
             gridScale = CANVAS_MAX_SIZE / offset;
         }
-        const canvasWidth = Math.ceil(offsetX * gridScale), canvasHeight = Math.ceil(offsetY * gridScale);
+        let canvasWidth = Math.ceil(offsetX * gridScale), canvasHeight = Math.ceil(offsetY * gridScale);
         const scaleX = canvasWidth / offsetX, scaleY = canvasHeight / offsetY;
         const pixels = [];
+        const bufferSize = Math.ceil(size * 2);
         for (let i = 0, len = vs.length; i < len; i++) {
             const v = vs[i];
             v.x -= minX;
@@ -68,12 +69,18 @@ class HeatMap extends BaseObject {
             v.x *= scaleX;
             v.y *= scaleY;
             v.y = canvasHeight - v.y;
+            //translate x y
+            v.x += bufferSize;
+            v.y += bufferSize;
             //for heat draw data
             pixels.push({
                 coordinate: [v.x, v.y],
                 count: data[i].count
             });
         }
+        //buffer canvas size
+        canvasWidth += bufferSize * 2;
+        canvasHeight += bufferSize * 2;
         let shadowCanvas = createCanvas(canvasWidth, canvasHeight);
         let shadowContext = shadowCanvas.getContext('2d');
         // shadowContext.scale(devicePixelRatio, devicePixelRatio);
