@@ -65,6 +65,14 @@ export type ExtrudeLineOptionType = BaseObjectOptionType & {
     bottomColor?: string,
     key?: string
 }
+export type PathOptionType = BaseObjectOptionType & {
+    bottomHeight?: number,
+    width?: number,
+    cornerRadius?: number,
+    topColor?: string,
+    bottomColor?: string,
+    key?: string
+}
 
 export type ExtrudeLineTrailOptionType = BaseObjectOptionType & {
     trail?: number,

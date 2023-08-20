@@ -1,4 +1,8 @@
-import { extrudePolygons as _extrudePolygons, extrudePolylines as _extrudePolylines, cylinder as _cylinder } from 'poly-extrude';
+import { extrudePolygons as _extrudePolygons, extrudePolylines as _extrudePolylines, cylinder as _cylinder, expandPaths as _expandPaths } from 'poly-extrude';
+
+const EXTRUDEPOLYGONS = 1;
+const EXTRUDELINES = 2;
+const EXPANDPATHS = 3;
 
 export const initialize = function () {
 };
@@ -10,13 +14,13 @@ export const onmessage = function (message, postResponse) {
         generateData(datas, center, glRes, matrix);
         const result = generateExtrude(datas);
         postResponse(null, result, [result.position, result.normal, result.uv, result.indices]);
-    } else if (type === 'ExtrudeLines') {
+    } else if (type === 'ExtrudeLines' || type === 'Paths') {
         for (let i = 0, len = datas.length; i < len; i++) {
             for (let j = 0, len1 = datas[i].data.length; j < len1; j++) {
                 datas[i].data[j] = arrayBufferToArray(datas[i].data[j], datas[i].center || center, glRes, matrix);
             }
         }
-        const result = generateExtrude(datas, true);
+        const result = generateExtrude(datas, type === 'ExtrudeLines' ? EXTRUDELINES : EXPANDPATHS);
         postResponse(null, result, [result.position, result.normal, result.uv, result.indices]);
     } else if (type === 'ExtrudePolygon') {
         const polygons = [], transfer = [];
@@ -97,7 +101,7 @@ export const onmessage = function (message, postResponse) {
             geometriesAttributes,
             faceMap
         }, [position.buffer]);
-    } else if (type === 'ExtrudeLine') {
+    } else if (type === 'ExtrudeLine' || type === 'Path') {
         for (let i = 0, len = datas.length; i < len; i++) {
             for (let j = 0, len1 = datas[i].data.length; j < len1; j++) {
                 datas[i].data[j] = arrayBufferToArray(datas[i].data[j], datas[i].center || center, glRes, matrix);
@@ -106,7 +110,7 @@ export const onmessage = function (message, postResponse) {
         const lines = [], transfer = [];
         datas.forEach(d => {
             const line = [d];
-            const { position, normal, uv, indices } = generateExtrude(line, true);
+            const { position, normal, uv, indices } = generateExtrude(line, type === 'ExtrudeLine' ? EXTRUDELINES : EXPANDPATHS);
             lines.push({
                 id: d.id,
                 position,
@@ -140,6 +144,8 @@ export const onmessage = function (message, postResponse) {
         datas = new Float32Array(datas);
         const result = cylinder(datas);
         postResponse(null, result, [result.position, result.normal, result.uv, result.indices]);
+    } else {
+        console.error(`No processing logic found for type:${type}`);
     }
 };
 
@@ -201,12 +207,19 @@ function arrayBufferToArray(buffer, center, glRes, matrix) {
 
 
 
-function generateExtrude(datas, isLine = false) {
+function generateExtrude(datas, type = EXTRUDEPOLYGONS) {
     const len = datas.length;
     const geometriesAttributes = [], geometries = [];
     let psIndex = 0;
     for (let i = 0; i < len; i++) {
-        const buffGeom = isLine ? extrudeLine(datas[i]) : extrudePolygons(datas[i]);
+        let buffGeom;
+        if (type === EXTRUDEPOLYGONS) {
+            buffGeom = extrudePolygons(datas[i]);
+        } else if (type === EXTRUDELINES) {
+            buffGeom = extrudeLines(datas[i]);
+        } else if (type === EXPANDPATHS) {
+            buffGeom = expandPaths(datas[i]);
+        }
         const minZ = datas[i].bottomHeight || 0;
         const { position } = buffGeom;
         geometries.push(buffGeom);
@@ -269,11 +282,21 @@ function extrudePolygons(d) {
     return { position, normal, uv, indices };
 }
 
-function extrudeLine(d) {
+function extrudeLines(d) {
     const { data, height, width, bottomHeight } = d;
     const { position, normal, uv, indices } = _extrudePolylines(data, {
         lineWidth: width,
         depth: height
+    });
+    setBottomHeight(position, bottomHeight);
+    return { position, normal, uv, indices };
+}
+
+function expandPaths(d) {
+    const { data, cornerRadius, width, bottomHeight } = d;
+    const { position, normal, uv, indices } = _expandPaths(data, {
+        lineWidth: width,
+        cornerRadius
     });
     setBottomHeight(position, bottomHeight);
     return { position, normal, uv, indices };

@@ -29,9 +29,10 @@ class Boxs extends MergedMixin(BaseObject) {
         const centerPt = layer.coordinateToVector3(center);
         const geometries = [], bars = [], geometriesAttributes = [], faceMap = [];
         let faceIndex = 0, psIndex = 0, normalIndex = 0, uvIndex = 0;
+        options = maptalks.Util.extend({}, { altitude: 0, layer, points }, options);
         const cache = {}, altCache = {};
         for (let i = 0; i < len; i++) {
-            const opts = maptalks.Util.extend({ index: i }, OPTIONS, points[i]);
+            const opts = maptalks.Util.extend({ index: i }, options, points[i]);
             const { radius, altitude, topColor, bottomColor, height, coordinate } = opts;
             const r = distanceToVector3(radius, layer, cache);
             const h = altitudeToVector3(height, layer, altCache);
@@ -90,7 +91,6 @@ class Boxs extends MergedMixin(BaseObject) {
             uvIndex += uvCount * 2;
         }
         super();
-        options = maptalks.Util.extend({}, { altitude: 0, layer, points }, options);
         this._initOptions(options);
         const geometry = mergeBarGeometry(geometries);
         this._createMesh(geometry, material);

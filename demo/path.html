@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>path test</title>
+    <script type="text/javascript" src="https://unpkg.com/gcoord@0.2.3/dist/gcoord.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
+    <script type="text/javascript" src="../dist/maptalks.three.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            center: [120.59034272, 31.27578422],
+            zoom: 20,
+            pitch: 70,
+            zoomControl: true,
+            // bearing: 180,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('base', {
+                maxAvailableZoom: 18,
+                urlTemplate:
+                    'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="https://www.esri.com/en-us/home">esri</a>'
+            })
+        });
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+            // animation: true
+        });
+
+
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            addLines('briges.geojson');
+            initGui();
+            animation();
+        };
+        const sceneConfig = {
+            postProcess: {
+                enable: true,
+                antialias: { enable: true }
+            }
+        };
+        const groupLayer = new maptalks.GroupGLLayer('group', [threeLayer], { sceneConfig });
+        groupLayer.addTo(map);
+        var lines;
+        function getPathMaterial(color = 'red') {
+            const texture = new THREE.TextureLoader().load('./data/road.jpg');
+            texture.needsUpdate = true; //使用贴图时进行更新
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+            // texture.repeat.set(0.002, 0.002);
+            texture.repeat.set(1, 1);
+            const material = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true,
+                color: '#fff'
+            });
+            return material;
+        }
+
+        var material = getPathMaterial();
+        var highlightmaterial = new THREE.MeshBasicMaterial({
+            color: 'red',
+            // opacity: 0.8,
+            transparent: true
+        });
+
+        function transFormGeoJSON(geojson) {
+            geojson.features = geojson.features.filter(f => {
+                return f.geometry.type.includes('LineString');
+            });
+            geojson.features.forEach((f, index) => {
+                geojson.features[index] = gcoord.transform(f, gcoord.AMap, gcoord.WGS84);
+            });
+        }
+        function addLines(fileName) {
+            fetch(`./data/${fileName}`).then(function (res) {
+                return res.json();
+            }).then(function (geojson) {
+                transFormGeoJSON(geojson);
+                var lineStrings = maptalks.GeoJSON.toGeometry(geojson);
+                var timer = 'generate line time';
+                console.time(timer);
+                lines = lineStrings.slice(0, Infinity).map(function (lineString) {
+                    var line = threeLayer.toPath(lineString, { altitude: Math.random() * 0.2, cornerRadius: 1, width: 8, asynchronous: true }, material);
+                    //tooltip test
+                    line.setToolTip(line.getId(), {
+                        showTimeout: 0,
+                        eventsPropagation: true,
+                        dx: 10
+                    });
+
+                    //infowindow test
+                    line.setInfoWindow({
+                        content: 'hello world,id:' + line.getId(),
+                        title: 'message',
+                        animationDuration: 0,
+                        autoOpenOn: false
+                    });
+
+                    //event test
+                    ['click', 'mouseout', 'mouseover', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].forEach(function (eventType) {
+                        line.on(eventType, function (e) {
+                            // console.log(e.type, e);
+                            // console.log(this);
+                            if (e.type === 'mouseout') {
+                                this.setSymbol(material);
+                            }
+                            if (e.type === 'mouseover') {
+                                this.setSymbol(highlightmaterial);
+                            }
+                        });
+                    });
+                    return line;
+                });
+                console.log('lines.length:', lines.length);
+                console.timeEnd(timer);
+                threeLayer.addMesh(lines);
+            })
+        }
+
+        function initGui() {
+            var params = {
+                add: true,
+                color: '#fff',
+                show: true,
+                opacity: 1,
+                altitude: 0
+            };
+            var gui = new dat.GUI();
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    threeLayer.addMesh(lines);
+                } else {
+                    threeLayer.removeMesh(lines);
+                }
+            });
+            gui.addColor(params, 'color').name('line color').onChange(function () {
+                material.color.set(params.color);
+                lines.forEach(function (mesh) {
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'opacity', 0, 1).onChange(function () {
+                material.opacity = params.opacity;
+                lines.forEach(function (mesh) {
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'show').onChange(function () {
+                lines.forEach(function (mesh) {
+                    if (params.show) {
+                        mesh.show();
+                    } else {
+                        mesh.hide();
+                    }
+                });
+            });
+            gui.add(params, 'altitude', 0, 300).onChange(function () {
+                lines.forEach(function (mesh) {
+                    mesh.setAltitude(params.altitude);
+                });
+            });
+        }
+
+
+        function animation() {
+            material.map.offset.x -= 0.01;
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer.redraw();
+            }
+            requestAnimationFrame(animation);
+        }
+    </script>
+</body>
+
+</html>

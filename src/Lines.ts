@@ -6,7 +6,7 @@ import MergedMixin from './MergedMixin';
 import Line from './Line';
 import { isGeoJSONLine } from './util/GeoJSONUtil';
 import { addAttribute, getVertexColors } from './util/ThreeAdaptUtil';
-import { getCenterOfPoints, getGeometriesColorArray, setBottomHeight } from './util/index';
+import { getCenterOfPoints, getGeometriesColorArray, getLineStringProperties, setBottomHeight } from './util/index';
 import { LineMaterialType, LineOptionType, LineStringType } from './type/index';
 import { ThreeLayer } from './index';
 import { LinesTaskIns } from './BaseObjectTaskManager';
@@ -52,16 +52,18 @@ class Lines extends MergedMixin(BaseObject) {
                 center,
                 data: lineStringList,
                 lineStrings,
-                baseObject: this
+                baseObject: this,
+                option: options,
             });
         } else {
             for (let i = 0; i < len; i++) {
                 const lls = lineStringList[i];
                 let psCount = 0;
                 for (let m = 0, le = lls.length; m < le; m++) {
-                    const properties = (isGeoJSONLine(lls[m] as any) ? lls[m]['properties'] : (lls[m] as any).getProperties() || {});
+                    const properties = getLineStringProperties(lls[m]);
+                    const opts = maptalks.Util.extend({}, options, properties);
                     const { positions } = getLinePosition(lls[m], layer, center, false);
-                    setBottomHeight(positions, properties.bottomHeight, layer, cache);
+                    setBottomHeight(positions, opts.bottomHeight, layer, cache);
                     psCount += (positions.length / 3 * 2 - 2);
                     positionList.push(getLineSegmentPosition(positions));
                 }

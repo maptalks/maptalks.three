@@ -9,7 +9,7 @@ import { generateBufferGeometry, generatePickBufferGeometry, getDefaultBufferGeo
 import { ExtrudePolygonOptionType, PolygonType } from './type';
 import { ThreeLayer } from './index';
 import { getVertexColors } from './util/ThreeAdaptUtil';
-import { setBottomHeight } from './util';
+import { getPolygonProperties, setBottomHeight } from './util';
 import { ExtrudePolygonsTaskIns } from './BaseObjectTaskManager';
 
 const OPTIONS = {
@@ -63,7 +63,8 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
                 key: options.key,
                 center,
                 data: polygons,
-                baseObject: this
+                baseObject: this,
+                option: options,
             });
         } else {
             const centerPt = layer.coordinateToVector3(center);
@@ -72,9 +73,9 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
             const altCache = {};
             for (let i = 0; i < len; i++) {
                 const polygon = polygons[i];
-                const properties = (isGeoJSONPolygon(polygon as any) ? polygon['properties'] : (polygon as any).getProperties() || {});
-                const height = properties.height || 1;
-                const bottomHeight = properties.bottomHeight || 0;
+                const opts = maptalks.Util.extend({}, options, getPolygonProperties(polygon));
+                const height = opts.height || 1;
+                const bottomHeight = opts.bottomHeight || 0;
                 const buffGeom = getExtrudeGeometryParams(polygon, height, layer, center, centerPt, altCache);
                 geometries.push(buffGeom);
                 const minZ = setBottomHeight(buffGeom, bottomHeight, layer, altCache);
