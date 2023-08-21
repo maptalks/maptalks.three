@@ -92,7 +92,12 @@ export class BaseObjectTask {
             if (this.queueMap[id]) {
                 const { baseObject } = this.queueMap[id];
                 if (baseObject && baseObject._workerLoad) {
-                    baseObject._workerLoad(result);
+                    const layer = baseObject.getLayer();
+                    if (layer) {
+                        baseObject._workerLoad(result);
+                    } else {
+                        console.warn(baseObject, ' worker Processing completed but removed from the layer');
+                    }
                 }
                 delete this.queueMap[id];
             }
