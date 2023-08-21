@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as maptalks from 'maptalks';
-import { extrudePolylines } from 'poly-extrude';
+import { extrudePolylines, expandPaths } from 'poly-extrude';
 import { isGeoJSON, getGeoJSONCoordinates, getGeoJSONCenter, isGeoJSONMulti, spliteGeoJSONMulti, isGeoJSONLine } from './GeoJSONUtil';
 import { addAttribute } from './ThreeAdaptUtil';
 import { ThreeLayer } from './../index';
@@ -195,6 +195,38 @@ export function getExtrudeLineParams(lineString: SingleLineStringType | Array<TH
     } = extrudePolylines([ps], {
         lineWidth: lineWidth,
         depth: depth
+    });
+    return {
+        position: position,
+        normal: normal,
+        indices: indices,
+        uv
+    };
+}
+
+/**
+ *
+ * @param {*} lineString
+ * @param {*} lineWidth
+ * @param {*} cornerRadius
+ * @param {*} layer
+ */
+export function getPathParams(lineString: SingleLineStringType | Array<THREE.Vector3>,
+    lineWidth = 1, cornerRadius = 1, layer: ThreeLayer, center?: maptalks.Coordinate): MergeAttributeType {
+    const positions = getLinePosition(lineString, layer, center).positionsV;
+    const ps = [];
+    for (let i = 0, len = positions.length; i < len; i++) {
+        const p = positions[i];
+        ps.push([p.x, p.y]);
+    }
+    const {
+        indices,
+        position,
+        normal,
+        uv
+    } = expandPaths([ps], {
+        lineWidth: lineWidth,
+        cornerRadius: cornerRadius
     });
     return {
         position: position,

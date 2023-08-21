@@ -33,10 +33,12 @@ import * as IdentifyUtil from './util/IdentifyUtil';
 import * as geometryExtrude from 'deyihu-geometry-extrude';
 import * as polyextrude from 'poly-extrude';
 import LineMaterial from './util/fatline/LineMaterial';
-import { BarOptionType, BaseLayerOptionType, BaseObjectOptionType, ExtrudeLineOptionType, ExtrudeLineTrailOptionType, ExtrudePolygonOptionType, FatLineMaterialType, getBaseObjectMaterialType, HeatMapDataType, HeatMapOptionType, LineMaterialType, LineOptionType, LineStringType, PointOptionType, PolygonType, SingleLineStringType, TerrainOptionType } from './type/index';
+import { BarOptionType, BaseLayerOptionType, BaseObjectOptionType, ExtrudeLineOptionType, ExtrudeLineTrailOptionType, ExtrudePolygonOptionType, FatLineMaterialType, getBaseObjectMaterialType, HeatMapDataType, HeatMapOptionType, LineMaterialType, LineOptionType, LineStringType, PathOptionType, PointOptionType, PolygonType, SingleLineStringType, TerrainOptionType } from './type/index';
 import { getWorkerCode, getWorkerName } from './worker/getworker';
 import { BaseObjectTaskManager, BaseObjectTask } from './BaseObjectTaskManager';
 import { fetchDataWorkerKey, fetchDataWorkerCode, getFetchDataActor } from './worker/fetchdataworker';
+import Path from './Path';
+import Paths from './Paths';
 
 
 const options: BaseLayerOptionType = {
@@ -605,6 +607,21 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return new Boxs(points, options, material, this);
     }
 
+    /**
+     *
+     * @param {maptalks.LineString} lineString
+     * @param {Object} options
+     * @param {THREE.Material} material
+     */
+    toPath(lineString: LineStringType, options: PathOptionType, material: THREE.Material): Path {
+        return new Path(lineString, options, material, this);
+    }
+
+
+    toPaths(lineStrings: Array<LineStringType>, options: PathOptionType, material: THREE.Material): Paths {
+        return new Paths(lineStrings, options, material, this);
+    }
+
 
     getBaseObjects(): Array<BaseObject> {
         return this.getMeshes().filter((mesh => {
@@ -629,8 +646,16 @@ class ThreeLayer extends maptalks.CanvasLayer {
     }
 
 
+    /**
+     * clear all object3ds
+     * @returns 
+     */
     clear() {
         return this.clearMesh();
+    }
+
+    clearBaseObjects() {
+        return this.removeMesh(this.getBaseObjects());
     }
 
     clearMesh() {
@@ -950,7 +975,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return (maptalks.Util.isNumber(count) && count > 0 ? pickResult.slice(0, count) : baseObjects);
     }
 
-    identifyAtPoint(point:maptalks.Point, options = {}) {
+    identifyAtPoint(point: maptalks.Point, options = {}) {
         const map = this.getMap();
         if (!map) {
             return [];

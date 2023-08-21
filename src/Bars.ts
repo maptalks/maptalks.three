@@ -47,7 +47,7 @@ class Bars extends MergedMixin(BaseObject) {
             this.getOptions().id = id;
             const datas = [];
             for (let i = 0; i < len; i++) {
-                const opts = maptalks.Util.extend({ index: i }, OPTIONS, points[i]);
+                const opts = maptalks.Util.extend({ index: i }, options, points[i]);
                 const { radius, radialSegments, altitude, height, coordinate } = opts;
                 const r = distanceToVector3(radius, layer, cache);
                 (points[i] as any)._radius = r;
@@ -64,7 +64,7 @@ class Bars extends MergedMixin(BaseObject) {
             });
         } else {
             for (let i = 0; i < len; i++) {
-                const opts = maptalks.Util.extend({ index: i }, OPTIONS, points[i]);
+                const opts = maptalks.Util.extend({ index: i }, options, points[i]);
                 const { radius, radialSegments, altitude, topColor, bottomColor, height, coordinate } = opts;
                 const r = distanceToVector3(radius, layer, cache);
                 const h = altitudeToVector3(height, layer, altCache);

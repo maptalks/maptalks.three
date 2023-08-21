@@ -2,6 +2,7 @@ import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import { ThreeLayer } from './../index';
 import { MergeAttributeType } from './../type/index';
+import { isGeoJSONLine, isGeoJSONPolygon } from './GeoJSONUtil';
 //Using cache to reduce computation
 export function distanceToVector3(distance: number, layer: ThreeLayer, cache: { [key: number]: number } = {}): number {
     if (cache[distance] === undefined) {
@@ -105,4 +106,12 @@ export function coordiantesToArrayBuffer(coordiantes = []): ArrayBuffer {
         array[i * 2 + 1] = y;
     }
     return array.buffer;
+}
+
+export function getPolygonProperties(polygon) {
+    return (isGeoJSONPolygon(polygon) ? polygon['properties'] : polygon.getProperties()) || {};
+}
+
+export function getLineStringProperties(lineString) {
+    return (isGeoJSONLine(lineString as any) ? lineString['properties'] : (lineString as any).getProperties()) || {};
 }

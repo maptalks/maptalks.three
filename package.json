@@ -49,6 +49,6 @@
   },
   "dependencies": {
     "deyihu-geometry-extrude": "0.1.10",
-    "poly-extrude": "^0.2.0"
+    "poly-extrude": "^0.3.0"
   }
 }
