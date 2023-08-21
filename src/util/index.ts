@@ -88,22 +88,38 @@ export function getGeometriesColorArray(geometriesAttributes): Float32Array {
     }
     return new Float32Array(colorsLen * 3);
 }
+const TEMP_VECTOR3 = new THREE.Vector3();
+const heightCache = new Map();
 
-export function coordiantesToArrayBuffer(coordiantes = []): ArrayBuffer {
+export function coordiantesToArrayBuffer(coordiantes = [], layer?: ThreeLayer): ArrayBuffer {
     const len = coordiantes.length;
-    const array = new Float64Array(len * 2);
+    const hasHeight = !!layer;
+    const dimensional = hasHeight ? 3 : 2;
+    const array = new Float64Array(len * dimensional);
+    heightCache.clear();
     for (let i = 0; i < len; i++) {
         let x, y;
         const c = coordiantes[i];
+        let height;
         if (c.x) {
             x = c.x;
             y = c.y;
+            height = c.z;
         } else {
             x = c[0];
             y = c[1];
+            height = c[2];
         }
-        array[i * 2] = x;
-        array[i * 2 + 1] = y;
+        array[i * dimensional] = x;
+        array[i * dimensional + 1] = y;
+        height = height || 0;
+        if (hasHeight && height !== 0) {
+            if (!heightCache.has(height)) {
+                const z = layer.altitudeToVector3(height, height, null, TEMP_VECTOR3).x;
+                heightCache.set(height, z);
+            }
+            array[i * dimensional + 2] = heightCache.get(height);
+        }
     }
     return array.buffer;
 }

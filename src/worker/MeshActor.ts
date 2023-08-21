@@ -210,7 +210,7 @@ function gengerateExtrudeLines(lineStringList: Array<Array<SingleLineStringType>
             const lineString = multiLineString[j];
             let arrayBuffer: ArrayBuffer;
             if (isMercator) {
-                arrayBuffer = getLineArrayBuffer(lineString);
+                arrayBuffer = getLineArrayBuffer(lineString, layer);
             } else {
                 arrayBuffer = getLinePosition(lineString, layer, center, false).arrayBuffer;
             }
@@ -276,7 +276,7 @@ function gengerateLines(lineStringList: Array<Array<SingleLineStringType>>, cent
         for (let j = 0, len1 = multiLineString.length; j < len1; j++) {
             const lineString = multiLineString[j];
             if (isMercator) {
-                const arrayBuffer = getLineArrayBuffer(lineString);
+                const arrayBuffer = getLineArrayBuffer(lineString, layer);
                 transfer.push(arrayBuffer);
                 data.push(arrayBuffer);
             } else {

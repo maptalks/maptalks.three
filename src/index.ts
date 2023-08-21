@@ -85,7 +85,8 @@ const EVENTS = [
 ];
 const TEMP_COORD = new maptalks.Coordinate(0, 0);
 const TEMP_POINT = new maptalks.Point(0, 0);
-
+const TEMP_VECTOR3 = new THREE.Vector3();
+const heightCache = new Map();
 const KEY_FBO = '__webglFramebuffer';
 
 // const MATRIX4 = new THREE.Matrix4();
@@ -174,6 +175,24 @@ class ThreeLayer extends maptalks.CanvasLayer {
     drawOnInteracting(gl, view, scene, camera, event, timeStamp, context) {
         this.renderScene(context, this);
     }
+
+    /**
+     * transform height to glpoint
+     * @param enableHeight 
+     * @param height 
+     * @returns 
+     */
+    _transformHeight(enableHeight: boolean, height: number) {
+        if (!enableHeight) {
+            return 0;
+        }
+        height = height || 0;
+        if (height === 0) {
+            return 0;
+        }
+        const v = this.altitudeToVector3(height, height, null, TEMP_VECTOR3);
+        return v.x;
+    }
     /**
      * Convert a geographic coordinate to THREE Vector3
      * @param  {maptalks.Coordinate} coordinate - coordinate
@@ -202,7 +221,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return new THREE.Vector3(p.x, p.y, z);
     }
 
-    coordinatiesToGLFloatArray(coordinaties: Array<maptalks.Coordinate | Array<number>>, centerPt: THREE.Vector3): {
+    coordinatiesToGLFloatArray(coordinaties: Array<maptalks.Coordinate | Array<number>>, centerPt: THREE.Vector3, hasHeight?: boolean): {
         positions: Float32Array,
         positons2d: Float32Array
     } {
@@ -214,6 +233,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         const len = coordinaties.length;
         const array = new Float32Array(len * 2);
         const array3d = new Float32Array(len * 3);
+        heightCache.clear();
         for (let i = 0; i < len; i++) {
             let coordinate = coordinaties[i];
             const isArray = Array.isArray(coordinate);
@@ -230,10 +250,20 @@ class ThreeLayer extends maptalks.CanvasLayer {
             array[idx] = p.x;
             array[idx + 1] = p.y;
 
+            const coord = (coordinate as any);
+            let height = coord.z || coord[2] || 0;
+            if (hasHeight && !heightCache.has(height)) {
+                const z = this._transformHeight(hasHeight, height);
+                heightCache.set(height, z);
+            }
+            let z = 0;
+            if (hasHeight) {
+                z = heightCache.get(height) || 0;
+            }
             const idx1 = i * 3
             array3d[idx1] = p.x;
             array3d[idx1 + 1] = p.y;
-            array3d[idx1 + 2] = 0;
+            array3d[idx1 + 2] = z;
 
         }
         return {
