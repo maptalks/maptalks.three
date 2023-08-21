@@ -277,7 +277,7 @@ function gengerateLines(lineStringList: Array<Array<SingleLineStringType>>, cent
             const lineString = multiLineString[j];
             if (isMercator) {
                 const arrayBuffer = getLineArrayBuffer(lineString);
-                data.push(arrayBuffer);
+                transfer.push(arrayBuffer);
                 data.push(arrayBuffer);
             } else {
                 const arrayBuffer = getLinePosition(lineString, layer, center, false).arrayBuffer;
