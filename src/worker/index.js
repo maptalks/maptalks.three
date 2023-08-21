@@ -17,7 +17,7 @@ export const onmessage = function (message, postResponse) {
     } else if (type === 'ExtrudeLines' || type === 'Paths') {
         for (let i = 0, len = datas.length; i < len; i++) {
             for (let j = 0, len1 = datas[i].data.length; j < len1; j++) {
-                datas[i].data[j] = arrayBufferToArray(datas[i].data[j], datas[i].center || center, glRes, matrix);
+                datas[i].data[j] = arrayBufferToArray(datas[i].data[j], datas[i].center || center, glRes, matrix, true);
             }
         }
         const result = generateExtrude(datas, type === 'ExtrudeLines' ? EXTRUDELINES : EXPANDPATHS);
@@ -43,7 +43,7 @@ export const onmessage = function (message, postResponse) {
         for (let i = 0, len = datas.length; i < len; i++) {
             const positionList = [];
             for (let j = 0, len1 = datas[i].data.length; j < len1; j++) {
-                datas[i].data[j] = arrayBufferToArray(datas[i].data[j], datas[i].center || center, glRes, matrix);
+                datas[i].data[j] = arrayBufferToArray(datas[i].data[j], datas[i].center || center, glRes, matrix, true);
                 const array = lineArrayToFloatArray(datas[i].data[j]);
                 positionList.push(getLineSegmentPosition(array));
             }
@@ -62,7 +62,7 @@ export const onmessage = function (message, postResponse) {
         for (let i = 0, len = datas.length; i < len; i++) {
             let psCount = 0;
             for (let j = 0, len1 = datas[i].data.length; j < len1; j++) {
-                datas[i].data[j] = arrayBufferToArray(datas[i].data[j], datas[i].center || center, glRes, matrix);
+                datas[i].data[j] = arrayBufferToArray(datas[i].data[j], datas[i].center || center, glRes, matrix, true);
                 const array = lineArrayToFloatArray(datas[i].data[j]);
                 setBottomHeight(array, datas[i].bottomHeight);
                 psCount += (array.length / 3 * 2 - 2);
@@ -104,7 +104,7 @@ export const onmessage = function (message, postResponse) {
     } else if (type === 'ExtrudeLine' || type === 'Path') {
         for (let i = 0, len = datas.length; i < len; i++) {
             for (let j = 0, len1 = datas[i].data.length; j < len1; j++) {
-                datas[i].data[j] = arrayBufferToArray(datas[i].data[j], datas[i].center || center, glRes, matrix);
+                datas[i].data[j] = arrayBufferToArray(datas[i].data[j], datas[i].center || center, glRes, matrix, true);
             }
         }
         const lines = [], transfer = [];
@@ -170,7 +170,7 @@ function generateData(list, center, glRes, matrix) {
 
 
 
-function arrayBufferToArray(buffer, center, glRes, matrix) {
+function arrayBufferToArray(buffer, center, glRes, matrix, hasHeight) {
     let ps;
     if (glRes) {
         ps = new Float64Array(buffer);
@@ -178,8 +178,9 @@ function arrayBufferToArray(buffer, center, glRes, matrix) {
         ps = new Float32Array(buffer);
     }
     const vs = [];
-    for (let i = 0, len = ps.length; i < len; i += 2) {
-        let x = ps[i], y = ps[i + 1];
+    const dimensional = hasHeight ? 3 : 2;
+    for (let i = 0, len = ps.length; i < len; i += dimensional) {
+        let x = ps[i], y = ps[i + 1], z = ps[i + 2];
         if (center && glRes && matrix) {
             TEMP_COORD.x = x;
             TEMP_COORD.y = y;
@@ -200,7 +201,11 @@ function arrayBufferToArray(buffer, center, glRes, matrix) {
             y -= center[1];
 
         }
-        vs.push([x, y]);
+        if (hasHeight) {
+            vs.push([x, y, z]);
+        } else {
+            vs.push([x, y]);
+        }
     }
     return vs;
 }
@@ -454,6 +459,7 @@ function lineArrayToFloatArray(coordinates = []) {
         const idx = i * 3;
         array[idx] = c[0];
         array[idx + 1] = c[1];
+        array[idx + 2] = c[2] || 0;
     }
     return array;
 }
