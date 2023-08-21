@@ -5,7 +5,7 @@ import { getLineArrayBuffer, getLinePosition } from '../util/LineUtil';
 import { LineStringType, PolygonType, SingleLineStringType } from './../type/index';
 import { ThreeLayer } from './../index';
 import { getWorkerName } from './worker';
-import { getLineStringProperties, getPolygonProperties } from 'src/util';
+import { getLineStringProperties, getPolygonProperties } from './../util/index';
 
 let MeshActor;
 if (maptalks.worker) {
