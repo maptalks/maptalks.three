@@ -153,8 +153,8 @@
                                 data = select.data;
                                 baseObject = select.baseObject;
                                 if (baseObject && !baseObject.isAdd) {
-                                    baseObject.setSymbol(highlightmaterial);
                                     threeLayer.addMesh(baseObject);
+                                    baseObject.setSymbol(highlightmaterial);
                                     selectMesh.push(baseObject);
                                 }
                             }
