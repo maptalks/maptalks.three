@@ -1043,6 +1043,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         type = type || event.type;
         const e = this._getEventParams(event);
         const { coordinate } = (e as any);
+        const map = this.getMap();
         function showInfoWindow(baseObject: BaseObject, eventType?: string) {
             eventType = eventType || type;
             const infoWindow = baseObject.getInfoWindow();
@@ -1053,7 +1054,9 @@ class ThreeLayer extends maptalks.CanvasLayer {
             const infoOptions = infoWindow ? (infoWindow as any).options : {};
             const autoOpenOn = infoOptions['autoOpenOn'] || 'click';
             if (autoOpenOn === eventType) {
-                baseObject.openInfoWindow(coordinate);
+                if (!map.options.supportPluginEvent) {
+                    baseObject.openInfoWindow(coordinate);
+                }
                 baseObject.fire('showinfowindow', { infoWindow });
             }
         }
