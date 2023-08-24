@@ -51,6 +51,7 @@ declare namespace worker {
 declare class Coordinate {
   x: number;
   y: number;
+  z?:number;
   constructor(parameters: any)
   constructor(x: number, y: number)
   equals(coordinate: Coordinate): boolean

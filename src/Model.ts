@@ -29,6 +29,15 @@ class Model extends BaseObject {
         this.getObject3d().position.copy(position);
         this.type = 'Model';
     }
+
+
+    getCoordinates() {
+        const coordinate = this.options.coordinate;
+        const altitude = this.options.altitude;
+        const c = new maptalks.Coordinate(coordinate);
+        c.z = altitude;
+        return c;
+    }
 }
 
 export default Model;
