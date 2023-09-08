@@ -93,7 +93,7 @@
                 model.rotation.x = Math.PI / 2;
                 model.scale.set(100, 100, 100);
 
-                baseObjectModel = threeLayer.toModel(model, { center: map.getCenter() });
+                baseObjectModel = threeLayer.toModel(model, { coordinate: map.getCenter() });
                 // model.position.copy(threeLayer.coordinateToVector3(map.getCenter()));
                 threeLayer.addMesh(baseObjectModel);
 

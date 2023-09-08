@@ -110,5 +110,7 @@ export type TerrainOptionType = BaseObjectOptionType & {
     image: ImageType,
     imageWidth?: number,
     imageHeight?: number,
-    texture?: ImageType
+    texture?: ImageType,
+    flaserBoundary: boolean,
+    bufferPixel: number
 }

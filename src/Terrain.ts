@@ -45,7 +45,7 @@ function updateGeometryPosition(image, geometry: THREE.BufferGeometry, layer, op
     if (!geometry || !layer) {
         return;
     }
-    const { imageWidth, imageHeight } = options;
+    const { imageWidth, imageHeight, flaserBoundary } = options;
     let imgdata;
     if (image instanceof Uint32Array || image instanceof Uint8ClampedArray) {
         imgdata = image;
@@ -67,7 +67,8 @@ function updateGeometryPosition(image, geometry: THREE.BufferGeometry, layer, op
         const R = imgdata[i], G = imgdata[i + 1], B = imgdata[i + 2];
         const height = -10000 + ((R * 256 * 256 + G * 256 + B) * 0.1);
         let z = 0;
-        if (!isBoundary()) {
+
+        if (!isBoundary() || !flaserBoundary) {
             const value = cache.get(height);
             if (value !== undefined) {
                 z = value;
@@ -94,7 +95,9 @@ const OPTIONS = {
     image: null,
     imageWidth: 256,
     imageHeight: 256,
-    texture: null
+    texture: null,
+    flaserBoundary: true,
+    bufferPixel: 1
 };
 
 /**
@@ -103,7 +106,7 @@ const OPTIONS = {
 class Terrain extends BaseObject {
     constructor(extent: maptalks.Extent, options: TerrainOptionType, material: THREE.Material, layer: ThreeLayer) {
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, extent });
-        const { texture, image, altitude, imageHeight, imageWidth } = options;
+        const { texture, image, altitude, imageHeight, imageWidth, flaserBoundary, bufferPixel } = options;
         // if (!image) {
         //     console.error('not find image');
         // }
@@ -128,11 +131,11 @@ class Terrain extends BaseObject {
         });
         const dx = vxmax - vxmin, dy = vymax - vymin;
         const ax = dx / imageWidth, ay = dy / imageHeight;
-        //buffer 1px
-        vxmin -= ax;
-        vxmax += ax;
-        vymin -= ay;
-        vymax += ay;
+        //buffer pixel size
+        vxmin -= ax * bufferPixel;
+        vxmax += ax * bufferPixel;
+        vymin -= ay * bufferPixel;
+        vymax += ay * bufferPixel;
         const w = Math.abs(vxmax - vxmin), h = Math.abs(vymax - vymin);
         const rgbImg = generateImage(image), img = generateImage(texture);
         // const geometry = new THREE.PlaneBufferGeometry(w, h, imageWidth - 1, imageHeight - 1);
@@ -146,10 +149,12 @@ class Terrain extends BaseObject {
         material.transparent = true;
         if (rgbImg) {
             rgbImg.onload = () => {
-                updateGeometryPosition(rgbImg, geometry, layer, { imageWidth, imageHeight });
+                updateGeometryPosition(rgbImg, geometry, layer, { imageWidth, imageHeight, flaserBoundary });
+                this.fire('dataload', {});
             };
             rgbImg.onerror = function () {
                 console.error(`not load ${rgbImg.src}`);
+                this.fire('dataerror', {});
             };
         }
         if (img) {
@@ -158,6 +163,7 @@ class Terrain extends BaseObject {
                 (material as any).map = texture;
                 material.opacity = 1;
                 material.needsUpdate = true;
+                this.fire('textureload', {});
             });
         } else {
             material.opacity = 1;
@@ -169,6 +175,7 @@ class Terrain extends BaseObject {
         const geometry = (this.getObject3d() as THREE.Mesh).geometry;
         const layer = this.getLayer();
         updateGeometryPosition(image, geometry, layer, this.getOptions());
+        this.fire('updatedata', {});
         return this;
     }
 }
