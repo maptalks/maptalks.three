@@ -140,6 +140,7 @@ class ExtrudeLineTrail extends BaseObject {
                 };
                 const id = `${parentId}-${i}`;
                 const option = maptalks.Util.extend({}, this.options);
+                option.parentCenter = center;
                 option.id = id;
                 option.center = center;
                 ExtrudeLineTaskIns.push({
