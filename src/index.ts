@@ -1383,7 +1383,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
             this.off('identifyempty', this._emptyIdentifyThis);
         }
         map.off('zooming zoomend', this._zoomendThis, this);
-        this.clear();
+        // this.clear();
         return this;
     }
 
