@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>osm buildings demo</title>
+    <script type="text/javascript" src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <script type="text/javascript" src="buildings.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            /* background-color: #000; */
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            center: [13.415118329414781, 52.53001062340084],
+            zoom: 16,
+            pitch: 70,
+            // bearing: 180,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+
+        // features to draw
+        var features = [];
+
+        buildings.forEach(function (b) {
+            features = features.concat(b.features);
+        });
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+            // animation: true
+        });
+
+        var meshs = [];
+        var material = new THREE.MeshLambertMaterial({ color: '#fff', transparent: true });
+        var highlightmaterial = new THREE.MeshBasicMaterial({ color: 'yellow', transparent: true });
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            scene.add(new THREE.AmbientLight('#fff', 0.2));
+            console.log('init');
+            if (this._inited) {
+                return;
+            }
+            addBuilding();
+            initGui();
+            threeLayer.config('animation', true);
+            this._inited = true;
+        };
+
+        const sceneConfig = {
+            postProcess: {
+                enable: true,
+                antialias: { enable: true }
+            }
+        };
+        const groupLayer = new maptalks.GroupGLLayer('group', [threeLayer], { sceneConfig });
+        groupLayer.addTo(map);
+
+        function addBuilding() {
+
+            // var material = new THREE.MeshBasicMaterial({ color: '#3e35cf' });
+            // material.vertexColors = THREE.VertexColors;
+            features.forEach(function (g) {
+                var heightPerLevel = 10;
+                var levels = g.properties.levels || 1;
+                var mesh = threeLayer.toExtrudePolygon(maptalks.GeoJSON.toGeometry(g), {
+                    height: levels * heightPerLevel,
+                    topColor: '#fff',
+                    asynchronous: true
+                }, material);
+
+                //tooltip test
+                mesh.setToolTip(levels * heightPerLevel, {
+                    showTimeout: 0,
+                    eventsPropagation: true,
+                    dx: 10
+                });
+
+                //infowindow test
+                mesh.setInfoWindow({
+                    content: 'hello world,height:' + levels * heightPerLevel,
+                    title: 'message',
+                    animationDuration: 0,
+                    autoOpenOn: false
+                });
+
+                // mesh.getInfoWindow().addTo(map);
+
+                //event test
+                ['click', 'mousemove', 'mouseout', 'mouseover', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].forEach(function (eventType) {
+                    mesh.on(eventType, function (e) {
+                        console.log(e.type, e);
+                        // console.log(this);
+                        if (e.type === 'mouseout') {
+                            this.setSymbol(material);
+                        }
+                        if (e.type === 'mouseover') {
+                            this.setSymbol(highlightmaterial);
+                        }
+                    });
+                });
+                meshs.push(mesh);
+            });
+            threeLayer.addMesh(meshs);
+        }
+
+
+        function initGui() {
+            var params = {
+                add: true,
+                color: material.color.getStyle(),
+                show: true,
+                opacity: 1,
+                altitude: 0,
+                'remove-add-layer': function () {
+                    threeLayer.remove();
+                    setTimeout(() => {
+                        threeLayer.addTo(groupLayer);
+                    }, 1000);
+                }
+            };
+            var gui = new dat.GUI();
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    threeLayer.addMesh(meshs);
+                } else {
+                    threeLayer.removeMesh(meshs);
+                }
+            });
+            gui.addColor(params, 'color').name('building color').onChange(function () {
+                material.color.set(params.color);
+                meshs.forEach(function (mesh) {
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'opacity', 0, 1).onChange(function () {
+                material.opacity = params.opacity;
+                meshs.forEach(function (mesh) {
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'show').onChange(function () {
+                meshs.forEach(function (mesh) {
+                    if (params.show) {
+                        mesh.show();
+                    } else {
+                        mesh.hide();
+                    }
+                });
+            });
+            gui.add(params, 'altitude', 0, 300).onChange(function () {
+                meshs.forEach(function (mesh) {
+                    mesh.setAltitude(params.altitude);
+                });
+            });
+            gui.add(params, 'remove-add-layer');
+        }
+
+
+    </script>
+</body>
+
+</html>
