@@ -201,6 +201,8 @@ function gengerateExtrudeLines(lineStringList: Array<Array<SingleLineStringType>
         let height = properties.height || 1;
         let cornerRadius = properties.cornerRadius || 0;
         let bottomHeight = properties.bottomHeight || 0;
+        //for ExtrudeLineTrail ,slice lines the center is lineCenter
+        const parentCenter = properties.parentCenter;
         width = getDistance(width, layer, cache);
         cornerRadius = getDistance(cornerRadius, layer, cache);
         height = getAltitude(height, layer, altCache);
@@ -212,7 +214,7 @@ function gengerateExtrudeLines(lineStringList: Array<Array<SingleLineStringType>
             if (isMercator) {
                 arrayBuffer = getLineArrayBuffer(lineString, layer);
             } else {
-                arrayBuffer = getLinePosition(lineString, layer, center, false).arrayBuffer;
+                arrayBuffer = getLinePosition(lineString, layer, parentCenter || center, false).arrayBuffer;
             }
             transfer.push(arrayBuffer);
             data.push(arrayBuffer);
