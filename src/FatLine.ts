@@ -72,6 +72,9 @@ class FatLine extends BaseObject {
 
     _setMaterialRes(layer, material) {
         const map = layer.getMap();
+        if (!map) {
+            return this;
+        }
         const size = map.getSize();
         const width = size.width,
             height = size.height;
@@ -134,6 +137,20 @@ class FatLine extends BaseObject {
             pick.add(this.pickObject3d);
         }
         this._fire('workerload', { target: this });
+    }
+
+    _animation() {
+        const layer = this.getLayer();
+        if (!layer) {
+            return this;
+        }
+        const object3d = this.getObject3d();
+        const pickObject3d = this.getPickObject3d();
+        [object3d, pickObject3d].forEach(object3d => {
+            if (object3d) {
+                this._setMaterialRes(layer, (object3d as any).material);
+            }
+        });
     }
 
 }
