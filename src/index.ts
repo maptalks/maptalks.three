@@ -88,6 +88,7 @@ const TEMP_POINT = new maptalks.Point(0, 0);
 const TEMP_VECTOR3 = new THREE.Vector3();
 const heightCache = new Map();
 const KEY_FBO = '__webglFramebuffer';
+const TEMP_V4 = new THREE.Vector4();
 
 // const MATRIX4 = new THREE.Matrix4();
 
@@ -1630,6 +1631,11 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
             this.context.render(this.scene, this.camera);
             renderTargetProps[KEY_FBO] = threeCreatedFBO;
         } else {
+            const { width, height } = this.canvas;
+            const viewport = this.context.getViewport(TEMP_V4);
+            if (viewport.width !== width || viewport.height !== height) {
+                this.context.setViewport(0, 0, width, height);
+            }
             this.context.render(this.scene, this.camera);
         }
         this.context.setRenderTarget(null);
