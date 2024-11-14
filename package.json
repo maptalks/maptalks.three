@@ -16,7 +16,6 @@
   "module": "dist/index.js",
   "jsnext:main": "dist/index.js",
   "scripts": {
-    "worker": "rollup --environment BUILD:production -c rollup.worker.config.js && node workerinit.js",
     "tsc": "npx tsc",
     "dev": "rollup --environment BUILD:dev -w -c rollup.config.js",
     "build": "npm run tsc && rollup --environment BUILD:production -c rollup.config.js",

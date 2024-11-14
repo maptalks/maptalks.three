@@ -5,6 +5,8 @@ import commonjs from '@rollup/plugin-commonjs';
 import { terser } from 'rollup-plugin-terser';
 import json from '@rollup/plugin-json';
 import typescript from '@rollup/plugin-typescript';
+import mtkWorkerPlugin from './worker-plugin';
+
 const pkg = require('./package.json');
 const dev = process.env.BUILD === 'dev';
 
@@ -77,7 +79,34 @@ const es5BasePlugins = [
     }),
     removeGlobal()
 ];
+
+const workerPlugins = [
+    json(),
+    resolve({
+        module: true,
+        jsnext: true,
+        main: true
+    }),
+    commonjs(),
+    babel()
+];
+
 let bundleList = [
+    {
+        input: 'src/worker/index.js',
+        plugins: dev ? workerPlugins.concat([mtkWorkerPlugin()]) : workerPlugins.concat([terser(), mtkWorkerPlugin()]),
+        external: ['maptalks', 'three'],
+        output: {
+            'sourcemap': true,
+            format: 'amd',
+            name: 'maptalks',
+            globals: {
+                'maptalks': 'maptalks'
+            },
+            extend: true,
+            file: 'dist/worker.amd.js'
+        }
+    },
     {
         input: 'src/index.ts',
         plugins: basePlugins,
@@ -102,7 +131,7 @@ let bundleList = [
         plugins: basePlugins.concat([terser()]),
         external: ['maptalks', 'three'],
         output: {
-            'sourcemap': false,
+            'sourcemap': true,
             'format': 'umd',
             'name': 'maptalks',
             'banner': banner,
@@ -140,7 +169,7 @@ let bundleList = [
         plugins: es5BasePlugins.concat([terser()]),
         external: ['maptalks', 'three'],
         output: {
-            'sourcemap': false,
+            'sourcemap': true,
             'format': 'umd',
             'name': 'maptalks',
             'banner': banner,
@@ -169,6 +198,6 @@ let bundleList = [
     // }
 ];
 if (dev) {
-    bundleList = bundleList.slice(0, 1);
+    bundleList = bundleList.slice(0, 2);
 }
 module.exports = bundleList;

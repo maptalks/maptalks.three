@@ -34,11 +34,12 @@ import * as geometryExtrude from 'deyihu-geometry-extrude';
 import * as polyextrude from 'poly-extrude';
 import LineMaterial from './util/fatline/LineMaterial';
 import { BarOptionType, BaseLayerOptionType, BaseObjectOptionType, ExtrudeLineOptionType, ExtrudeLineTrailOptionType, ExtrudePolygonOptionType, FatLineMaterialType, getBaseObjectMaterialType, HeatMapDataType, HeatMapOptionType, LineMaterialType, LineOptionType, LineStringType, PathOptionType, PointOptionType, PolygonType, SingleLineStringType, TerrainOptionType } from './type/index';
-import { getWorkerCode, getWorkerName } from './worker/getworker';
+import { getWorkerName } from './worker/worker';
 import { BaseObjectTaskManager, BaseObjectTask } from './BaseObjectTaskManager';
 import { fetchDataWorkerKey, fetchDataWorkerCode, getFetchDataActor } from './worker/fetchdataworker';
 import Path from './Path';
 import Paths from './Paths';
+import workerCode from './../dist/worker.amd';
 
 
 const options: BaseLayerOptionType = {
@@ -1722,6 +1723,6 @@ export {
 };
 
 if (maptalks.registerWorkerAdapter) {
-    maptalks.registerWorkerAdapter(getWorkerName(), getWorkerCode());
+    maptalks.registerWorkerAdapter(getWorkerName(), workerCode);
     maptalks.registerWorkerAdapter(fetchDataWorkerKey, fetchDataWorkerCode);
 }
