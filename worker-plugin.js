@@ -9,6 +9,7 @@ export default function WorkerPlugin() {
         //     }
         //     return null; // 其他ID应按通常方式处理
         // },
+        // eslint-disable-next-line no-unused-vars
         renderChunk(code, chunk) {
             code = code.replace('define([\'exports\'],', '');
             code = code.replace('define(["exports"],', '');
