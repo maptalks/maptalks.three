@@ -97,14 +97,14 @@ let bundleList = [
         plugins: dev ? workerPlugins.concat([mtkWorkerPlugin()]) : workerPlugins.concat([terser(), mtkWorkerPlugin()]),
         external: ['maptalks', 'three'],
         output: {
-            'sourcemap': true,
+            'sourcemap': false,
             format: 'amd',
             name: 'maptalks',
             globals: {
                 'maptalks': 'maptalks'
             },
             extend: true,
-            file: 'dist/worker.amd.js'
+            file: 'src/worker/worker.amd.js'
         }
     },
     {

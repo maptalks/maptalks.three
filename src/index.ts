@@ -39,7 +39,7 @@ import { BaseObjectTaskManager, BaseObjectTask } from './BaseObjectTaskManager';
 import { fetchDataWorkerKey, fetchDataWorkerCode, getFetchDataActor } from './worker/fetchdataworker';
 import Path from './Path';
 import Paths from './Paths';
-import workerCode from './../dist/worker.amd';
+import workerCode from './worker/worker.amd.js';
 
 
 const options: BaseLayerOptionType = {
@@ -1014,7 +1014,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         });
         baseObjects.forEach(mesh => {
             if (!(mesh instanceof BaseObject)) {
-                pickResult.push(mesh);
+                pickResult.push(mesh as unknown as BaseObject);
             }
         })
         options = maptalks.Util.extend({}, options);
