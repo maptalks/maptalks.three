@@ -616,7 +616,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * @param {*} options
      * @param {*} material
      */
-    toFatLines(lineStrings: Array<LineStringType>, options, material: FatLineMaterialType): FatLines {
+    toFatLines(lineStrings: Array<LineStringType>, options: LineOptionType, material: FatLineMaterialType): FatLines {
         return new FatLines(lineStrings, options, material, this);
     }
 

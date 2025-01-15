@@ -23,7 +23,9 @@
     "preversion": "npm run lint",
     "version": "npm run build && git add -A dist",
     "lint": "eslint index.js src/**/*.js test/**/*.js",
-    "prepublish": "npm run lint && npm run build"
+    "prepublish": "npm run lint && npm run build",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs"
   },
   "devDependencies": {
     "@babel/core": "^7.0.0",
@@ -44,7 +46,8 @@
     "rollup-plugin-terser": "^7.0.2",
     "three": "^0.151.0",
     "tslib": "^2.1.0",
-    "typescript": "^4.5.4"
+    "typescript": "^4.5.4",
+    "vitepress": "^1.5.0"
   },
   "dependencies": {
     "deyihu-geometry-extrude": "0.1.10",
