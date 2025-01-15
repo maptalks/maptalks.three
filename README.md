@@ -82,10 +82,6 @@ threeLayer.addTo(map);
 
 IE 11, Chrome, Firefox, other modern and mobile browsers that support WebGL;
 
-## API Reference
-
-### [API](https://deyihu.github.io/maptalks.three.doc/build/)  
-
 
 ## Contributing
 
