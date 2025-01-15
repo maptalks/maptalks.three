@@ -14,7 +14,10 @@ import {
 } from 'maptalks.three';
 
 const map = new maptalks.Map('map', {
-    /* options */
+    center: [19.06325670775459, 42.16842479475318],
+    zoom: 3,
+    pitch: 60,
+    // bearing: 180,
 });
 
 const threeLayer = new ThreeLayer('t');
@@ -38,7 +41,10 @@ import {
 } from 'maptalks.three';
 
 const map = new maptalks.Map('map', {
-    /* options */
+    center: [19.06325670775459, 42.16842479475318],
+    zoom: 3,
+    pitch: 60,
+    // bearing: 180,
 });
 
 const threeLayer = new ThreeLayer('t');
@@ -71,7 +77,10 @@ groupLayer.addTo(map);
 <script type="text/javascript" src="https://unpkg.com/maptalks.three/dist/maptalks.three.js"></script>
 <script>
     const map = new maptalks.Map('map', {
-        /* options */
+        center: [19.06325670775459, 42.16842479475318],
+        zoom: 3,
+        pitch: 60,
+        // bearing: 180,
     });
 
     const threeLayer = new maptalks.ThreeLayer('t');

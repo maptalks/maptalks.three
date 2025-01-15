@@ -29,7 +29,7 @@ export default defineConfig({
         { text: 'Some Links', link: '/start/links.md' },
       ],
       '/api/': [
-        { text: 'BaseObject Options Type', link: '/api/baseobjectoptionstype.md' },
+        { text: 'Some Types', link: '/api/types.md' },
         { text: 'BaseObject', link: '/api/baseobject.md' },
         { text: 'ThreeLayer', link: '/api/threelayer.md' }
       ]
