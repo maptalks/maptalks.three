@@ -4,7 +4,8 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "🌐maptalks.three",
   description: "A maptalks layer to render with three.js.",
-  base: '/maptalks.three/docs/',
+  base: '/maptalks.three/docs/dist/',
+  outDir: './dist/',
   markdown: {
     image: {
       // 默认禁用；设置为 true 可为所有图片启用懒加载。
