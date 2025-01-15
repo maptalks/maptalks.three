@@ -48,5 +48,5 @@ node_modules
 examples/replace.json
 json/*
 dist/*
-.vitepress/
+.vitepress/cache
 docs/.vitepress/cache
