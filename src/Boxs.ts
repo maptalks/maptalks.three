@@ -29,7 +29,7 @@ class Boxs extends MergedMixin(BaseObject) {
         const centerPt = layer.coordinateToVector3(center);
         const geometries = [], bars = [], geometriesAttributes = [], faceMap = [];
         let faceIndex = 0, psIndex = 0, normalIndex = 0, uvIndex = 0;
-        options = maptalks.Util.extend({}, { altitude: 0, layer, points }, options);
+        options = maptalks.Util.extend({}, { altitude: 0, layer, points }, OPTIONS, options);
         const cache = {}, altCache = {};
         for (let i = 0; i < len; i++) {
             const opts = maptalks.Util.extend({ index: i }, options, points[i]);
