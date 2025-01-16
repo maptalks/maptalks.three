@@ -1,6 +1,7 @@
 
 import * as THREE from 'three';
 import * as maptalks from 'maptalks';
+import { createWebGLRenderTarget } from './util/ThreeAdaptUtil';
 
 const color: THREE.Color = new THREE.Color();
 let colorIndex = 1;
@@ -20,7 +21,7 @@ class GPUPick {
         this.layer = layer;
         this.camera = layer.getCamera();
         this.renderer = layer.getThreeRenderer();
-        this.pickingTexture = new THREE.WebGLRenderTarget(1, 1);
+        this.pickingTexture = createWebGLRenderTarget();
         this.pickingScene = new THREE.Scene();
     }
 

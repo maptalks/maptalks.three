@@ -52,9 +52,25 @@ export function getVertexColors(): number | boolean {
 
 export function getBoxGeometry(width: number, height: number, depth: number) {
     const three = getThreeNameSpace();
+    if (REVISION >= 144) {
+        return new three.BoxGeometry(width, height, depth);
+    }
     if (three.BoxBufferGeometry) {
         return new three.BoxBufferGeometry(width, height, depth);
     } else if (three.BoxGeometry) {
         return new three.BoxGeometry(width, height, depth);
+    }
+}
+
+export function createWebGLRenderTarget() {
+    //https://github.com/mrdoob/three.js/pull/25771
+    if (REVISION >= 152) {
+        return new THREE.WebGLRenderTarget(1, 1, {
+            format: THREE.RGBAFormat,
+            //@ts-ignore
+            colorSpace: THREE.SRGBColorSpace
+        })
+    } else {
+        return new THREE.WebGLRenderTarget(1, 1, {});
     }
 }

@@ -15,9 +15,9 @@ export default defineConfig({
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
-      { text: 'Start', link: '/start/install.md' },
-      { text: 'API', link: '/api/index.md' },
-      { text: 'Questions', link: '/questions/index.md' },
+      { text: 'Start', link: '/start/install.md', activeMatch: '/start/' },
+      { text: 'API', link: '/api/index.md', activeMatch: '/api/' },
+      { text: 'Questions', link: '/questions/index.md', activeMatch: '/questions/' },
       { text: 'Examples', link: 'https://maptalks.org/maptalks.three/demo/index.html' },
     ],
 
