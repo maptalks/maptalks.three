@@ -717,9 +717,9 @@ class ThreeLayer extends maptalks.CanvasLayer {
     }
 
     lookAt(vector: THREE.Vector3) {
-        const renderer = this._getRenderer();
-        if (renderer) {
-            renderer.context.lookAt(vector);
+        const camera = this.getCamera();
+        if (camera && camera.lookAt && vector) {
+            camera.lookAt(vector);
         }
         return this;
     }
