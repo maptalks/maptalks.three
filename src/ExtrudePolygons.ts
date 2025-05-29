@@ -18,6 +18,7 @@ const OPTIONS = {
     bottomHeight: 0,
     topColor: null,
     bottomColor: '#2d2f61',
+    top: true
 };
 const TEMP_COORD = new maptalks.Coordinate(0, 0);
 
@@ -51,7 +52,7 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
         // Get the center point of the point set
         const center = new maptalks.Coordinate((minX + maxX) / 2, (minY + maxY) / 2);
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, polygons, coordinate: center });
-        const { topColor, bottomColor, altitude, asynchronous } = options;
+        const { topColor, bottomColor, altitude, asynchronous, top } = options;
         let bufferGeometry;
         const extrudePolygons = [], faceMap = [], geometriesAttributes = [];
         super();
@@ -76,7 +77,7 @@ class ExtrudePolygons extends MergedMixin(BaseObject) {
                 const opts = maptalks.Util.extend({}, options, getPolygonProperties(polygon));
                 const height = opts.height || 1;
                 const bottomHeight = opts.bottomHeight || 0;
-                const buffGeom = getExtrudeGeometryParams(polygon, height, layer, center, centerPt, altCache);
+                const buffGeom = getExtrudeGeometryParams(polygon, height, top, layer, center, centerPt, altCache);
                 geometries.push(buffGeom);
                 const minZ = setBottomHeight(buffGeom, bottomHeight, layer, altCache);
 

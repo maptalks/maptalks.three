@@ -16,7 +16,8 @@ const OPTIONS = {
     bottomHeight: 0,
     topColor: null,
     bottomColor: '#2d2f61',
-    heightEnable: true
+    heightEnable: true,
+    top: true
 };
 
 /**
@@ -27,7 +28,7 @@ class ExtrudePolygon extends BaseObject {
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, polygon });
         super();
         this._initOptions(options);
-        const { height, topColor, bottomColor, altitude, bottomHeight, asynchronous } = options;
+        const { height, topColor, bottomColor, altitude, bottomHeight, asynchronous, top } = options;
         let geometry: THREE.BufferGeometry;
         const center = (isGeoJSONPolygon(polygon as any) ? getGeoJSONCenter(polygon as any) : (polygon as any).getCenter());
         if (asynchronous) {
@@ -42,7 +43,7 @@ class ExtrudePolygon extends BaseObject {
                 baseObject: this
             });
         } else {
-            geometry = getExtrudeGeometry(polygon, height, layer);
+            geometry = getExtrudeGeometry(polygon, height, top, layer);
             const h = setBottomHeight(geometry, bottomHeight, layer);
             if (topColor) {
                 const extrudeH = layer.altitudeToVector3(height, height).x;

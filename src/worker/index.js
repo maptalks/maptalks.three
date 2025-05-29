@@ -271,7 +271,7 @@ function generateExtrude(datas, type = EXTRUDEPOLYGONS) {
 
 
 function extrudePolygons(d) {
-    const { data, height, bottomHeight } = d;
+    const { data, height, bottomHeight, top } = d;
     const { position, normal, uv, indices } = _extrudePolygons(
         // polygons same with coordinates of MultiPolygon type geometry in GeoJSON
         // See http://wiki.geojson.org/GeoJSON_draft_version_6#MultiPolygon
@@ -280,7 +280,8 @@ function extrudePolygons(d) {
         {
             // Can be a constant value, or a function.
             // Default to be 1.
-            depth: height
+            depth: height,
+            top
         }
     );
     setBottomHeight(position, bottomHeight);

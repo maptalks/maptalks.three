@@ -39,8 +39,8 @@ const topColor: THREE.Color = new THREE.Color('#fff'),
  * @param {*} height
  * @param {*} layer
  */
-export function getExtrudeGeometry(polygon: PolygonType, height: number, layer: ThreeLayer, center?: maptalks.Coordinate): THREE.BufferGeometry {
-    const { position, normal, uv, indices } = getExtrudeGeometryParams(polygon, height, layer, center);
+export function getExtrudeGeometry(polygon: PolygonType, height: number, top: boolean, layer: ThreeLayer, center?: maptalks.Coordinate): THREE.BufferGeometry {
+    const { position, normal, uv, indices } = getExtrudeGeometryParams(polygon, height, top, layer, center);
     const color = new Float32Array(position.length);
     color.fill(1, 0, position.length);
     const bufferGeomertry = new THREE.BufferGeometry();
@@ -53,7 +53,7 @@ export function getExtrudeGeometry(polygon: PolygonType, height: number, layer: 
 }
 
 
-export function getExtrudeGeometryParams(polygon: PolygonType, height: number, layer: ThreeLayer, center: maptalks.Coordinate, centerPt?: THREE.Vector3, altCache?: any): MergeAttributeType {
+export function getExtrudeGeometryParams(polygon: PolygonType, height: number, top: boolean, layer: ThreeLayer, center: maptalks.Coordinate, centerPt?: THREE.Vector3, altCache?: any): MergeAttributeType {
     const datas = getPolygonPositions(polygon, layer, center, centerPt, false);
     const shapes = datas;
     //Possible later use of geojson
@@ -68,7 +68,8 @@ export function getExtrudeGeometryParams(polygon: PolygonType, height: number, l
         height = layer.altitudeToVector3(height, height).x;
     }
     const { position, normal, uv, indices } = extrudePolygons(shapes as any, {
-        depth: height
+        depth: height,
+        top
     });
     return {
         position, normal, uv, indices
