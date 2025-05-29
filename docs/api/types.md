@@ -60,7 +60,8 @@ export type ExtrudePolygonOptionType = BaseObjectOptionType & {
     bottomHeight?: number,
     topColor?: string,
     bottomColor?: string,
-    key?: string
+    key?: string,
+    top?: boolean
 }
 
 ```
@@ -75,7 +76,8 @@ export type ExtrudeLineOptionType = BaseObjectOptionType & {
     height?: number,
     topColor?: string,
     bottomColor?: string,
-    key?: string
+    key?: string,
+    pathUV?: boolean
 }
 ```
 
@@ -101,7 +103,8 @@ export type ExtrudeLineTrailOptionType = BaseObjectOptionType & {
     chunkLength?: number,
     width?: number,
     height?: number,
-    speed?: number
+    speed?: number,
+    pathUV?: boolean
 }
 ```
 
