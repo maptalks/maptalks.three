@@ -2,7 +2,12 @@ import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 
 export type BaseLayerOptionType = {
-    renderer?: string,
+    minZoom?: number;
+	maxZoom?: number;
+	visible?: boolean;
+	opacity?: number;
+	zIndex?: number;
+    renderer?: 'gl',
     doubleBuffer?: boolean,
     glOptions?: {
         preserveDrawingBuffer: boolean
