@@ -60,7 +60,8 @@ export type ExtrudePolygonOptionType = BaseObjectOptionType & {
     bottomHeight?: number,
     topColor?: string,
     bottomColor?: string,
-    key?: string
+    key?: string,
+    top?: boolean
 }
 export type ExtrudeLineOptionType = BaseObjectOptionType & {
     bottomHeight?: number,

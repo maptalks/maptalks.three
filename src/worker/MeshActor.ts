@@ -143,13 +143,15 @@ function gengerateExtrudePolygons(polygons: PolygonType[] = [], center: maptalks
         }
         let height = properties.height || 1;
         let bottomHeight = properties.bottomHeight || 0;
+        const top = properties.top;
         height = getAltitude(height, layer, altCache);
         bottomHeight = getAltitude(bottomHeight, layer, altCache);
         const d = {
             id: properties.id,
             data,
             height,
-            bottomHeight
+            bottomHeight,
+            top
         };
         if (isMercator) {
             (d as any).center = [centerPt.x, centerPt.y];
