@@ -17,7 +17,8 @@ const OPTIONS = {
     altitude: 0,
     topColor: null,
     bottomColor: '#2d2f61',
-    heightEnable: true
+    heightEnable: true,
+    pathUV: false
 };
 
 
@@ -30,7 +31,7 @@ class ExtrudeLine extends BaseObject {
         super();
         this._initOptions(options);
 
-        const { height, width, bottomColor, topColor, bottomHeight, altitude, asynchronous } = options;
+        const { height, width, bottomColor, topColor, bottomHeight, altitude, asynchronous, pathUV } = options;
         const h = layer.altitudeToVector3(height, height).x;
         const w = layer.distanceToVector3(width, width).x;
         const { lineStrings, center } = LineStringSplit(lineString);
@@ -53,7 +54,7 @@ class ExtrudeLine extends BaseObject {
             let minZ = 0;
             const cache = {};
             for (let i = 0, len = lineStrings.length; i < len; i++) {
-                const attribute = getExtrudeLineParams(lineStrings[i], w, h, layer, center);
+                const attribute = getExtrudeLineParams(lineStrings[i], w, h, pathUV, layer, center);
                 minZ = setBottomHeight(attribute, bottomHeight, layer, cache);
                 extrudeParams.push(attribute);
             }

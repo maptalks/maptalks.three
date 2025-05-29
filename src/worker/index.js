@@ -289,10 +289,11 @@ function extrudePolygons(d) {
 }
 
 function extrudeLines(d) {
-    const { data, height, width, bottomHeight } = d;
+    const { data, height, width, bottomHeight, pathUV } = d;
     const { position, normal, uv, indices } = _extrudePolylines(data, {
         lineWidth: width,
-        depth: height
+        depth: height,
+        pathUV
     });
     setBottomHeight(position, bottomHeight);
     return { position, normal, uv, indices };
