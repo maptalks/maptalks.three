@@ -23,18 +23,23 @@ threeLayer.addTo(map);
 
 ```ts
 export type BaseLayerOptionType = {
-    renderer?: string;
-    doubleBuffer?: boolean;
+    minZoom?: number;
+	maxZoom?: number;
+	visible?: boolean;
+	opacity?: number;
+	zIndex?: number;
+    renderer?: 'gl',
+    doubleBuffer?: boolean,
     glOptions?: {
-        preserveDrawingBuffer: boolean;
-    };
-    geometryEvents?: boolean;
-    identifyCountOnEvent?: number;
-    forceRenderOnMoving?: boolean;
-    forceRenderOnRotating?: boolean;
-    forceRenderOnZooming?: boolean;
-    centerForDistance?: maptalks.Coordinate;
-    loopRenderCount?: number;
+        preserveDrawingBuffer: boolean
+    },
+    geometryEvents?: boolean,
+    identifyCountOnEvent?: number,
+    forceRenderOnMoving?: boolean,
+    forceRenderOnRotating?: boolean,
+    forceRenderOnZooming?: boolean,
+    centerForDistance?: maptalks.Coordinate,
+    loopRenderCount?: number
 };
 ```
 
@@ -97,12 +102,13 @@ const vector2 = threeLayer.altitudeToVector3(100, 100);
 
 ```ts
 export type ExtrudePolygonOptionType = BaseObjectOptionType & {
-    height?: number;
-    bottomHeight?: number;
-    topColor?: string;
-    bottomColor?: string;
-    key?: string;
-};
+    height?: number,
+    bottomHeight?: number,
+    topColor?: string,
+    bottomColor?: string,
+    key?: string,
+    top?: boolean
+}
 
 const extrudePolygon = threeLayer.toExtrudePolygon(
     new maptalks.Polygon(coordinates),
@@ -158,14 +164,14 @@ const line = threeLayer.toLine(
 
 ```ts
 export type ExtrudeLineOptionType = BaseObjectOptionType & {
-    bottomHeight?: number;
-    width?: number;
-    height?: number;
-    topColor?: string;
-    bottomColor?: string;
-    key?: string;
-};
-
+    bottomHeight?: number,
+    width?: number,
+    height?: number,
+    topColor?: string,
+    bottomColor?: string,
+    key?: string,
+    pathUV?: boolean
+}
 const line = threeLayer.toExtrudeLine(
     new maptalks.LineString(coordinates),
     {
@@ -207,12 +213,13 @@ const line = threeLayer.toExtrudeLine(
 
 ```ts
 export type ExtrudeLineTrailOptionType = BaseObjectOptionType & {
-    trail?: number;
-    chunkLength?: number;
-    width?: number;
-    height?: number;
-    speed?: number;
-};
+    trail?: number,
+    chunkLength?: number,
+    width?: number,
+    height?: number,
+    speed?: number,
+    pathUV?: boolean
+}
 
 const line = threeLayer.toExtrudeLineTrail(
     new maptalks.LineString(coordinates),
@@ -238,13 +245,13 @@ Considering performance issues, it is not recommended to use it
 
 ```ts
 export type ExtrudePolygonOptionType = BaseObjectOptionType & {
-    height?: number;
-    bottomHeight?: number;
-    topColor?: string;
-    bottomColor?: string;
-    key?: string;
-};
-
+    height?: number,
+    bottomHeight?: number,
+    topColor?: string,
+    bottomColor?: string,
+    key?: string,
+    top?: boolean
+}
 const polygon1=new maptalks.Polygon(coordinates);
 const polygon2=new maptalks.Polygon(coordinates);
 
@@ -337,7 +344,8 @@ export type ExtrudeLineOptionType = BaseObjectOptionType & {
     height?: number,
     topColor?: string,
     bottomColor?: string,
-    key?: string
+    key?: string,
+    pathUV?: boolean
 }
 
 const lineStrings=[
