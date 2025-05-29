@@ -41,6 +41,8 @@ import Path from './Path';
 import Paths from './Paths';
 import workerCode from './worker/worker.amd.js';
 
+type MeshType = BaseObject | THREE.Object3D | Array<BaseObject | THREE.Object3D>;
+
 
 const options: BaseLayerOptionType = {
     'renderer': 'gl',
@@ -810,7 +812,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * add object3ds
      * @param {BaseObject} meshes
      */
-    addMesh(meshes: Array<BaseObject | THREE.Object3D>, render: boolean = true) {
+    addMesh(meshes: MeshType, render: boolean = true) {
         if (!meshes) return this;
         if (!Array.isArray(meshes)) {
             meshes = [meshes];
@@ -849,7 +851,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * remove object3ds
      * @param {BaseObject} meshes
      */
-    removeMesh(meshes: Array<BaseObject | THREE.Object3D>, render: boolean = true) {
+    removeMesh(meshes: MeshType, render: boolean = true) {
         if (!meshes) return this;
         if (!Array.isArray(meshes)) {
             meshes = [meshes];

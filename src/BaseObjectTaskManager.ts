@@ -445,7 +445,10 @@ export const BaseObjectTaskManager = {
         }
     },
     removeTask: (taskIns) => {
-        BaseObjectTaskManager.tasks.splice(BaseObjectTaskManager.tasks.indexOf(taskIns), 1);
+        const index = BaseObjectTaskManager.tasks.indexOf(taskIns);
+        if (index > -1) {
+            BaseObjectTaskManager.tasks.splice(index, 1);
+        }
     },
     loop() {
         ExtrudePolygonTaskIns.loop();
@@ -465,7 +468,7 @@ export const BaseObjectTaskManager = {
                 taskIns.loop();
             }
         });
-        maptalks.Util.requestAnimFrame(BaseObjectTaskManager.loop);
+        requestAnimationFrame(BaseObjectTaskManager.loop);
     },
     star() {
         if (!BaseObjectTaskManager.isRunning) {
