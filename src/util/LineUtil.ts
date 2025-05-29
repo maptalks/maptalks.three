@@ -102,14 +102,14 @@ export function getLinePosition(lineString: SingleLineStringType | Array<THREE.V
  * @param {Number} depth
  * @param {ThreeLayer} layer
  */
-export function getExtrudeLineGeometry(lineString: SingleLineStringType, lineWidth = 1, depth = 1,
+export function getExtrudeLineGeometry(lineString: SingleLineStringType, lineWidth = 1, depth = 1, pathUV = false,
     layer: ThreeLayer, center: maptalks.Coordinate): THREE.BufferGeometry {
     const {
         indices,
         position,
         normal,
         uv
-    } = getExtrudeLineParams(lineString, lineWidth, depth, layer, center);
+    } = getExtrudeLineParams(lineString, lineWidth, depth, pathUV, layer, center);
     const geometry = new THREE.BufferGeometry();
     addAttribute(geometry, 'position', new THREE.BufferAttribute(position, 3));
     addAttribute(geometry, 'normal', new THREE.BufferAttribute(normal, 3));
@@ -188,7 +188,7 @@ export function mergeChunkLineCoordinates(chunkLines: Array<Array<Array<number>>
  * @param {*} layer
  */
 export function getExtrudeLineParams(lineString: SingleLineStringType | Array<THREE.Vector3>,
-    lineWidth = 1, depth = 1, layer: ThreeLayer, center?: maptalks.Coordinate): MergeAttributeType {
+    lineWidth = 1, depth = 1, pathUV = false, layer: ThreeLayer, center?: maptalks.Coordinate): MergeAttributeType {
     const positions = getLinePosition(lineString, layer, center).positionsV;
     const ps = [];
     for (let i = 0, len = positions.length; i < len; i++) {
@@ -202,7 +202,8 @@ export function getExtrudeLineParams(lineString: SingleLineStringType | Array<TH
         uv
     } = extrudePolylines([ps], {
         lineWidth: lineWidth,
-        depth: depth
+        depth: depth,
+        pathUV
     });
     return {
         position: position,

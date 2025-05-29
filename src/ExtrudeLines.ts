@@ -18,7 +18,8 @@ const OPTIONS = {
     height: 1,
     altitude: 0,
     topColor: null,
-    bottomColor: '#2d2f61'
+    bottomColor: '#2d2f61',
+    pathUV: false
 };
 
 class ExtrudeLines extends MergedMixin(BaseObject) {
@@ -37,7 +38,7 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
         // Get the center point of the point set
         const center = getCenterOfPoints(centers);
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, lineStrings, coordinate: center });
-        const { altitude, topColor, bottomColor, asynchronous } = options;
+        const { altitude, topColor, bottomColor, asynchronous, pathUV } = options;
         let bufferGeometry: THREE.BufferGeometry;
         const faceMap = [], extrudeLines = [], geometriesAttributes = [];
         super();
@@ -68,7 +69,7 @@ class ExtrudeLines extends MergedMixin(BaseObject) {
                 const extrudeParams: MergeAttributeType[] = [];
                 let minZ = 0;
                 for (let m = 0, le = lls.length; m < le; m++) {
-                    const attribute = getExtrudeLineParams(lls[m], w, h, layer, center);
+                    const attribute = getExtrudeLineParams(lls[m], w, h, pathUV, layer, center);
                     minZ = setBottomHeight(attribute, bottomHeight, layer, cache);
                     extrudeParams.push(attribute);
                 }

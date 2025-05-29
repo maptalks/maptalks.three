@@ -48,7 +48,8 @@ const OPTIONS = {
     speed: 1,
     altitude: 0,
     interactive: false,
-    heightEnable: true
+    heightEnable: true,
+    pathUV: false
 };
 
 /**
@@ -60,7 +61,7 @@ class ExtrudeLineTrail extends BaseObject {
         super();
         this._initOptions(options);
 
-        const { width, height, altitude, speed, chunkLength, trail } = options;
+        const { width, height, altitude, speed, chunkLength, trail, pathUV } = options;
         let center: maptalks.Coordinate, coordinates;
         if (isGeoJSON(lineString as any)) {
             center = getGeoJSONCenter(lineString as any);
@@ -111,7 +112,8 @@ class ExtrudeLineTrail extends BaseObject {
             center,
             // positionMap,
             centerPt,
-            workerInitCount: 0
+            workerInitCount: 0,
+            pathUV
         };
         this._init(this._params);
         this.type = 'ExtrudeLineTrail';
@@ -123,7 +125,7 @@ class ExtrudeLineTrail extends BaseObject {
      * @param {*} params
      */
     _init(params) {
-        const { layer, trail, lineWidth, depth, chunkLines, positionMap, centerPt, center } = params;
+        const { layer, trail, lineWidth, depth, chunkLines, positionMap, centerPt, center, pathUV } = params;
         const len = chunkLines.length, geometries = [];
         if (this.options.asynchronous) {
             params.loaded = false;
@@ -157,14 +159,14 @@ class ExtrudeLineTrail extends BaseObject {
             for (let i = 0; i < len; i++) {
                 const lines = chunkLines.slice(i, i + trail);
                 const ps = getChunkLinesPosition(lines, layer, positionMap, centerPt).positionsV;
-                geometries.push(getExtrudeLineParams(ps, lineWidth, depth, layer));
+                geometries.push(getExtrudeLineParams(ps, lineWidth, depth, pathUV, layer));
             }
         }
     }
 
 
     _animation() {
-        const { index, geometries, speed, idx, chunkLines, trail, lineWidth, depth, loaded, layer, positionMap, centerPt } = this._params;
+        const { index, geometries, speed, idx, chunkLines, trail, lineWidth, depth, loaded, layer, positionMap, centerPt, pathUV } = this._params;
         if (!loaded) return;
         const i = Math.round(index);
         if (i > idx && i <= chunkLines.length - 1) {
@@ -175,7 +177,7 @@ class ExtrudeLineTrail extends BaseObject {
             if (!p) {
                 const lines = chunkLines.slice(i, i + trail);
                 const ps = getChunkLinesPosition(lines, layer, positionMap, centerPt).positionsV;
-                p = getExtrudeLineParams(ps, lineWidth, depth, layer);
+                p = getExtrudeLineParams(ps, lineWidth, depth, pathUV, layer);
                 geometries[i] = p;
             }
             const object3d = this.getObject3d() as any;

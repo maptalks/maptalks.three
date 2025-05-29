@@ -63,7 +63,8 @@ export type ExtrudeLineOptionType = BaseObjectOptionType & {
     height?: number,
     topColor?: string,
     bottomColor?: string,
-    key?: string
+    key?: string,
+    pathUV?: boolean
 }
 export type PathOptionType = BaseObjectOptionType & {
     bottomHeight?: number,
@@ -79,7 +80,8 @@ export type ExtrudeLineTrailOptionType = BaseObjectOptionType & {
     chunkLength?: number,
     width?: number,
     height?: number,
-    speed?: number
+    speed?: number,
+    pathUV?: boolean
 }
 
 export type PointOptionType = BaseObjectOptionType & {
