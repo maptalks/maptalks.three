@@ -274,6 +274,7 @@ class FatLines extends MergedMixin(BaseObject) {
         const position = new Float32Array(result.position);
         const newPosition = new Float32Array(position);
         (object3d as any).geometry.setPositions(new Float32Array(position));
+        (object3d as any).computeLineDistances();
         (this._geometryCache as any).setPositions(newPosition);
         this._setPickObject3d(newPosition, (object3d as any).material.linewidth);
         this._init();
