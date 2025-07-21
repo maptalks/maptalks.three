@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>extrudelinetrail test</title>
+    <script type="text/javascript" src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css" />
+    <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/examples/js/libs/stats.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/lz-string@1.4.4/libs/lz-string.min.js"></script>
+    <script type="text/javascript" src="../dist/maptalks.three.js"></script>
+    <script type="text/javascript" src="js/geoutil.js"></script>
+    <script type="text/javascript" src="buildings.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+        var map = new maptalks.Map("map", {
+            center: [104.0478, 30.5886], // [13.416935229170008, 52.529564137540376],
+            zoom: 15,
+            pitch: 70,
+            bearing: 180,
+            centerCross: true,
+            doubleClickZoom: false,
+            spatialReference: 'EPSG:4490',
+            baseLayer: new maptalks.TileLayer("tile", {
+                urlTemplate:
+                    "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+                subdomains: ["a", "b", "c", "d"],
+                attribution:
+                    '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>',
+            }),
+        });
+        // features to draw
+        var features = [];
+        buildings.forEach(function (b) {
+            features = features.concat(b.features);
+        });
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer("t", {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true,
+            // animation: true
+        });
+        var stats;
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById("map").appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            var material = new THREE.MeshBasicMaterial({
+                color: "#3e35cf",
+            });
+            var meshs = [];
+            features.forEach(function (g) {
+                var heightPerLevel = 10;
+                var levels = g.properties.levels || 1;
+                var mesh = threeLayer.toExtrudePolygon(
+                    maptalks.GeoJSON.toGeometry(g),
+                    {
+                        height: heightPerLevel * levels,
+                        topColor: "#fff",
+                        interactive: false,
+                    },
+                    material
+                );
+                meshs.push(mesh);
+            });
+            threeLayer.addMesh(meshs);
+            addLines();
+        };
+        const sceneConfig = {
+            postProcess: {
+                enable: true,
+                antialias: { enable: true },
+            },
+        };
+        const groupLayer = new maptalks.GroupGLLayer(
+            "group",
+            [threeLayer],
+            { sceneConfig }
+        );
+        groupLayer.addTo(map);
+        const road = [
+            {
+                type: "FeatureCollection",
+                features: [
+                    {
+                        type: "Feature",
+                        properties: {},
+                        geometry: {
+                            coordinates: [
+                                [104.03098778786034, 30.59087526729212],
+                                [104.03217306097929, 30.590578700262796],
+                                [104.03342053035533, 30.590549172688313],
+                                [104.03471121815215, 30.59046380447829],
+                                [104.0440188683612, 30.590633549520987],
+                                [104.05282265672281, 30.590951304025154],
+                                [104.05852506954278, 30.59104973837391],
+                                [104.06625778125363, 30.59122098585175],
+                                [104.07125364668201, 30.5913190282089],
+                            ],
+                            type: "LineString",
+                        },
+                    },
+                    {
+                        type: "Feature",
+                        properties: {},
+                        geometry: {
+                            coordinates: [
+                                [104.04836284615044, 30.600354935149724],
+                                [104.04824242397666, 30.596035073969546],
+                                [104.04787651176503, 30.59003501027827],
+                                [104.04768224759755, 30.58512410121648],
+                                [104.0478536008153, 30.580560615568018],
+                                [104.04796320479312, 30.57743343968221],
+                                [104.04821137008514, 30.57588078941116],
+                                [104.05251782662879, 30.574690657649626],
+                                [104.05495491392901, 30.574246284042133],
+                                [104.05685322670325, 30.574246284042133],
+                                [104.06635824599272, 30.574523444622002],
+                            ],
+                            type: "LineString",
+                        },
+                    },
+                    {
+                        type: "Feature",
+                        properties: {},
+                        geometry: {
+                            coordinates: [
+                                [104.05193238047792, 30.600017140469575],
+                                [104.0520220256218, 30.588710461370184],
+                                [104.0523246334784, 30.575027166211086],
+                            ],
+                            type: "LineString",
+                        },
+                    },
+                    {
+                        type: "Feature",
+                        properties: {},
+                        geometry: {
+                            coordinates: [
+                                [104.0578461854177, 30.600332605906672],
+                                [104.057611781802, 30.58602413350863],
+                                [104.057456858141, 30.577722379522726],
+                                [104.05552486806266, 30.569142772016036],
+                            ],
+                            type: "LineString",
+                        },
+                    },
+                    {
+                        type: "Feature",
+                        properties: {},
+                        geometry: {
+                            coordinates: [
+                                [104.06088839978997, 30.60775977361361],
+                                [104.06127035289012, 30.598422208994677],
+                                [104.06170792614671, 30.582413298359157],
+                                [104.06181064161291, 30.57799238788506],
+                            ],
+                            type: "LineString",
+                        },
+                    },
+                    {
+                        type: "Feature",
+                        properties: {},
+                        geometry: {
+                            coordinates: [
+                                [104.06486049546152, 30.611465427682802],
+                                [104.06533545465362, 30.596966456696876],
+                                [104.06570193191055, 30.58336751917676],
+                                [104.065952877207, 30.573716005333708],
+                            ],
+                            type: "LineString",
+                        },
+                    },
+                    {
+                        type: "Feature",
+                        properties: {},
+                        geometry: {
+                            coordinates: [
+                                [104.0683499621382, 30.61091097792979],
+                                [104.0685338085143, 30.609304064782535],
+                                [104.06857807386427, 30.60728069632195],
+                                [104.06863522745573, 30.598335068239066],
+                                [104.06857478383182, 30.589673573114894],
+                                [104.06887229660975, 30.57826092784444],
+                            ],
+                            type: "LineString",
+                        },
+                    },
+                    {
+                        type: "Feature",
+                        properties: {},
+                        geometry: {
+                            coordinates: [
+                                [104.03007840350665, 30.608001954717295],
+                                [104.03421131554165, 30.605516826428342],
+                                [104.03954242254059, 30.60226148613681],
+                                [104.04371945036257, 30.600912980838814],
+                                [104.04880204518548, 30.600801825329484],
+                                [104.0579200706731, 30.60063543971532],
+                                [104.07269869877899, 30.600303914291544],
+                                [104.0756333085663, 30.60046946988787],
+                            ],
+                            type: "LineString",
+                        },
+                    },
+                    {
+                        type: "Feature",
+                        properties: {},
+                        geometry: {
+                            coordinates: [
+                                [104.04508177049337, 30.59660699610133],
+                                [104.04847808682854, 30.596711247658448],
+                                [104.05245536908927, 30.596659100794014],
+                                [104.05811038380693, 30.596763436747636],
+                                [104.06136419811412, 30.596867941802117],
+                            ],
+                            type: "LineString",
+                        },
+                    },
+                    {
+                        type: "Feature",
+                        properties: {},
+                        geometry: {
+                            coordinates: [
+                                [104.04129656115009, 30.591938771821376],
+                                [104.04216431798227, 30.59375489727212],
+                                [104.0451865613843, 30.59365537080666],
+                                [104.05244216824912, 30.593705114370707],
+                                [104.05796493726035, 30.59375489727212],
+                                [104.06125239097565, 30.593954423197673],
+                            ],
+                            type: "LineString",
+                        },
+                    },
+                    {
+                        type: "Feature",
+                        properties: {},
+                        geometry: {
+                            coordinates: [
+                                [104.02097080113055, 30.58671927637326],
+                                [104.02408351203098, 30.58383410892229],
+                                [104.02554556275203, 30.58262475177206],
+                                [104.02860726337201, 30.58157469483814],
+                                [104.03583836636824, 30.57939722789665],
+                                [104.04042882551641, 30.578059970885292],
+                                [104.04193072711206, 30.57767739848758],
+                                [104.04386429390087, 30.57767739848758],
+                                [104.05211680603418, 30.57780464327027],
+                                [104.05736429945472, 30.577974737206887],
+                                [104.06190326967351, 30.577974737206887],
+                                [104.06888934869232, 30.57823081303144],
+                                [104.0723958352832, 30.57823081303144],
+                            ],
+                            type: "LineString",
+                        },
+                    },
+                    {
+                        type: "Feature",
+                        properties: {},
+                        geometry: {
+                            coordinates: [
+                                [104.03067186552158, 30.58121371254012],
+                                [104.03168820344564, 30.58350614344907],
+                                [104.03397420945453, 30.588872134437054],
+                                [104.03742553452486, 30.595855674494786],
+                                [104.0415037090956, 30.599403510745773],
+                                [104.04280410214255, 30.599224651734517],
+                                [104.0412399421545, 30.594620507121945],
+                            ],
+                            type: "LineString",
+                        },
+                    },
+                    {
+                        type: "Feature",
+                        properties: {},
+                        geometry: {
+                            coordinates: [
+                                [104.03614986956592, 30.57922295694891],
+                                [104.03995595791946, 30.588516638604048],
+                                [104.04159826573164, 30.5880122160914],
+                                [104.04409384350794, 30.587561649191315],
+                                [104.04787520771674, 30.587711481134434],
+                                [104.05202420854823, 30.58796199411013],
+                                [104.05752519851637, 30.588163121659647],
+                                [104.06149868135014, 30.588364889994267],
+                                [104.06552610821899, 30.588466015412962],
+                                [104.07442555395403, 30.588364889994267],
+                                [104.07923747187073, 30.587015295866195],
+                                [104.08512274888375, 30.58711428030017],
+                            ],
+                            type: "LineString",
+                        },
+                    },
+                    {
+                        type: "Feature",
+                        properties: {},
+                        geometry: {
+                            coordinates: [
+                                [104.03891536960424, 30.58579102478177],
+                                [104.04064569450918, 30.585115808566798],
+                                [104.04259528185054, 30.584590406381395],
+                                [104.04394107999718, 30.584637985587023],
+                                [104.04763632676907, 30.58473325443444],
+                                [104.0523385025283, 30.58487643443189],
+                                [104.05765333710207, 30.58501994753378],
+                                [104.06161811354696, 30.58506785945866],
+                            ],
+                            type: "LineString",
+                        },
+                    },
+                    {
+                        type: "Feature",
+                        properties: {},
+                        geometry: {
+                            coordinates: [
+                                [104.03735789213408, 30.58253271394669],
+                                [104.0389870097589, 30.582028995752168],
+                                [104.04347675193338, 30.580899628840058],
+                                [104.04764508620929, 30.580899628840058],
+                                [104.05224938683341, 30.58098919873983],
+                                [104.05730102122533, 30.581168742308733],
+                                [104.06592444645742, 30.581393931969558],
+                                [104.07457211394063, 30.58157469483814],
+                            ],
+                            type: "LineString",
+                        },
+                    },
+                    {
+                        type: "Feature",
+                        properties: {},
+                        geometry: {
+                            coordinates: [
+                                [104.06958083363651, 30.572534782987432],
+                                [104.06971270230417, 30.574917451236246],
+                                [104.07248294129823, 30.578471518659015],
+                                [104.07501842508469, 30.581615167933037],
+                                [104.07561878358075, 30.58350853369396],
+                                [104.07538731887496, 30.585220810195395],
+                                [104.07473004263284, 30.588386326825315],
+                                [104.07478728660874, 30.591451222120313],
+                                [104.07560894531127, 30.597578653385924],
+                                [104.07531572786695, 30.601231883848172],
+                                [104.07490324093419, 30.607866001814756],
+                            ],
+                            type: "LineString",
+                        },
+                    },
+                ],
+            },
+        ];
+        var material = new THREE.MeshBasicMaterial({
+            color: 0xd3887,
+            transparent: true,
+        });
+        var highlightmaterial = new THREE.MeshBasicMaterial({
+            color: 0x00ffff,
+            transparent: true,
+        });
+        var lines, lineTrails;
+        function addLines() {
+            fetch("./data/berlin-roads.txt")
+                .then(function (res) {
+                    return res.text();
+                })
+                .then(function (geojson) {
+                    // geojson = LZString.decompressFromBase64(geojson);
+                    // geojson = JSON.parse(geojson);
+                    var lineStrings = maptalks.GeoJSON.toGeometry(road);
+                    console.log(lineStrings, "lineStrings");
+                    var timer = "generate line time";
+                    console.time(timer);
+                    const list = [];
+                    lineStrings.forEach((lineString) => {
+                        list.push({
+                            lineString,
+                            len: lineLength(lineString),
+                        });
+                    });
+                    lineStrings = list.sort(function (a, b) {
+                        return b.len - a.len;
+                    });
+
+                    lines = lineStrings.slice(0, 1000).map((d) => {
+                        var line = threeLayer.toExtrudeLine(
+                            d.lineString,
+                            { altitude: 0, width: 3, height: 1 },
+                            material
+                        );
+                        return line;
+                    });
+                    lineTrails = lineStrings
+                        .slice(0, 300)
+                        .map(function (d) {
+                            var line = threeLayer.toExtrudeLineTrail(
+                                d.lineString,
+                                {
+                                    altitude: 0,
+                                    width: 3,
+                                    height: 2,
+                                    chunkLength: d.len / 1000,
+                                    speed: 1,
+                                    trail: 6,
+                                    interactive: false,
+                                    asynchronous: true
+                                },
+                                highlightmaterial
+                            );
+                            return line;
+                        });
+
+                    console.log("lines.length:", lines.length);
+                    console.timeEnd(timer);
+                    threeLayer.addMesh(lines);
+                    threeLayer.addMesh(lineTrails);
+                    initGui();
+                    // threeLayer.config('animation', true);
+                    animation();
+                });
+        }
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer.redraw();
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+        }
+
+        function initGui() {
+            var params = {
+                add: true,
+                color: highlightmaterial.color.getStyle(),
+                show: true,
+                opacity: 1,
+                altitude: 0,
+            };
+            var gui = new dat.GUI();
+            gui.add(params, "add").onChange(function () {
+                if (params.add) {
+                    threeLayer.addMesh(lineTrails);
+                } else {
+                    threeLayer.removeMesh(lineTrails);
+                }
+            });
+            gui.addColor(params, "color")
+                .name("line color")
+                .onChange(function () {
+                    highlightmaterial.color.set(params.color);
+                    lineTrails.forEach(function (mesh) {
+                        mesh.setSymbol(highlightmaterial);
+                    });
+                });
+            gui.add(params, "opacity", 0, 1).onChange(function () {
+                highlightmaterial.opacity = params.opacity;
+                lineTrails.forEach(function (mesh) {
+                    mesh.setSymbol(highlightmaterial);
+                });
+            });
+            gui.add(params, "show").onChange(function () {
+                lineTrails.forEach(function (mesh) {
+                    if (params.show) {
+                        mesh.show();
+                    } else {
+                        mesh.hide();
+                    }
+                });
+            });
+            gui.add(params, "altitude", 0, 300).onChange(function () {
+                lineTrails.forEach(function (mesh) {
+                    mesh.setAltitude(params.altitude);
+                });
+            });
+        }
+    </script>
+</body>
+
+</html>

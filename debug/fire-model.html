@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>model animation</title>
+    <script type="text/javascript" src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.104.0/build/three.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.104.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            center: [19.06325670775459, 42.16842479475318],
+            zoom: 18,
+            pitch: 60,
+            // bearing: 180,
+
+            centerCross: true,
+            doubleClickZoom: false
+        });
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+            // animation: true
+        });
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            camera.add(new THREE.PointLight('#fff', 4));
+
+            addGltf();
+
+        };
+
+        const baseLayer = new maptalks.TileLayer('tile', {
+            urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+            subdomains: ['a', 'b', 'c', 'd'],
+            attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+        })
+        const sceneConfig = {
+            postProcess: {
+                enable: true,
+                antialias: { enable: true },
+                bloom: {
+                    enable: true,
+                    threshold: 0,
+                    factor: 1,
+                    radius: 0.02,
+                },
+            }
+        };
+        const groupLayer = new maptalks.GroupGLLayer('group', [baseLayer,threeLayer], { sceneConfig, onlyWebGL1: true });
+        groupLayer.addTo(map);
+
+        var gltfLoader = new THREE.GLTFLoader();
+
+        function loadModel(modelUrl, callback) {
+            gltfLoader.load(modelUrl, function (gltf) {
+                const model = gltf.scene;
+                model.position.set(0, 0, 0);
+                const box = new THREE.Box3().setFromObject(model);
+                const center = new THREE.Vector3();
+                box.getCenter(center);
+                gltf.center = center;
+                const { min, max } = box;
+                const dx = Math.abs(max.x - min.x);
+                const scale = 1 / dx;
+                // console.log(scale);
+                if (scale > 0) {
+                    model.scale.set(scale, scale, scale);
+                    gltf.scale = scale;
+                }
+                callback && callback(gltf);
+            }, undefined, function (e) {
+                console.error(e);
+                callback();
+            });
+        }
+
+
+        var baseObjectModel;
+
+
+        function addGltf() {
+            loadModel('./data/Office Building.glb', function (gltf) {
+
+                const cloneModel = gltf.scene.clone();
+                const boxCenter = gltf.center;
+                const boxScale = gltf.scale;
+                const group = new THREE.Group();
+                group.add(cloneModel);
+                if (boxCenter && boxScale) {
+                    const { x, y, z } = boxCenter;
+                    group.position.set(-x * boxScale, -y * boxScale, -z * boxScale);
+                }
+                // rotation
+                const group1 = new THREE.Group();
+                group1.rotation.x = Math.PI / 2;
+                group1.add(group);
+
+                baseObjectModel = threeLayer.toModel(group1, { coordinate: map.getCenter() });
+                // model.position.copy(threeLayer.coordinateToVector3(map.getCenter()));
+                threeLayer.addMesh(baseObjectModel);
+                animate();
+
+            }, undefined, function (e) {
+
+                console.error(e);
+
+            });
+        }
+
+
+
+
+        function animate() {
+            requestAnimationFrame(animate);
+            // threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer.redraw();
+            }
+
+        }
+
+    </script>
+</body>
+
+</html>

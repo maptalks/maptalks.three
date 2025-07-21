@@ -40,11 +40,6 @@
 
             centerCross: true,
             doubleClickZoom: false,
-            // baseLayer: new maptalks.TileLayer('tile', {
-            //     urlTemplate: 'https://mt2.google.cn/maps/vt?lyrs=m&hl=zh-CN&gl=CN&x={x}&y={y}&z={z}',
-            //     subdomains: ['a', 'b', 'c', 'd'],
-            //     // attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
-            // })
         });
         map.on('click', e => {
             console.log(e.coordinate.toArray());

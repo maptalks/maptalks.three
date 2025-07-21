@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>shadow</title>
+    <script type="text/javascript" src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.104.0/build/three.min.js"></script>
+    <!-- <script type="text/javascript" src="./https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script> -->
+    <script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <script type="text/javascript"
+        src="https://unpkg.com/three@0.104.0/examples/js/libs/stats.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        .map {
+            width: 100%;
+            height: 100%;
+            /* background-color: #000; */
+            float: left;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map" class="map"></div>
+
+    <script>
+
+
+        var map = new maptalks.Map("map", {
+            center: [13.416935229170008, 52.529564137540376],
+            zoom: 13,
+            pitch: 70,
+            bearing: 0,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+
+        map.on('click', e => {
+            console.log(e.coordinate.toArray());
+        })
+
+
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true,
+            // animation: true
+        });
+
+        var ground, light, lightHelper, lightCameraHelper,
+            spotLight, spotLightHelper,
+            pointLight, pointLightHelper,
+            lnglat = [13.510762044348667, 52.60579972166951], centerLngLat = [13.401745279633246, 52.51832683303573], height = 10000;
+        var groundMaterial = new THREE.MeshPhongMaterial({
+            // side: THREE.DoubleSide,
+            color: 'gray'
+        }), groundShadowMaterial = new THREE.ShadowMaterial({ opacity: 0.5 });
+        var boxs = [];
+
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            threeLayer.getThreeRenderer().shadowMap.enabled = true;
+            threeLayer.getThreeRenderer().shadowMap.needsUpdate = true;
+
+            ground = new Ground(map.getCenter(), {}, groundShadowMaterial, threeLayer);
+            threeLayer.addMesh(ground);
+
+            // var light = new THREE.HemisphereLight(0xffffff, 0x444444, 0.1);
+            // light.position.set(0, 0, 1000);
+            // // light.castShadow = true;
+            // scene.add(light);
+
+            camera.add(new THREE.PointLight(0xffffff, 0.3))
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            const cube = getLightTarget();
+            threeLayer.addMesh(cube);
+
+
+            const z = threeLayer.altitudeToVector3(height, height).x;
+            const v = threeLayer.coordinateToVector3(lnglat, z);
+
+
+            spotLight = new THREE.SpotLight('white');
+            spotLight.castShadow = true;
+            spotLight.intensity = 1.5;
+            spotLight.angle = 0.46;
+            // spotLight.penumbra = 0.05;
+            // spotLight.decay = 2;
+            spotLight.distance = 200;
+
+            spotLight.target = cube;
+            spotLight.position.copy(v);
+
+            spotLight.shadow.mapSize.width = 512 * 10;
+            spotLight.shadow.mapSize.height = 512 * 10;
+
+            // threeLayer.addMesh(spotLight);
+
+            spotLightHelper = new THREE.SpotLightHelper(spotLight);
+            spotLightHelper.color = new THREE.Color('black');
+            // threeLayer.addMesh(spotLightHelper);
+
+            light = new THREE.DirectionalLight(0xffffff, 0.7);
+            light.position.copy(v)
+            light.castShadow = true;
+            light.target = cube;
+            light.shadow.mapSize.width = 512 * 10;
+            light.shadow.mapSize.height = 512 * 10;
+            light.shadow.camera.top = 128;
+            light.shadow.camera.bottom = - 86;
+            light.shadow.camera.left = - 68;
+            light.shadow.camera.right = 74;
+            scene.add(light);
+
+            lightHelper = new THREE.DirectionalLightHelper(light, 1, 'red');
+            scene.add(lightHelper);
+
+            lightCameraHelper = new THREE.CameraHelper(light.shadow.camera);
+            scene.add(lightCameraHelper);
+
+            pointLight = new THREE.PointLight('#fff', 0.5);
+            pointLight.castShadow = true;
+            pointLight.shadow.mapSize.width = 512 * 4;
+            pointLight.shadow.mapSize.height = 512 * 4;
+            const v1 = threeLayer.coordinateToVector3(centerLngLat)
+            pointLight.position.copy(v1);
+
+            pointLightHelper = new THREE.PointLightHelper(pointLight, 50, 'blue');
+            // scene.add(pointLightHelper);
+
+            // scene.add(pointLight);
+            addMeshs();
+            addBox();
+        };
+        threeLayer.addTo(map);
+
+        function getLightTarget() {
+            const size = 0.001;
+            const cubeGeometry = new THREE.CubeGeometry(size, size, size);
+            const cubeMaterial = new THREE.MeshLambertMaterial({
+                color: 'yellow'
+            });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            const v1 = threeLayer.coordinateToVector3(centerLngLat)
+            cube.position.copy(v1);
+            return cube;
+        }
+
+
+        function addMeshs() {
+            const lnglats = [
+                [13.436888403560943, 52.54498759919656]
+                , [13.43912951079767, 52.5473335373118]
+                , [13.439419135042954, 52.54715026403423]
+                , [13.439905396412883, 52.54697949908049]
+                , [13.441117846713269, 52.546443514880224]
+                , [13.441993040510397, 52.546354927811734]
+                , [13.444195295650047, 52.54549185248678]
+                , [13.443317069103045, 52.54498514697829]
+                , [13.442726189406358, 52.54462762734781]
+                , [13.441258264453836, 52.54347558333697]
+                , [13.436857085079623, 52.54494620022942]
+            ];
+            const polygon = new maptalks.Polygon([lnglats]);
+            var material = new THREE.MeshLambertMaterial({
+                color: '#fff'
+            });
+            const extrudePolygon = threeLayer.toExtrudePolygon(polygon, { height: 2000, interactive: false, topColor: '#fff' }, material);
+            extrudePolygon.getObject3d().castShadow = true;
+            threeLayer.addMesh(extrudePolygon);
+
+            const lnglats1 = [
+                [13.45743449029078, 52.530808718257134]
+                , [13.430051361864344, 52.55102063856944]
+                , [13.427130011346549, 52.55218100922096]
+                , [13.42187536035749, 52.552809394572336]
+                , [13.418295466267068, 52.5531437175521]
+                , [13.414684633938805, 52.55358049197153]
+                , [13.414307785761252, 52.55210718779401]
+                , [13.410710409909598, 52.55235907543434]
+                , [13.406013586298855, 52.552709469877385]
+                , [13.403198385854012, 52.55294213733529]
+
+            ];
+            const extrudeLine = threeLayer.toExtrudeLine(new maptalks.LineString(lnglats1), { width: 0, height: 1000 }, new THREE.MeshLambertMaterial({
+                color: 'red'
+            }));
+            extrudeLine.getObject3d().castShadow = true;
+            threeLayer.addMesh(extrudeLine);
+
+        }
+        function addBox() {
+            var lnglats = [
+                [13.429362937522342, 52.518205849377495]
+                , [13.41688993786238, 52.52216099633924]
+                , [13.417991247928398, 52.53296954185342]
+                , [13.438154245439819, 52.533321196953096]
+                , [13.450418871799684, 52.52653968753597]
+                , [13.390340036780685, 52.51953598324846]
+                , [13.399921081391199, 52.50920191922407]
+                , [13.366122901455583, 52.50949703597493]
+                , [13.365784792637783, 52.51964629275582]
+                , [13.371429857108524, 52.528732386936014]
+                , [13.383686384074508, 52.53781463596616]
+                , [13.40395563186371, 52.540223413847315]
+                , [13.361485408920998, 52.53916869831616]
+                , [13.35373758485457, 52.52883597474849]
+                , [13.355233792792774, 52.519259850666316]
+                , [13.369548077301943, 52.506940362998336]
+                , [13.338732610093984, 52.50860998116909]
+                , [13.341879792058194, 52.52318729489704]
+                , [13.348448231846305, 52.537668773653735]
+                , [13.389246594295287, 52.53548698398501]
+                , [13.38850757718967, 52.53863503802975]
+                , [13.37609820107241, 52.53114151693521]
+                , [13.378738663778222, 52.52573619010886]
+                , [13.37831231443704, 52.52080685602138]
+                , [13.375035939673353, 52.51971996135225]
+                , [13.389897299946142, 52.51899162027868]
+                , [13.391256053067082, 52.52202236946218]
+                , [13.392790046648201, 52.52844544479157]
+                , [13.395005819018024, 52.53310464893897]
+                , [13.401718911909938, 52.52425187302205]
+                , [13.402397026911103, 52.51909223851541]
+                , [13.411313379918056, 52.51798115586686]
+                , [13.415911385871823, 52.51888605929159]
+                , [13.41824726883442, 52.52171525554482]
+                , [13.417314242886505, 52.52609578512883]
+                , [13.412330051141907, 52.5293517938629]
+                , [13.40936323330186, 52.532595113983206]
+                , [13.41394381887676, 52.5381488398327]
+                , [13.419539658615577, 52.540914487009076]
+                , [13.436661171707783, 52.5407178069876]
+                , [13.43043712770941, 52.53493464958078]
+                , [13.426802529616793, 52.53273186525789]
+                , [13.427190063411217, 52.52859751715991]
+                , [13.429687741409111, 52.52541511779546]
+                , [13.420674712370555, 52.52132920963592]
+                , [13.422291590946202, 52.51771896093092]
+                , [13.42602853364042, 52.51691591867936]
+                , [13.4407066690992, 52.517628077846695]
+                , [13.445125010359334, 52.518379661504895]
+                , [13.449230960410887, 52.51890206493917]
+                , [13.452697161728338, 52.522833015637474]
+                , [13.452150183293384, 52.527206052817604]
+                , [13.450596418938858, 52.53120611025892]
+                , [13.449321345704561, 52.53478259925626]
+                , [13.44991743982439, 52.53800964581964]
+                , [13.444911438078066, 52.540011719191256]
+                , [13.433846712878221, 52.53776840443655]
+                , [13.446110400946054, 52.53745564016762]
+                , [13.42655484257807, 52.53375521527627]
+                , [13.410074080611025, 52.52474520696168]
+                , [13.39700902166237, 52.5211808556779]
+                , [13.39224970456371, 52.52795947015855]
+                , [13.397787887746631, 52.527687381119534]
+                , [13.404781597398824, 52.531570514480876]
+                , [13.402245452485431, 52.53470324196846]
+                , [13.420458447249871, 52.53324273115388]
+                , [13.421777392290323, 52.52903708527933]
+                , [13.422154850584775, 52.52568580719807]
+                , [13.425979170707365, 52.5225528451015]
+                , [13.43384246418384, 52.52106341825615]
+                , [13.437886395258374, 52.52359528344451]
+                , [13.43602741073164, 52.52734201890169]
+                , [13.433894856093502, 52.52999680902715]
+                , [13.440403956745058, 52.53046767348306]
+                , [13.443630184112749, 52.5345563486467]
+                , [13.446005091212669, 52.52604566053341]
+                , [13.447046979747824, 52.52147908728435]
+                , [13.438474092805109, 52.52016101093679]
+                , [13.433534190029263, 52.51375347746014]
+                , [13.423521933452776, 52.51201966778339]
+                , [13.408093385343363, 52.51256294330912]
+                , [13.394147099129441, 52.513520846913224]
+                , [13.384281207204936, 52.51450177617838]
+                , [13.37856319851221, 52.515164690078194]
+                , [13.375558597164172, 52.514388509308475]
+                , [13.381667785856393, 52.519387857354985]
+                , [13.382148908463023, 52.52353236618089]
+                , [13.38475353387787, 52.52724225103057]
+                , [13.3815086591095, 52.53156487184728]
+                , [13.380623530434377, 52.53505642591742]
+                , [13.381915256011666, 52.53591866294866]
+                , [13.396791162437012, 52.53627471648187]
+                , [13.402099823496656, 52.53279944740652]
+                , [13.40014347575675, 52.52837179268212]
+                , [13.396825898429597, 52.525773455094765]
+                , [13.401478509388994, 52.52207531777353]
+                , [13.407523503610946, 52.52190238141023]
+                , [13.406934142815885, 52.51893565590271]
+                , [13.405154993533188, 52.51460758767698]
+                , [13.418052098553744, 52.511710778919365]
+                , [13.428898211402839, 52.51138966299831]
+                , [13.42546107309363, 52.50816548714951]
+                , [13.41306722447439, 52.50606085199436]
+                , [13.393874072759445, 52.50845654912152]
+                , [13.389070011479362, 52.50536400255859]
+                , [13.398863392767112, 52.502241059261934]
+                , [13.412887755053475, 52.50193480806027]
+                , [13.421268634351577, 52.50208107057048]
+                , [13.428672171403946, 52.50321394606172]
+                , [13.437430700918526, 52.50479018806331]
+                , [13.442563091106194, 52.50680468710058]
+                , [13.440957302067545, 52.5120634858973]
+                , [13.433831621157651, 52.51369527613369]
+            ];
+            var material = new THREE.MeshLambertMaterial({
+                color: 'white'
+            });
+            lnglats.forEach(function (lnglat) {
+                var box = new Box(lnglat, {
+                    interactive: false,
+                    altitude: 0
+                }, material, threeLayer);
+                boxs.push(box);
+            });
+            threeLayer.addMesh(boxs);
+            animation();
+            initGui();
+        }
+
+        var isUp = true;
+        function updatePointLightPosition() {
+            if (isUp) {
+                pointLight.position.z += 1;
+            } else {
+                pointLight.position.z -= 1;
+            }
+            if (pointLight.position.z > 60) {
+                isUp = false;
+            }
+            if (pointLight.position.z <= 10) {
+                isUp = true;
+            }
+        }
+
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer.redraw();
+
+                spotLightHelper.update();
+                lightHelper.update();
+                pointLightHelper.update();
+                lightCameraHelper.update();
+                updatePointLightPosition();
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+        }
+
+        function initGui() {
+            var params = {
+                add: true,
+                color: '#3e35cf',
+                show: true,
+                opacity: 1,
+                altitude: 0,
+                transparent: true,
+
+                pointLightAdd: false,
+
+                spotLightAdd: false,
+                spotLightColor: spotLight.color.getStyle(),
+                spotLightIntensity: spotLight.intensity,
+                spotLightDistance: spotLight.distance,
+                spotLightAngle: spotLight.angle,
+                spotLightHeight: height,
+                spotLightMapScale: 1,
+
+                lightAdd: true,
+                lightColor: light.color.getStyle(),
+                lightIntensity: light.intensity,
+                lightTop: light.shadow.camera.top,
+                lightBottom: light.shadow.camera.bottom,
+                lightLeft: light.shadow.camera.left,
+                lightRight: light.shadow.camera.right,
+                lightHeight: height
+
+            };
+            var gui = new dat.GUI({
+                width: 300
+            });
+
+            const groundF = gui.addFolder('Ground');
+            groundF.open();
+            groundF.add(params, 'transparent').onChange(function () {
+                if (params.transparent) {
+                    ground.setSymbol(groundShadowMaterial);
+                } else {
+                    ground.setSymbol(groundMaterial);
+                }
+                // ground.material.needsUpdate = true;
+            })
+
+
+            const pointlightF = gui.addFolder('PointLight');
+            pointlightF.open();
+            pointlightF.add(params, 'pointLightAdd').name('add').onChange(function () {
+                if (params.pointLightAdd) {
+                    threeLayer.addMesh([pointLight, pointLightHelper]);
+                } else {
+                    threeLayer.removeMesh([pointLight, pointLightHelper]);
+                }
+            });
+
+
+
+            const lightF = gui.addFolder('DirectionalLight');
+            lightF.open();
+            lightF.add(params, 'lightAdd').name('add').onChange(function () {
+                if (params.lightAdd) {
+                    threeLayer.addMesh([light, lightHelper, lightCameraHelper]);
+                } else {
+                    threeLayer.removeMesh([light, lightHelper, lightCameraHelper]);
+                }
+            });
+            lightF.addColor(params, 'lightColor').onChange(function () {
+                light.color.set(params.lightColor);
+            });
+            lightF.add(params, 'lightIntensity', 0, 10).onChange(function () {
+                light.intensity = params.lightIntensity;
+            });
+            lightF.add(params, 'lightTop', -1000, 1000).onChange(function () {
+                light.shadow.camera.top = params.lightTop;
+                light.shadow.camera.needsUpdate = true;
+                light.shadow.camera.updateProjectionMatrix();
+            });
+            lightF.add(params, 'lightBottom', -1000, 1000).onChange(function () {
+                light.shadow.camera.bottom = params.lightBottom;
+                light.shadow.camera.needsUpdate = true;
+                light.shadow.camera.updateProjectionMatrix();
+            });
+            lightF.add(params, 'lightLeft', -1000, 1000).onChange(function () {
+                light.shadow.camera.left = params.lightLeft;
+                light.shadow.camera.needsUpdate = true;
+                light.shadow.camera.updateProjectionMatrix();
+            });
+            lightF.add(params, 'lightRight', -1000, 1000).onChange(function () {
+                light.shadow.camera.right = params.lightRight;
+                light.shadow.camera.needsUpdate = true;
+                light.shadow.camera.updateProjectionMatrix();
+            });
+            lightF.add(params, 'lightHeight', 0, 20000).onChange(function () {
+                const z = threeLayer.altitudeToVector3(params.lightHeight, params.lightHeight).x;
+                light.position.z = z;
+            });
+
+            const spotLightF = gui.addFolder('SpotLight');
+            spotLightF.open();
+            spotLightF.add(params, 'spotLightAdd').name('add').onChange(function () {
+                if (params.spotLightAdd) {
+                    threeLayer.addMesh([spotLight, spotLightHelper]);
+                } else {
+                    threeLayer.removeMesh([spotLight, spotLightHelper]);
+                }
+            });
+            spotLightF.addColor(params, 'spotLightColor').onChange(function () {
+                spotLight.color.set(params.spotLightColor);
+            });
+            spotLightF.add(params, 'spotLightIntensity', 0, 10).onChange(function () {
+                spotLight.intensity = params.spotLightIntensity;
+            });
+            spotLightF.add(params, 'spotLightDistance', 0, 1000).onChange(function () {
+                spotLight.distance = params.spotLightDistance;
+            });
+            spotLightF.add(params, 'spotLightAngle', 0, Math.PI).onChange(function () {
+                spotLight.angle = params.spotLightAngle;
+            });
+            spotLightF.add(params, 'spotLightHeight', 0, 20000).onChange(function () {
+                const z = threeLayer.altitudeToVector3(params.spotLightHeight, params.spotLightHeight).x;
+                spotLight.position.z = z;
+            });
+            // spotLightF.add(params, 'spotLightMapScale', 0, 10).onChange(function () {
+            //     const size = Math.ceil(params.spotLightMapScale) * 512;
+            //     console.log(size);
+            //     spotLight.shadow.mapSize.width = size;
+            //     spotLight.shadow.mapSize.height = size;
+            //     spotLight.shadow.needsUpdate = true;
+            // });
+        }
+
+
+
+        //default values
+        var OPTIONS = {
+            altitude: 0,
+            interactive: true
+        };
+
+        class Box extends maptalks.BaseObject {
+            constructor(coordinate, options, material, layer) {
+                options = maptalks.Util.extend({}, OPTIONS, options, { layer, coordinate });
+                super();
+                //Initialize internal configuration
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L135
+                this._initOptions(options);
+                const { altitude, radius } = options;
+                //generate geometry
+
+                const h = Math.random() * 10;
+                const geometry = new THREE.BoxBufferGeometry(0.4, 0.4, h);
+
+                //Initialize internal object3d
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L140
+                this._createMesh(geometry, material);
+
+                //set object3d position
+                const z = layer.altitudeToVector3(altitude, altitude).x + h / 2;
+                const position = layer.coordinateToVector3(coordinate, z);
+                this.getObject3d().position.copy(position);
+                this.getObject3d().castShadow = true;
+            }
+        }
+
+
+        const OPTIONS1 = {
+            interactive: false,
+            altitude: 0,
+
+        }
+        class Ground extends maptalks.BaseObject {
+            constructor(coordinate, options, material, layer) {
+                options = maptalks.Util.extend({}, OPTIONS1, options, { layer, coordinate });
+                super();
+                //Initialize internal configuration
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L135
+                this._initOptions(options);
+                const { altitude } = options;
+                //generate geometry
+
+                const geometry = new THREE.PlaneBufferGeometry(200, 200);
+
+                //Initialize internal object3d
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L140
+                this._createMesh(geometry, material);
+
+                //set object3d position
+                const z = layer.altitudeToVector3(altitude, altitude).x;
+                const position = layer.coordinateToVector3(coordinate, z);
+                this.getObject3d().position.copy(position);
+                this.getObject3d().receiveShadow = true;
+            }
+        }
+    </script>
+</body>
+
+</html>

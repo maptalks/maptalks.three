@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>User Interactions - Draw tool to draw geometries</title>
+<style type="text/css">
+    html,
+    body {
+        margin: 0px;
+        height: 100%;
+        width: 100%
+    }
+
+    .container {
+        width: 100%;
+        height: 100%;
+        background-color: black;
+    }
+</style>
+<link rel='stylesheet' href='https://maptalks.com/api/maptalks.css' />
+<script type='text/javascript' src='https://maptalks.com/api/maptalks.min.js'></script>
+<script type='text/javascript' src='https://maptalks.com/api/maptalks-gl-layers.js'></script>
+<script type='text/javascript' src='./../assets/lib/lil-gui.min.js'></script>
+<script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
+<!--fatline script-->
+<!-- https://threejs.org/examples/#webgl_lines_fat -->
+<script type="text/javascript" src="https://unpkg.com/three@0.138.0/examples/js/lines/LineMaterial.js"></script>
+<script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
+<body>
+
+    <div id="map" class="container"></div>
+
+    <script>
+
+        var map = new maptalks.Map('map', {
+            center: [116.46755129, 39.86160898],
+            zoom: 9,
+            pitch: 60,
+            baseLayer: new maptalks.TileLayer('base', {
+                urlTemplate: "https://webst01.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
+                subdomains: ["a", "b", "c", "d"],
+            })
+        });
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            identifyCountOnEvent: 1
+            // forceRenderOnMoving: true,
+            // forceRenderOnRotating: true
+        });
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            scene.add(new THREE.AmbientLight('#fff', 0.3));
+            loadTexture();
+            animation();
+            addCircles();
+            addAreas();
+            initGui();
+
+        };
+
+        threeLayer.addTo(map);
+        // 添加到GroupGLLayer中
+        // GroupGLLayer能实现抗锯齿等后处理，也能加入其他三维图层，让子图层都融合到同一个三维空间中
+        // const sceneConfig = {
+        //     postProcess: {
+        //         enable: true,
+        //         antialias: { enable: true },
+        //         bloom: {
+        //             enable: true,
+        //             threshold: 0,
+        //             factor: 1,
+        //             radius: 0.02,
+        //         },
+        //     }
+        // };
+        // const groupLayer = new maptalks.GroupGLLayer('group', [threeLayer], { sceneConfig });
+        // groupLayer.addTo(map);
+
+        //https://threejs.org/examples/#webgl_lines_fat
+        var linematerial = new THREE.LineMaterial({
+            color: 0xf2f2f2,
+            // transparent: true,
+            // vertexColors: THREE.VertexColors,
+            // side: THREE.BackSide,
+            linewidth: 4 // in pixels
+            // vertexColors: THREE.VertexColors,
+            // dashed: false
+
+        });
+
+
+
+
+        const material = new THREE.MeshPhongMaterial({ color: '#fff' });
+
+        function loadTexture() {
+            const textureLoader = new THREE.TextureLoader();
+            // textureLoader.load('./../assets/image/beijing-texture.png', (texture) => {
+            //     texture.needsUpdate = true; //使用贴图时进行更新
+            //     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+            //     // texture.repeat.set(0.002, 0.002);
+            //     texture.repeat.set(1, 1);
+            //     material.map = texture;
+            //     material.needsUpdate = true;
+            //     addAreas();
+            // });
+        }
+
+
+        function resetTopUV(extrudePolygons) {
+            // console.log(geometries);
+            //计算所有区域的总的包围盒
+            let minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity, maxZ = -Infinity;
+            extrudePolygons.forEach(extrudePolygon => {
+                const geometry = extrudePolygon.getObject3d().geometry;
+                const center = extrudePolygon.getObject3d().position;
+                const px = center.x, py = center.y;
+                const position = geometry.attributes.position.array;
+                for (let i = 0, len = position.length; i < len; i += 3) {
+                    const x = position[i] + px, y = position[i + 1] + py, z = position[i + 2];
+                    minx = Math.min(minx, x);
+                    miny = Math.min(miny, y);
+                    maxx = Math.max(maxx, x);
+                    maxy = Math.max(maxy, y);
+                    maxZ = Math.max(maxZ, z);
+                }
+            });
+            console.log(minx, miny, maxx, maxy);
+            //计算每个子区域的每个轮廓坐标点的在这个包围盒的百分比
+            const dx = maxx - minx, dy = maxy - miny;
+            extrudePolygons.forEach(extrudePolygon => {
+                const geometry = extrudePolygon.getObject3d().geometry;
+                const position = geometry.attributes.position.array;
+                const center = extrudePolygon.getObject3d().position;
+                const px = center.x, py = center.y;
+                const uv = geometry.attributes.uv.array;
+                let idx = 0;
+                for (let i = 0, len = position.length; i < len; i += 3) {
+                    const x = position[i] + px, y = position[i + 1] + py, z = position[i + 2];
+                    if (z === maxZ) {
+                        const u = (x - minx) / dx;
+                        const v = (y - miny) / dy;
+                        const index = idx * 2;
+                        uv[index] = u;
+                        uv[index + 1] = v;
+                    }
+                    idx++;
+                }
+            });
+        }
+
+        const height = 40000, offset = 1000;
+        const polygonLinkLine = new Map();
+
+        function syncAltitude(id, altitude) {
+            const line = polygonLinkLine.get(id);
+            line.setAltitude(altitude + height + offset);
+        }
+
+        function polygonUp(e) {
+            const polygon = e.target;
+            if (polygon._showPlayer) {
+                polygon._showPlayer.cancel();
+            }
+            const duration = 1000,
+                easing = 'out';
+            const player = polygon._showPlayer = maptalks.animate({
+                'altitude': 8000
+            }, {
+                'duration': duration,
+                'easing': easing
+            }, frame => {
+                const altitude = frame.styles.altitude;
+                if (altitude > 0) {
+                    this.setAltitude(altitude);
+                    syncAltitude(polygon.getId(), altitude);
+                }
+            });
+            player.play();
+        }
+
+        function polygonDown(e) {
+            const polygon = e.target;
+            if (polygon._showPlayer) {
+                polygon._showPlayer.cancel();
+            }
+            polygon.setAltitude(0);
+            syncAltitude(polygon.getId(), 0);
+        }
+
+        function polygonToLine(geojson) {
+            return geojson.features.map(f => {
+                const { type, coordinates } = f.geometry;
+                if (type === 'MultiPolygon') {
+                    return {
+                        type: 'Feature',
+                        geometry: {
+                            type: 'MultiLineString',
+                            coordinates: coordinates.map(c => {
+                                return c[0];
+                            })
+                        }
+                    }
+                }
+                return {
+                    type: 'Feature',
+                    geometry: {
+                        type: 'LineString',
+                        coordinates: coordinates[0]
+                    }
+                }
+            })
+        }
+
+
+        function addCircles() {
+
+            const material = new THREE.MeshBasicMaterial({
+                color: '#ff0', transparent: false
+            });
+            var circle = new Circle([116.418757,
+                39.917544], {
+                radius: 19000,
+                altitude: height + offset
+            }, material, threeLayer);
+
+            threeLayer.addMesh(circle);
+
+            var circle1 = new Circle([  100.5,
+                    21.36], {
+                radius: 19000,
+                altitude: height + offset
+            }, material, threeLayer);
+
+            threeLayer.addMesh(circle1);
+
+        }
+
+
+        function addAreas() {
+            fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json').then(res => res.json()).then(geojson => {
+                // fetch('../assets/data/beijingarea.json').then(res => res.json()).then(geojson => {
+                const polygons = maptalks.GeoJSON.toGeometry(geojson);
+                const geojsonLines = polygonToLine(geojson);
+                const lines = maptalks.GeoJSON.toGeometry(geojsonLines);
+                const fatlines = lines.map(line => {
+                    return threeLayer.toFatLine(line, { altitude: height + offset, bloom: true }, linematerial);
+                });
+
+                const extrudePolygons = polygons.map((p, index) => {
+                    const id = maptalks.Util.GUID();
+                    const extrudePolygon = threeLayer.toExtrudePolygon(p, { height, topColor: '#fff', asynchronous: true }, material);
+                    extrudePolygon.on('mouseover', polygonUp);
+                    extrudePolygon.on('mouseout', polygonDown);
+                    extrudePolygon.setId(id);
+                    polygonLinkLine.set(id, fatlines[index]);
+                    return extrudePolygon;
+                });
+                let idx = 0;
+                extrudePolygons.forEach(extrudePolygon => {
+                    extrudePolygon.on('workerload', e => {
+                        idx++;
+                        if (idx === extrudePolygons.length) {
+                            resetTopUV(extrudePolygons);
+                        }
+                    })
+                });
+                threeLayer.addMesh(fatlines);
+                threeLayer.addMesh(extrudePolygons);
+            })
+        }
+
+
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer.redraw();
+            }
+            requestAnimationFrame(animation);
+        }
+
+        function initGui() {
+            // var params = {
+            //     add: true,
+            //     color: linematerial.color.getStyle(),
+            //     show: true,
+            //     opacity: 1,
+            //     altitude: 0
+            // };
+            // var gui = new lil.GUI();
+            // gui.addColor(params, 'color').name('line color').onChange(function () {
+            //     linematerial.color.set(params.color);
+
+            // });
+        }
+
+        //default values
+        var OPTIONS = {
+            radius: 100,
+            altitude: 0
+        };
+
+
+        class Circle extends maptalks.BaseObject {
+            constructor(coordinate, options, material, layer) {
+                options = maptalks.Util.extend({}, OPTIONS, options, { layer, coordinate });
+                super();
+                //Initialize internal configuration
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L135
+                this._initOptions(options);
+                const { altitude, radius } = options;
+                //generate geometry
+                const r = layer.distanceToVector3(radius, radius).x
+                const geometry = new THREE.CircleBufferGeometry(r, 50);
+
+                //Initialize internal object3d
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L140
+                this._createMesh(geometry, material);
+
+                //set object3d position
+                const z = layer.distanceToVector3(altitude, altitude).x;
+                const position = layer.coordinateToVector3(coordinate, z);
+                this.getObject3d().position.copy(position);
+                // this.getObject3d().rotation.x = -Math.PI;
+            }
+
+
+            /**
+             * animateShow test
+             * 
+             * */
+            animateShow(options = {}, cb) {
+                if (this._showPlayer) {
+                    this._showPlayer.cancel();
+                }
+                if (maptalks.Util.isFunction(options)) {
+                    options = {};
+                    cb = options;
+                }
+                const duration = options['duration'] || 1000,
+                    easing = options['easing'] || 'out';
+                const player = this._showPlayer = maptalks.animation.Animation.animate({
+                    'scale': 1
+                }, {
+                    'duration': duration,
+                    'easing': easing
+                }, frame => {
+                    const scale = frame.styles.scale;
+                    if (scale > 0) {
+                        this.getObject3d().scale.set(scale, scale, scale);
+                    }
+                    if (cb) {
+                        cb(frame, scale);
+                    }
+                });
+                player.play();
+                return player;
+            }
+        }
+
+
+
+
+
+
+    </script>
+</body>
+
+</html>

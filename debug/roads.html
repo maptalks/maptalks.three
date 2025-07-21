@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>circle spatial query</title>
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="https://unpkg.com/@maptalks/geojson-bbox@1.0.4/dist/bbox.umd.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/examples/js/lines/LineMaterial.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/geojsondataset/dist/geojsondataset.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/jsts@2.9.2/dist/jsts.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            /* background-color: #000; */
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            center: [121.50914636594325, 31.274172389528275],
+            zoom: 13.478337137999542,
+            pitch: 0.800000000000026,
+            bearing: 0.29999999999973,
+            // bearing: 180,
+
+            centerCross: true,
+            doubleClickZoom: false,
+        });
+
+        const sceneConfig = {
+            postProcess: {
+                enable: true,
+                antialias: { enable: true }
+            }
+        };
+        const groupLayer = new maptalks.GroupGLLayer('group', [], { sceneConfig });
+        groupLayer.addTo(map);
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true,
+            animation: true
+        });
+
+
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            addRoads();
+        };
+        threeLayer.addTo(groupLayer);
+
+        var geojsonData;
+
+        const geoDataSet = new geojsondataset.GeoDataSet({ coordinateCount: 20000, loopFPS: 2 });
+        const dataGroupId = 'shanghairoads';
+
+        var material = new THREE.LineMaterial({
+            color: '#000',
+            transparent: true,
+            // vertexColors: THREE.VertexColors,
+            // side: THREE.BackSide,
+            linewidth: 2 // in pixels
+            // vertexColors: THREE.VertexColors,
+            // dashed: false
+        });
+        geoDataSet.on(dataGroupId, (geojson) => {
+            const mesh = threeLayer.toFatLines(geojson.features, { asynchronous: true }, material);
+            threeLayer.addMesh(mesh);
+
+        })
+
+        function addRoads() {
+            fetch('./roadtest.geojson').then(res => res.json()).then(geojson => {
+                geojsonData = geojson;
+                geoDataSet.addGeoData(dataGroupId, geojson);
+            })
+        }
+
+        const layer1 = new maptalks.VectorLayer('layer1').addTo(map);
+        var drawTool = new maptalks.DrawTool({
+            mode: 'Point'
+        }).addTo(map).disable();
+
+        drawTool.on('drawend', function (param) {
+            layer1.addGeometry(param.geometry);
+            lineCross(param.geometry);
+        });
+
+        var items = ['Circle'].map(function (value) {
+            return {
+                item: value,
+                click: function () {
+                    drawTool.setMode(value).enable();
+                }
+            };
+        });
+
+        var toolbar = new maptalks.control.Toolbar({
+            items: [
+                {
+                    item: 'Shape',
+                    children: items
+                },
+                {
+                    item: 'Disable',
+                    click: function () {
+                        drawTool.disable();
+                    }
+                },
+                {
+                    item: 'Clear',
+                    click: function () {
+                        layer1.clear();
+                    }
+                }
+            ]
+        }).addTo(map);
+
+        const geoJSONRender = new jsts.io.GeoJSONReader();
+        function lineCross(circle) {
+            const time = 'time';
+            console.time(time);
+            const circleGeoJSON = circle.toGeoJSON();
+            const circleBBOX = bbox(circleGeoJSON);
+            function bboxCross(bbox1, bbox2) {
+                if (bbox1[2] < bbox2[0]) {
+                    return false;
+                }
+                if (bbox1[1] > bbox2[3]) {
+                    return false;
+                }
+                if (bbox1[0] > bbox2[2]) {
+                    return false;
+                }
+                if (bbox1[3] < bbox2[1]) {
+                    return false;
+                }
+                return true;
+            }
+            const filterFeatures = [];
+            for (let i = 0, len = geojsonData.features.length; i < len; i++) {
+                const f = geojsonData.features[i];
+                if (!f.bbox) {
+                    f.bbox = bbox(f);
+                }
+                if (bboxCross(circleBBOX, f.bbox)) {
+                    filterFeatures.push(f);
+                }
+            }
+            const result = [];
+            const cirlceGeom = geoJSONRender.read(circleGeoJSON);
+            for (let i = 0, len = filterFeatures.length; i < len; i++) {
+                if (!filterFeatures[i].geom) {
+                    filterFeatures[i].geom = geoJSONRender.read(filterFeatures[i]);
+                }
+                const geom = filterFeatures[i].geom;
+                if (geom.geometry.intersects(cirlceGeom.geometry)) {
+                    result.push(filterFeatures[i]);
+                }
+            }
+            console.timeEnd(time);
+            console.log(result);
+
+            const lines = result.map(f => {
+                const line = maptalks.GeoJSON.toGeometry(f);
+                line.setSymbol({ lineColor: 'red' });
+                return line;
+            });
+            layer1.addGeometry(lines);
+        }
+
+    </script>
+</body>
+
+</html>

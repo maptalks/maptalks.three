@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>slice geojson by geojson-seg</title>
+<style type="text/css">
+    html,
+    body {
+        margin: 0px;
+        height: 100%;
+        width: 100%
+    }
+
+    .container {
+        width: 100%;
+        height: 100%;
+        background: black;
+    }
+</style>
+<script type="text/javascript" src="https://unpkg.com/three@0.104.0/examples/js/libs/stats.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+<!-- <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.min.js"></script> -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks-gl@0.105.4/dist/maptalks-gl.min.js"></script>
+<script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
+<script type="text/javascript" src="https://unpkg.com/maptalks.three/dist/maptalks.three.min.js"></script>
+<script type="text/javascript" src="https://unpkg.com/geojsondataset/dist/geojsondataset.js"></script>
+
+<body>
+
+    <div id="map" class="container"></div>
+
+    <script>
+        var map = new maptalks.Map('map', {
+            "center": [114.34237799, 34.77017133], "zoom": 13.331093885274715, "pitch": 64.40000000000015, "bearing": 1.8123918162685868,
+            // baseLayer: new maptalks.TileLayer('base', {
+            //     urlTemplate: "http://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}",
+            //     subdomains: ['a', 'b', 'c', 'd'],
+            //     attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            // })
+        });
+
+        const tileLayer = new maptalks.TileLayer("base", {
+            urlTemplate: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            subdomains: ["a", "b", "c", "d"],
+        });
+        const geoDataSet = new geojsondataset.GeoDataSet({ coordinateCount: 10000, loopFPS: 2 });
+        const dataGroupId = 'dikuai';
+
+        const material = new THREE.MeshLambertMaterial({ color: '#fff' });
+        let total = 0, dataCount = 0;
+        geoDataSet.on(dataGroupId, (geojson) => {
+            try {
+                geojson.features = geojson.features.filter(f => f.geometry.coordinates.length > 0);
+                const mesh = threeLayer.toExtrudePolygons(geojson.features, { topColor: '#fff', asynchronous: true }, material);
+                threeLayer.addMesh(mesh);
+                total += geojson.coordinateCount;
+                dataCount += geojson.features.length;
+                // console.log('coordiantes count:', total);
+            } catch (e) {
+                console.error(e);
+                console.log(geojson);
+                // geojson.features.forEach(f => {
+                //     console.log(f.geometry.type);
+                // });
+            }
+
+        })
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            identifyCountOnEvent: 1,
+            // forceRenderOnMoving: true,
+            // forceRenderOnRotating: true
+        });
+        var stats;
+
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            scene.add(new THREE.AmbientLight('#fff', 0.3));
+            animate();
+            setTimeout(() => {
+                addPolygon();
+            }, 100);
+
+        };
+        const sceneConfig = {
+            postProcess: {
+                enable: true,
+                antialias: { enable: true }
+            }
+        };
+        const groupLayer = new maptalks.GroupGLLayer('group', [tileLayer, threeLayer], { sceneConfig });
+        groupLayer.addTo(map);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            stats.update();
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate && !threeLayer.isRendering()) {
+                threeLayer.redraw();
+            }
+
+        }
+
+        function addPolygon() {
+            //fetch big geojson files
+            maptalks.GeoJSON.fetch('./data/output_filename-height-integer.geojson', 10000).then(geojson => {
+                geoDataSet.addGeoData(dataGroupId, geojson);
+            })
+        }
+
+
+    </script>
+</body>
+
+</html>

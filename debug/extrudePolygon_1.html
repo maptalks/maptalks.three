@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>三维 - 绘制Line的高度面</title>
+<style type="text/css">
+    html,
+    body {
+        margin: 0px;
+        height: 100%;
+        width: 100%
+    }
+
+    .container {
+        width: 100%;
+        height: 100%
+    }
+</style>
+<link rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+<!-- <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.min.js"></script> -->
+<script type="text/javascript" src="https://unpkg.com/maptalks@1.0.0-rc.27/dist/maptalks.js"></script>
+
+<!-- <script type="text/javascript" src="https://unpkg.com/@maptalks/gl-layers/dist/maptalks-gl-layers.js"></script> -->
+<script type="text/javascript" src="https://unpkg.com/@maptalks/gl-layers@0.27.0/dist/maptalks-gl-layers.js"></script>
+
+<!-- <script type="text/javascript" src="https://maptalks.com/api/maptalks-gl-layers.js"></script> -->
+<script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
+<script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
+<script src="https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="./china.js"></script>
+
+<body>
+
+    <div id="map" class="container"></div>
+
+    <script>
+
+        const map = new maptalks.Map("map", {
+            center: [105, 35.49856],
+            zoom: 8,
+            pitch: 63,
+            lights: {
+                directional: {
+                    direction: [1, 0, -1],
+                    color: [1, 1, 1]
+                },
+                // ambient: {
+                //     resource: {
+                //         url: {
+                //             front: "{res}/hdr/gradient/front.png",
+                //             back: "{res}/hdr/gradient/back.png",
+                //             left: "{res}/hdr/gradient/left.png",
+                //             right: "{res}/hdr/gradient/right.png",
+                //             top: "{res}/hdr/gradient/top.png",
+                //             bottom: "{res}/hdr/gradient/bottom.png"
+                //         }
+                //     },
+                //     exposure: 1,
+                //     hsv: [0, 0.34, 0],
+                //     orientation: 0
+                // }
+            },
+            layerSwitcherControl: {
+                'position': 'top-right',
+                // title of base layers
+                'baseTitle': 'Base Layers',
+                // title of layers
+                'overlayTitle': 'Layers',
+                // layers you don't want to manage with layer switcher
+                'excludeLayers': [],
+                // css class of container element, maptalks-layer-switcher by default
+                'containerClass': 'maptalks-layer-switcher'
+            },
+            baseLayer: new maptalks.TileLayer("base", {
+                urlTemplate: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+                subdomains: ["a", "b", "c", "d"],
+                // altitude: -30000,
+                attribution: "&copy; <a href='http://osm.org'>OpenStreetMap</a> contributors, &copy; <a href='https://carto.com/'>CARTO</a>",
+            }),
+        })
+
+        const dataConfig = {
+            type: '3d-extrusion',
+            altitudeProperty: 'altitude',
+            altitudeScale: 1,
+            defaultAltitude: 0,
+            topThickness: 0,
+            top: false,
+            side: true,
+            // sideVerticalUVMode: 1
+            // textureYOrigin: 'bottom'
+        };
+
+        const material = {
+            'baseColorFactor': [1, 1, 1, 1],
+            // 'emissiveFactor': [1, 1, 1],
+            'roughnessFactor': 1,
+            'metalnessFactor': 1,
+            // 'outputSRGB': 0,
+            // 'uvScale': [0.001, 0.0013]
+        };
+
+
+        let boundGeoms = [];
+        let topPolygon = [];
+
+        chinaData.features.forEach(f => {
+            const polygon = maptalks.GeoJSON.toGeometry(f);
+
+            polygon.setSymbol({
+                topPolygonFill: 'rgba(33, 112, 199, 1)',
+                bottomPolygonFill: 'rgba(133, 122, 199, 1)'
+            });
+            polygon.setProperties({
+                // height: 30000,
+                altitude: 30000
+            });
+            boundGeoms.push(polygon);
+            //顶面
+            const polygon2 = maptalks.GeoJSON.toGeometry(f);
+
+            polygon2.setSymbol({
+                lineColor: "#ccc",
+                lineWidth: 0,
+                polygonFill: 'rgba(133, 122, 199, 1)',
+                // polygonFillOpacity: 0.7,
+                // textName: "{name}",
+                textSize: 12,
+                textFill: '#00f',
+                // polygonOpacity: 0.6,
+            })
+
+            topPolygon.push(polygon2);
+
+        });
+
+        const layer = new maptalks.ExtrudePolygonLayer('extrudeP', boundGeoms, {
+            dataConfig,
+            material,
+            geometryEvents: false,
+            cullFace: false,
+            sceneConfig: {
+                depthFunc: '<='
+            }
+        });
+
+
+        const groupLayer = new maptalks.GroupGLLayer('group', [layer]).addTo(map);
+
+        const topLayer = new maptalks.PolygonLayer('mExtrudeBound_top', {
+            altitude: 30001
+        });
+
+        groupLayer.addLayer(topLayer);
+        topLayer.addGeometry(topPolygon)
+
+
+
+    </script>
+</body>
+
+</html>

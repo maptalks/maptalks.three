@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>surface test</title>
+    <script type="text/javascript" src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+    <script type="text/javascript" src="https://maptalks.com/api/maptalks-gl-layers.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.109.0/examples/js/libs/stats.min.js"></script>
+    <!-- <script type="text/javascript" src="https://cdn.bootcss.com/simplex-noise/2.3.0/simplex-noise.min.js"></script> -->
+    <script src="https://unpkg.com/colorin/dist/colorin.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            /* background-color: #000; */
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var baseLayer = new maptalks.TileLayer('tile', {
+            urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+            subdomains: ['a', 'b', 'c', 'd'],
+            attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+        });
+
+        var map = new maptalks.Map("map", {
+            center: [-74.00912099912109, 40.71107610933129], "zoom": 17.58265798930098, "pitch": 77.60000000000018, "bearing": -1.2000000000000455,
+            centerCross: true,
+            doubleClickZoom: false,
+            // baseLayer: baseLayer
+        });
+
+        const vt = new maptalks.VectorTileLayer("vt", {
+            urlTemplate: "http://tile.maptalks.com/test/planet-single/{z}/{x}/{y}.mvt",
+            spatialReference: "preset-vt-3857",
+        });
+
+        const style = {
+            style: [{
+                filter: [
+                    "all",
+                    ["==", "$layer", "building"],
+                    ["==", "$type", "Polygon"],
+                ],
+                renderPlugin: {
+                    dataConfig: {
+                        type: "3d-extrusion",
+                        altitudeProperty: "height",
+                        minHeightProperty: "min_height",
+                        altitudeScale: 1,
+                        defaultAltitude: 10,
+                        topThickness: 0,
+                        top: true,
+                        side: true,
+                    },
+                    sceneConfig: {},
+                    type: "lit",
+                },
+                symbol: {
+                    bloom: false,
+                    ssr: false,
+                    polygonOpacity: 1,
+                    material: {
+                        baseColorTexture: null,
+                        baseColorFactor: [0.53, 0.73, 0.48, 1],
+                        hsv: [0, 0, 0],
+                        baseColorIntensity: 1,
+                        contrast: 1,
+                        outputSRGB: 1,
+                        metallicRoughnessTexture: null,
+                        roughnessFactor: 1,
+                        metallicFactor: 1,
+                        normalTexture: null,
+                        noiseTexture: null,
+                        uvScale: [1, 1],
+                        uvOffset: [0, 0],
+                        uvRotation: 0,
+                        uvOffsetAnim: [0, 0],
+                        normalMapFactor: 1,
+                        normalMapFlipY: 0,
+                        bumpTexture: null,
+                        bumpScale: 0.02,
+                        clearCoatThickness: 5,
+                        clearCoatFactor: 0,
+                        clearCoatIor: 1.4,
+                        clearCoatRoughnessFactor: 0.04,
+                        occlusionTexture: null,
+                        emissiveTexture: null,
+                        emissiveFactor: [0, 0, 0],
+                        emitColorFactor: 1,
+                        emitMultiplicative: 0,
+                    },
+                },
+            },],
+        };
+        vt.setStyle(style);
+
+        // const layer = new maptalks.VectorLayer('layer').addTo(map);
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true,
+            forceRenderOnZooming: true,
+        });
+
+        const material = new THREE.MeshLambertMaterial({ wireframe: false, color: "#FFF", vertexColors: true, transparent: true });
+
+        const baseObjects = [];
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+
+            const surface = new Surface([-74.00912099912109, 40.71107610933129, -74.00112099912109, 40.71907610933129], { factor: 300, width: 100, height: 100 }, material, threeLayer);
+            threeLayer.addMesh(surface);
+            baseObjects.push(surface);
+            animation();
+            initGui();
+        }
+        const sceneConfig = {
+            postProcess: {
+                enable: false,
+                antialias: { enable: true }
+            }
+        };
+        const groupLayer = new maptalks.GroupGLLayer('group', [vt, threeLayer], { sceneConfig, });
+        groupLayer.addTo(map);
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate && !threeLayer.isRendering()) {
+                threeLayer.redraw();
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+
+        }
+
+
+        function initGui() {
+            var params = {
+                add: true,
+                color: material.color.getStyle(),
+                wireframe: material.wireframe,
+                show: true,
+                opacity: 1,
+                altitude: 0,
+            };
+            var gui = new dat.GUI();
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    threeLayer.addMesh(baseObjects);
+                } else {
+                    threeLayer.removeMesh(baseObjects);
+                }
+            });
+            gui.addColor(params, 'color').name('color').onChange(function () {
+                material.color.set(params.color);
+                material.needsUpdate = true;
+            });
+            gui.add(params, 'opacity', 0, 1).onChange(function () {
+                material.opacity = params.opacity;
+            });
+            gui.add(params, 'show').onChange(function () {
+                baseObjects.forEach(function (mesh) {
+                    if (params.show) {
+                        mesh.show();
+                    } else {
+                        mesh.hide();
+                    }
+                });
+            });
+            gui.add(params, 'wireframe').onChange(function () {
+                material.wireframe = params.wireframe;
+            });
+            gui.add(params, 'altitude', 0, 10000).onChange(function () {
+                baseObjects.forEach(function (mesh) {
+                    mesh.setAltitude(params.altitude);
+                });
+            });
+        }
+
+        const OPTIONS = {
+            interactive: false,
+            altitude: 0,
+            width: 100,
+            height: 100,
+            texture: null,
+            factor: 1
+        };
+        /**
+         *
+         */
+        class Surface extends maptalks.BaseObject {
+            constructor(extent, options, material, layer) {
+                options = maptalks.Util.extend({}, OPTIONS, options, { layer, extent });
+                const { altitude, width, height, factor } = options;
+                if (!(extent instanceof maptalks.Extent)) {
+                    extent = new maptalks.Extent(extent);
+                }
+                const { xmin, ymin, xmax, ymax } = extent;
+                const coords = [
+                    [xmin, ymin],
+                    [xmin, ymax],
+                    [xmax, ymax],
+                    [xmax, ymin]
+                ];
+                let vxmin = Infinity, vymin = Infinity, vxmax = -Infinity, vymax = -Infinity;
+                coords.forEach(coord => {
+                    const v = layer.coordinateToVector3(coord);
+                    const { x, y } = v;
+                    vxmin = Math.min(x, vxmin);
+                    vymin = Math.min(y, vymin);
+                    vxmax = Math.max(x, vxmax);
+                    vymax = Math.max(y, vymax);
+                });
+                const w = Math.abs(vxmax - vxmin), h = Math.abs(vymax - vymin);
+                //平面
+                const geometry = new THREE.PlaneBufferGeometry(w, h, width - 1, height - 1);
+
+                const dx = 2 / width, dy = 2 / height;
+                let valMax = -Infinity;
+                let valMin = Infinity;
+
+                const data = [];
+                //曲面的简单参数方程,具体的可以根据自己的业务来，或者直接用业务的值作为z值
+                for (var i = -1; i <= 1; i += dx) {
+                    for (var j = -1; j <= 1; j += dy) {
+                        const value = Math.sin(i * Math.PI) * Math.sin(j * Math.PI);
+                        data.push(value);
+                        valMax = Math.max(valMax, value);
+                        valMin = Math.min(valMin, value);
+                    }
+                }
+
+                // console.log(valMax, valMin);
+
+                const colors = [
+                    [-1, '#313695'],
+                    [-0.8, '#4575b4'],
+                    [-0.6, '#74add1'],
+                    [-0.4, '#abd9e9'],
+                    [-0.2, '#e0f3f8'],
+                    [0, '#ffffbf'],
+                    [0.2, '#fee090'],
+                    [0.4, '#fdae61'],
+                    [0.6, '#f46d43'],
+                    [0.8, '#d73027'],
+                    [1, '#a50026']
+                ];
+                //颜色插值 https://github.com/maptalks/colorin
+                const ci = new colorin.ColorIn(colors);
+                const position = geometry.attributes.position.array;
+                const colorsArray = new Float32Array(position.length);
+                //update z value
+                for (let i = 0, len = data.length; i < len; i++) {
+                    const alt = data[i];
+                    const z = threeLayer.altitudeToVector3(alt, alt).x;
+                    const idx = i * 3;
+                    position[idx + 2] = z * factor;
+                    const [r, g, b] = ci.getColor(alt);
+                    colorsArray[idx] = r / 255;
+                    colorsArray[idx + 1] = g / 255;
+                    colorsArray[idx + 2] = b / 255;
+                }
+                geometry.setAttribute("color", new THREE.BufferAttribute(colorsArray, 3));
+
+                super();
+                this._initOptions(options);
+                this._createGroup(geometry, material);
+
+                const nurb = new THREE.Mesh(geometry, material);
+
+                const lineGeometry = geometry.clone();
+                const lineMaterial = new THREE.MeshLambertMaterial({ color: 'black', wireframe: true, transparent: true, opacity: 0.3 });
+                const line = new THREE.Mesh(lineGeometry, lineMaterial);
+                line.renderOrder = 1
+                // line.position.z = 1
+
+                this.getObject3d().add(nurb);
+                this.getObject3d().add(line);
+                const z = layer.altitudeToVector3(altitude, altitude).x;
+                const v = layer.coordinateToVector3(extent.getCenter(), z);
+                this.getObject3d().position.copy(v);
+            }
+        }
+
+    </script>
+</body>
+
+</html>

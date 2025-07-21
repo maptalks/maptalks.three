@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+  <title>load obj model</title>
+  <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+  <style>
+    html,body{
+        margin:0px;
+        height:100%;
+        width: 100%;
+    }
+    #map { width: 100%; height: 100%; background-color : #000;}
+  </style>
+</head>
+<body>
+<div id="map"></div>
+<script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+<script type="text/javascript" src="https://unpkg.com/three@0.104.0/build/three.min.js"></script>
+<script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
+<script type="text/javascript" src="../demo/js/OBJLoader.js"></script>
+<script src="../demo/js/DDSLoader.js"></script>
+<script src="../demo/js/MTLLoader.js"></script>
+<script>
+var map = new maptalks.Map("map",{
+    center : [13.41261,52.529611],
+    zoom   :  15,
+    pitch : 60,
+    bearing : 30,
+    attribution : {
+      'content' : '<span style="padding:4px;">&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://osmbuilding.org">osmbuilding.org</a></span>'
+    },
+    baseLayer : new maptalks.TileLayer('tile',{
+        'urlTemplate' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+        'subdomains'  : ['a','b','c','d']
+    })
+});
+
+THREE.Loader.Handlers.add( /\.dds$/i, new THREE.DDSLoader() );
+
+var mtlLoaded = false;
+
+// the ThreeLayer to draw buildings
+var threeLayer = new maptalks.ThreeLayer('t');
+// prepare data, load mtl into three scene.
+threeLayer.prepareToDraw = function (gl, scene, camera) {
+    scene.add(new THREE.AmbientLight(0xffffff));// soft white light
+    var mtlLoader = new THREE.MTLLoader();
+    mtlLoader.setPath( '../demo/obj/' );
+    mtlLoader.load( 'male02.mtl', function( materials ) {
+        materials.preload();
+        //change to back side with THREE <= v0.94
+        // for (const p in materials.materials) {
+        //     //change material's side to BackSide
+        //     materials.materials[p].side = THREE.BackSide;
+        // }
+        var objLoader = new THREE.OBJLoader();
+        objLoader.setMaterials( materials );
+        objLoader.setPath( '../demo/obj/' );
+        objLoader.load( 'male02.obj', function ( object ) {
+            object.traverse( function ( child ) {
+                if ( child instanceof THREE.Mesh ) {
+                  child.scale.set(0.04, 0.04, 0.04);
+                  child.rotation.set(Math.PI * 1 / 2, -Math.PI * 1 / 2, 0);
+                }
+            });
+            // var v = threeLayer.coordinateToVector3(map.getCenter());
+            // object.position.x = v.x;
+            // object.position.y = v.y;
+            // object.position.z = v.z;
+            // scene.add(object);
+
+            var model=threeLayer.toModel(object,{
+                coordinate:map.getCenter(),
+                altitude:100
+            });
+
+            threeLayer.addMesh(model);
+
+            //tooltip test
+            model.setToolTip('obj model', {
+                    showTimeout: 0,
+                    eventsPropagation: true,
+                    dx: 10
+            });
+
+            model.on('mouseover mouseout',function(e){
+               var scale=1;
+               if(e.type==='mouseover'){
+                 scale=1.5;
+               }
+               this.getObject3d().scale.set(1,1,scale);
+            });
+            mtlLoaded = true;
+            threeLayer.redraw();
+            threeLayer.config('animation',true);
+        });
+    });
+};
+
+threeLayer.addTo(map);
+
+</script>
+</body>
+</html>

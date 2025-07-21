@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>custom cloud</title>
+    <script type="text/javascript" src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.104.0/build/three.min.js"></script>
+    <script type="text/javascript"
+        src="https://unpkg.com/three@0.104.0/examples/js/libs/stats.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background: url(data:image/png;base64,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UVl2+J+sK152+D5rSAoByJR6AejueSBAuuIooB2IxB0UXQL2zsDhIVh+5Fe2Ey4/4kdBQd/36vjQanwhAJnSgRBgWh0PyVmqSfUaFwiQ1XIvwH70V50+EgANyfKjv7HV8uVHf2UTk0IA8gO4gCeP/sZ2wiQgVqvTjc1ppjBoDwwB6GB145489i9279gLCK44J8ftsmzVrgn4TljdmJpuTu3rzxACdPc8EAA/sRNmh9CGwLDdFQCQ4AU8dfzfbCdMArAzpQNDIL1TZv7TE+D2zJrGhRCQ1fKaADANDCUA5AdPnfidrZZLAE7g6RO/s3lBEpC30R7u3vM//wbIwBDA8oKnT/6HzQu8ANQVBwKGJjS+eFwlv4NFAFgOXScEEiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiACIiAC/48E/gsRMgR79HK0awAAAABJRU5ErkJggg==) 0% 0% / 32px 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            center: [13.387019725776781, 52.534681959246285],
+            zoom: 15.3709303868565,
+            pitch: 76.80000000000028,
+            bearing: 78.60000000000059,
+
+            centerCross: true,
+            doubleClickZoom: false
+            // baseLayer: new maptalks.TileLayer('tile', {
+            //     urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+            //     subdomains: ['a', 'b', 'c', 'd'],
+            //     attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            // })
+        });
+
+        map.on("click", (e) => {
+            console.log(e.coordinate.toArray());
+        });
+
+        var threeLayer = new maptalks.ThreeLayer("t", {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+            // animation: true
+        });
+
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            addCloud();
+            threeLayer.config("animation", true);
+        };
+        threeLayer.addTo(map);
+
+        const texture = new THREE.TextureLoader().load('./../demo/data/cloud.png');
+        const material = new THREE.MeshBasicMaterial({
+            map: texture,
+            opacity: 0.8
+        });
+        material.depthWrite = false;
+        material.depthTest = false;
+        material.transparent = true;
+
+        var clouds;
+        function addCloud() {
+            const lnglats = [
+                [13.429362937522342, 52.518205849377495],
+                [13.41688993786238, 52.52216099633924],
+                [13.417991247928398, 52.53296954185342],
+                [13.438154245439819, 52.533321196953096],
+                [13.450418871799684, 52.52653968753597],
+                [13.390340036780685, 52.51953598324846],
+                [13.399921081391199, 52.50920191922407],
+                [13.366122901455583, 52.50949703597493],
+                [13.365784792637783, 52.51964629275582],
+                [13.371429857108524, 52.528732386936014],
+                [13.383686384074508, 52.53781463596616],
+                [13.40395563186371, 52.540223413847315],
+                [13.361485408920998, 52.53916869831616],
+                [13.35373758485457, 52.52883597474849],
+                [13.355233792792774, 52.519259850666316],
+                [13.369548077301943, 52.506940362998336],
+                [13.338732610093984, 52.50860998116909],
+                [13.341879792058194, 52.52318729489704],
+                [13.348448231846305, 52.537668773653735],
+                [13.370267559064587, 52.53610789069805],
+                [13.352398748229916, 52.53426951424066],
+                [13.32917834063403, 52.53345720792228],
+                [13.32838302024652, 52.5414016970403],
+                [13.341339730961181, 52.549039669394716],
+                [13.30839491626, 52.52006466132198],
+                [13.321803623156029, 52.50997280009139],
+                [13.338675194278721, 52.51285681318856],
+                [13.350773287706716, 52.50578393664759],
+                [13.352938038005732, 52.49926509513634],
+                [13.390612018269849, 52.50106415098125],
+                [13.38085103285789, 52.51117501588382],
+                [13.371912229055738, 52.51620620873595],
+                [13.385023928648707, 52.52329102536052],
+                [13.38797659379361, 52.530046153225754],
+                [13.400710313574336, 52.531284682415304],
+                [13.404743113640848, 52.52567868927119],
+                [13.405288275100474, 52.518207474890716],
+                [13.389307890028704, 52.512117245037956],
+                [13.393544614190887, 52.50323083613486],
+                [13.42949534556817, 52.506143197022],
+                [13.441038089538779, 52.50912428349895],
+                [13.450124783449382, 52.51500726740582],
+                [13.440367194036753, 52.524255063255595],
+                [13.425565592006024, 52.529183239050525],
+                [13.435102666169428, 52.54191773534748],
+                [13.422579355711378, 52.545430332675636],
+                [13.399409274560867, 52.55121487363223],
+                [13.364511203339816, 52.55256901186388],
+                [13.338487023092966, 52.550823924943955],
+                [13.333713238626729, 52.550619529990655],
+                [13.398332535638474, 52.5627084688401],
+                [13.436796435519682, 52.56759404223877],
+                [13.449692938562748, 52.561471572030115],
+                [13.471662162677148, 52.55026366774459],
+                [13.469625151191735, 52.538948118587626],
+                [13.466943716584069, 52.53121884752758],
+                [13.447687186684561, 52.547081383994026],
+                [13.42121401741315, 52.547797597526284],
+                [13.411217459455884, 52.54985018203385],
+                [13.393565849942206, 52.55104375618643],
+                [13.37284533362481, 52.54590352731688],
+                [13.417913837316519, 52.524226100962636],
+                [13.348450942001364, 52.54717350684891],
+                [13.356433469820786, 52.54436841017852],
+                [13.370236032009984, 52.544917150098144],
+                [13.375067021549171, 52.55449795021113],
+                [13.37841287643289, 52.55783662718679],
+                [13.403362027063395, 52.560741547061724],
+                [13.426443806559405, 52.56726724470397],
+                [13.432851476032738, 52.557432662968864],
+                [13.439618692649901, 52.55278926180378],
+                [13.457523499921763, 52.55462623876272],
+                [13.460038626962728, 52.54285768601531],
+                [13.466249895598253, 52.532220117682726],
+                [13.468714162269407, 52.522801086415456],
+                [13.44359521442641, 52.516214571670815],
+                [13.417770736754278, 52.509323468600684],
+                [13.40481063681068, 52.506857755605694],
+                [13.398607450933923, 52.49980783290718],
+                [13.391702259783074, 52.514147579018044],
+                [13.393353540007183, 52.523417229256296],
+                [13.389812851695524, 52.53486876899646],
+                [13.38671882469157, 52.54418274389147],
+                [13.378897486033225, 52.54529489558067],
+                [13.341297574614941, 52.549503337650464],
+                [13.339939722207191, 52.54313774450824],
+                [13.37158658112969, 52.549972633558895],
+                [13.329052392022732, 52.533722642356764],
+                [13.304874238167145, 52.531385232397696],
+                [13.318469834321945, 52.51967194663004],
+                [13.33105343366492, 52.51772518148803],
+                [13.336373599476588, 52.528978274459206],
+                [13.353296012824103, 52.5363257443656],
+                [13.318285430533251, 52.513370996358304],
+                [13.332398763730907, 52.50653334276976],
+                [13.335799520363821, 52.49867150940261],
+                [13.35011486318831, 52.4993820638301],
+                [13.36260965386873, 52.510209663056315],
+                [13.332922109562787, 52.518162599841304],
+                [13.321024087329988, 52.52257368105634],
+                [13.342874254548974, 52.53008073489414],
+                [13.334819219141991, 52.542836992775364],
+                [13.35341325516788, 52.54779231662255],
+                [13.37104393496054, 52.54254178847813],
+                [13.394743215093968, 52.543147972547075],
+                [13.401849373754544, 52.543827273766595],
+                [13.380161963106389, 52.55021433764338],
+                [13.3945135597246, 52.5459501330964],
+                [13.416649588825749, 52.54351788066387],
+                [13.414581250181413, 52.532132062431884],
+                [13.396104583588453, 52.51761693339907],
+                [13.35446424238944, 52.52014925843511],
+                [13.305700136691485, 52.52075599397884],
+                [13.30071682868902, 52.529765456702506],
+                [13.327976360117532, 52.52625770595867],
+                [13.356746977445255, 52.52408319075337],
+                [13.310270681213183, 52.539217932728405],
+                [13.311179196440094, 52.53211409881604],
+                [13.334007894941578, 52.54492979909125],
+                [13.350149040013662, 52.55169828778017],
+                [13.377281005555915, 52.55757870529894],
+                [13.39905157818066, 52.562222479711494],
+                [13.40897726644198, 52.5639702509836],
+                [13.4214934410237, 52.56017742778752],
+                [13.435143481124896, 52.54757666108955],
+                [13.444414299092614, 52.53782503208626],
+                [13.430289593524208, 52.53019139023306],
+                [13.416591839108605, 52.51654849934934],
+                [13.407546209845691, 52.50879418624376],
+                [13.37589022604152, 52.49731836485492],
+                [13.35946446482194, 52.4963059975415],
+                [13.350855523479822, 52.50676282739752],
+                [13.34287283461515, 52.5140238210204],
+                [13.340099682344999, 52.51962358411188],
+                [13.327322533322558, 52.52123889638639],
+                [13.308783196922832, 52.53363511404743],
+                [13.316663989452081, 52.53734935032807],
+                [13.349154886788483, 52.535785060347365],
+                [13.357180367720957, 52.53740547133188],
+                [13.364994672612738, 52.53491631531287],
+                [13.375254829284131, 52.5342423843521],
+                [13.370028603452056, 52.52776847238434],
+                [13.345788429615595, 52.518712694991194],
+                [13.335891143720119, 52.510592040318016],
+                [13.30708196774333, 52.504716885695615],
+                [13.342343825539274, 52.51520475314962],
+                [13.360954410235536, 52.510583282532224],
+                [13.390479968034242, 52.51152741382006],
+                [13.41630952249659, 52.515194367451585],
+                [13.421092054075757, 52.51427472778775],
+                [13.424242628411548, 52.530933195223014],
+                [13.425694542416181, 52.53789436290171],
+                [13.414573261656983, 52.54032420641133],
+                [13.416767768038994, 52.553629448755686],
+                [13.415095372125961, 52.56047454056622],
+                [13.39482886530402, 52.559013671983706],
+                [13.382454971864718, 52.5572974425896],
+                [13.40938528268407, 52.562210903701185],
+                [13.419681009641181, 52.56016012845052],
+                [13.42684039037681, 52.54090994710023],
+                [13.417654671781747, 52.52102636492978],
+                [13.411861405464947, 52.508421649586495],
+                [13.408763144514865, 52.503785107474044],
+                [13.391260537958033, 52.51991931004531],
+                [13.366216367940865, 52.53148180602281],
+                [13.339186460321798, 52.53042408451617],
+                [13.347048264077785, 52.53311835253615],
+                [13.347177224175766, 52.539557286352846],
+                [13.455831972087708, 52.527604649321546],
+                [13.43633964871833, 52.516669936318266],
+                [13.40582228013659, 52.507711870219936],
+                [13.391458007734286, 52.504441770122156],
+                [13.366608853974412, 52.500121840947514],
+                [13.35120325563355, 52.496812508005036],
+                [13.320226027472017, 52.497559169770994],
+                [13.298135209726752, 52.49346106981804],
+                [13.314119590237738, 52.484496171297764],
+                [13.357330946579623, 52.48859899253736],
+                [13.431703502349933, 52.50133832168794],
+                [13.488405753913185, 52.517030374938514],
+                [13.500219791195605, 52.53177109335641],
+                [13.48242514146807, 52.557987294236995],
+                [13.45245062092954, 52.568000795869665],
+                [13.444208233087693, 52.574083688482546],
+                [13.407229193322564, 52.57234136800574],
+                [13.37061483671937, 52.56264112069144],
+                [13.35259395458229, 52.55886785655039],
+                [13.333579430579562, 52.55497348780412],
+                [13.314953335911355, 52.54229069863655],
+                [13.30788530183031, 52.53116082096207],
+                [13.358591548175468, 52.52679174554564],
+                [13.369155391713775, 52.523512266607185],
+                [13.380282570095915, 52.51166082261338],
+                [13.382562915016251, 52.50327122338754],
+                [13.357681332781908, 52.493763283954735],
+                [13.316711511316953, 52.48893964851422],
+                [13.300322103778853, 52.50096198185602],
+                [13.322852102575325, 52.52133789363384],
+                [13.42237593905179, 52.53891130963811],
+                [13.456271344866764, 52.54544590361192],
+                [13.468106060677883, 52.53421443160133],
+                [13.452262048196872, 52.520920927888454],
+                [13.462738438980296, 52.517529760836254],
+                [13.46044494746684, 52.54846689335281],
+                [13.448681661901105, 52.55878619998836],
+                [13.415947463253588, 52.55758434753247],
+                [13.44334162093105, 52.5726972382914],
+                [13.409709532018951, 52.57435094297213],
+                [13.38098117894208, 52.569390657453],
+                [13.360540935144854, 52.56269731833734],
+                [13.355443778830136, 52.547652482546454],
+                [13.398478312385123, 52.53581578190867],
+                [13.41723781833116, 52.5343885538737],
+                [13.462897660078397, 52.540028889275476],
+                [13.473199528807868, 52.53955946091716],
+                [13.466950422810669, 52.529898950521755],
+                [13.440081365117408, 52.51858301974076],
+                [13.395763634160517, 52.50249902205198],
+                [13.372567783894624, 52.497423896942934],
+                [13.355120260997637, 52.50209439879765],
+                [13.355608276488056, 52.52772299421994],
+                [13.388206954852535, 52.52575322499493],
+                [13.422912606449586, 52.52774897141475],
+                [13.446806736659255, 52.52270849125611],
+                [13.460304013449445, 52.52144552274328],
+                [13.466832075403545, 52.53717617674724],
+                [13.454941760128804, 52.548764587840395],
+                [13.447931817972062, 52.55770147916823],
+                [13.379886946924216, 52.547167995925605],
+                [13.340983754826766, 52.54140741054917],
+                [13.361789403339344, 52.566567644312016],
+                [13.410120703529856, 52.5770249012721],
+                [13.428077112173696, 52.57357975778538],
+                [13.33549548498911, 52.51314093332766],
+                [13.311710636429098, 52.50174312431639],
+                [13.315985988743705, 52.491744703287935],
+                [13.382496670615865, 52.50205445140804],
+                [13.393673450348274, 52.505842586210036],
+                [13.415963494958874, 52.514051597517465],
+                [13.455853947353035, 52.53278630732913],
+                [13.43448030797731, 52.54317258053649],
+                [13.393662029304778, 52.54254595915708],
+                [13.375276272278029, 52.54516210558458],
+                [13.338232950747397, 52.537767008227746],
+                [13.38388391846513, 52.53582611095206],
+                [13.41670461122851, 52.52928223698254],
+                [13.444454961493761, 52.53200347279724],
+                [13.454478641177275, 52.5317515719],
+                [13.438493110299873, 52.531278406216956],
+                [13.427451659122653, 52.5290931539391],
+                [13.314344440117793, 52.55081393092527],
+                [13.342897862342738, 52.53686350661306],
+                [13.356279474735288, 52.522789468403545],
+                [13.352232380481155, 52.5117583302285],
+                [13.32204375711558, 52.50168437802628],
+                [13.33507278640434, 52.49453266960174],
+                [13.339805627423857, 52.488994088347425],
+                [13.375484392908675, 52.50224365351673],
+                [13.383499883076638, 52.51588540022905],
+                [13.376736005972134, 52.52548313450731],
+                [13.396573213347665, 52.53360666799048],
+                [13.407763690494676, 52.54545478614719],
+                [13.403317009674765, 52.55518814571698],
+                [13.389141988347546, 52.564863645036695],
+                [13.393431631723615, 52.56976488226812],
+                [13.428135069289965, 52.57109538246689],
+                [13.447043621541297, 52.570419155816325],
+                [13.457294878604557, 52.56605368540929],
+                [13.47204528204793, 52.557566455684736],
+                [13.483855413723859, 52.54704683133187],
+                [13.486479540890173, 52.53475092722286],
+                [13.482534646707336, 52.525224446610736],
+                [13.461599140659928, 52.52033647795926],
+                [13.437216114110129, 52.51322782516357],
+                [13.414739442415225, 52.505066723377894],
+                [13.409092593519972, 52.499590442468815],
+                [13.38721753672121, 52.49542575170287],
+                [13.362236646896577, 52.49164004452976],
+                [13.350181924954086, 52.513114024975295],
+                [13.348333828424984, 52.5222876531445],
+                [13.359054185244077, 52.52723219472162],
+                [13.383741770863253, 52.54365404501081],
+                [13.39824827394466, 52.56062664348278],
+                [13.381462062222681, 52.5682628906296],
+                [13.355889101889034, 52.57030902456265],
+                [13.32595734422614, 52.56885840592176],
+                [13.32262018837298, 52.54890174764952],
+                [13.320250857195788, 52.526204208371354],
+                [13.362957509493754, 52.52161834442765],
+                [13.419690669490365, 52.53422750319996],
+                [13.442186760627123, 52.545089124538634],
+                [13.438879258507768, 52.552188278030854],
+                [13.411012603620406, 52.54717715135561],
+                [13.37055159327258, 52.52664171990054],
+                [13.361161188620372, 52.521864179498465],
+                [13.320198391635586, 52.52058960569619],
+                [13.303905801972519, 52.52822038555516],
+                [13.307792437829335, 52.52962655298515],
+                [13.34989168246534, 52.51853762778549],
+                [13.416454693136188, 52.5181642722512],
+                [13.448324831200011, 52.523880118756125],
+                [13.477384150920102, 52.52946548762358],
+                [13.497256445558378, 52.5356825721245],
+                [13.391163480045407, 52.550984392768186],
+                [13.37041568574773, 52.55611667392387],
+                [13.345262751994028, 52.53770621759972],
+                [13.351917946356934, 52.50955935870249],
+                [13.407031242365747, 52.51047763698196]
+            ];
+            clouds = lnglats.map(function (lnglat) {
+                const cloud = new Cloud(
+                    lnglat,
+                    {
+                        altitude: Math.random() * 1000 + 500
+                    },
+                    material,
+                    threeLayer
+                );
+                return cloud;
+            });
+
+            const texture = new THREE.Texture(generateTextureCanvas());
+            // texture.anisotropy = threeLayer.getThreeRenderer().getMaxAnisotropy();
+            texture.needsUpdate = true;
+            const material1 = new THREE.MeshBasicMaterial({
+                map: texture
+                // wireframe: true
+            });
+            material1.vertexColors = THREE.VertexColors;
+            const buildings = lnglats.slice(0, 100).map((lnglat) => {
+                const building = new Building(
+                    lnglat,
+                    { radius: 150, height: 200 + 1000 * Math.random() },
+                    material1,
+                    threeLayer
+                );
+                return building;
+            });
+            threeLayer.addMesh(clouds);
+            threeLayer.addMesh(buildings);
+        }
+
+        //default values
+        var OPTIONS = {
+            width: 500,
+            height: 500,
+            altitude: 0,
+            interactive: false
+        };
+
+        /**
+         * custom  component
+         *
+         * you can customize your own components
+         * */
+
+        class Cloud extends maptalks.BaseObject {
+            constructor(coordinate, options, material, layer) {
+                options = maptalks.Util.extend({}, OPTIONS, options, { layer, coordinate });
+                super();
+                //Initialize internal configuration
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L135
+                this._initOptions(options);
+                const { altitude, width, height } = options;
+                //generate geometry
+                const w = layer.distanceToVector3(width, width).x;
+                const h = layer.altitudeToVector3(width, width).x;
+                const geometry = new THREE.PlaneBufferGeometry(w, h);
+
+                //Initialize internal object3d
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L140
+                // this._createMesh(geometry, material);
+                this._createGroup();
+                const mesh = new THREE.Mesh(geometry, material);
+                this.getObject3d().add(mesh);
+
+                //set object3d position
+                const z = layer.altitudeToVector3(altitude, altitude).x;
+                const position = layer.coordinateToVector3(coordinate, z);
+                this.getObject3d().position.copy(position);
+
+                const random = Math.random();
+                const flag = random <= 0.3 ? "x" : random < 0.6 ? "y" : "z";
+                this.positionflag = flag;
+                const offset = Math.min(w, h);
+                this.offset = offset;
+                this._offset = 0;
+                this._offsetAdd = random > 0.5;
+            }
+
+            // test animation
+            _animation() {
+                const map = this.getMap();
+                const bearing = map.getBearing(),
+                    pitch = map.getPitch();
+                this.getObject3d().children[0].rotation.x = (pitch * Math.PI) / 180;
+                this.getObject3d().rotation.z = (-bearing * Math.PI) / 180;
+
+                const offset = 0.001 * 5;
+                if (this._offsetAdd) {
+                    this._offset += offset;
+                    this.getObject3d().position[this.positionflag] += offset;
+                    if (this._offset >= this.offset) {
+                        this._offsetAdd = false;
+                    }
+                } else {
+                    this._offset -= offset;
+                    this.getObject3d().position[this.positionflag] -= offset;
+                    if (this._offset <= -this.offset) {
+                        this._offsetAdd = true;
+                    }
+                }
+            }
+        }
+
+        const OPTIONS1 = {
+            height: 500,
+            altitude: 0,
+            radius: 100,
+            interactive: false
+        };
+
+        class Building extends maptalks.BaseObject {
+            constructor(coordinate, options, material, layer) {
+                options = maptalks.Util.extend({}, OPTIONS1, options, {
+                    layer,
+                    coordinate
+                });
+                super();
+                //Initialize internal configuration
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L135
+                this._initOptions(options);
+                const { altitude, radius, height } = options;
+                //generate geometry
+                const r = layer.distanceToVector3(radius, radius).x;
+                const h = layer.altitudeToVector3(height, height).x;
+                // const a = w;
+                const geometry = new THREE.BoxBufferGeometry(r * 2, r * 2, h, 1, 1, 1);
+
+                const position = geometry.attributes.position.array;
+                const color = new Float32Array(position.length);
+                color.fill(1, 0, position.length);
+                geometry.addAttribute("color", new THREE.BufferAttribute(color, 3));
+
+                geometry.translate(0, 0, h / 2);
+
+                //Initialize internal object3d
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L140
+                this._createMesh(geometry, material);
+
+                //set object3d position
+                const z = layer.altitudeToVector3(altitude, altitude).x;
+                const v = layer.coordinateToVector3(coordinate, z);
+                this.getObject3d().position.copy(v);
+                this._init(h / 2);
+            }
+
+            _init(offset) {
+                const topColor = new THREE.Color("gray");
+                const bufferGeometry = this.getObject3d().geometry;
+                const geometry = new THREE.Geometry().fromBufferGeometry(bufferGeometry);
+
+                const { vertices, faces, faceVertexUvs } = geometry;
+                vertices.forEach((element) => {
+                    if (element.z < offset) {
+                        element.z = 0;
+                    }
+                });
+                faces[0].a = 2;
+                faces[0].b = 3;
+                faces[0].c = 0;
+
+                faces[1].a = 3;
+                faces[1].b = 1;
+                faces[1].c = 0;
+
+                faces[2].a = 5;
+                faces[2].b = 4;
+                faces[2].c = 7;
+
+                faces[3].a = 4;
+                faces[3].b = 6;
+                faces[3].c = 7;
+                // faces.slice(2, Infinity).forEach(element => {
+                //     const { a, b, c } = element;
+                //     const z1 = vertices[a].z;
+                //     const z2 = vertices[b].z;
+                //     const z3 = vertices[c].z;
+                //     if (z1 === z2 && z2 === z3 && z1 === z3) {
+                //         return;
+                //     }
+
+                //     console.log(a, vertices[a]);
+                //     console.log(b, vertices[b]);
+                //     console.log(c, vertices[c]);
+                //     console.log('-----------')
+                // });
+                // console.log(vertices, faces);
+                var value = 1 - Math.random() * Math.random();
+                var baseColor = new THREE.Color().setRGB(
+                    value + Math.random() * 0.1,
+                    value,
+                    value + Math.random() * 0.1
+                );
+                for (let i = 0, len = faces.length; i < len; i++) {
+                    const { a, b, c } = faces[i];
+                    const p1 = vertices[a],
+                        p2 = vertices[b],
+                        p3 = vertices[c];
+                    //top face
+                    if (p1.z > offset && p2.z > offset && p3.z > offset) {
+                        const vertexColors = faces[i].vertexColors;
+                        for (let j = 0, len1 = vertexColors.length; j < len1; j++) {
+                            vertexColors[j].r = topColor.r;
+                            vertexColors[j].g = topColor.g;
+                            vertexColors[j].b = topColor.b;
+                        }
+                        const uvs = faceVertexUvs[0][i];
+                        for (let j = 0, len1 = uvs.length; j < len1; j++) {
+                            uvs[j].x = 0;
+                            uvs[j].y = 0;
+                        }
+                    } else {
+                        const vertexColors = faces[i].vertexColors;
+                        for (let j = 0, len1 = vertexColors.length; j < len1; j++) {
+                            vertexColors[j].r = baseColor.r;
+                            vertexColors[j].g = baseColor.g;
+                            vertexColors[j].b = baseColor.b;
+                        }
+                    }
+                }
+                this.getObject3d().geometry = new THREE.BufferGeometry().fromGeometry(
+                    geometry
+                );
+                bufferGeometry.dispose();
+                geometry.dispose();
+            }
+        }
+
+        function generateTextureCanvas() {
+            // build a small canvas 32x64 and paint it in white
+            var canvas = document.createElement("canvas");
+            canvas.width = 32;
+            canvas.height = 64;
+            var context = canvas.getContext("2d");
+            // plain it in white
+            context.fillStyle = "#ffffff";
+            context.fillRect(0, 0, 32, 64);
+            // draw the window rows - with a small noise to simulate light variations in each room
+            for (var y = 2; y < 64; y += 2) {
+                for (var x = 0; x < 32; x += 2) {
+                    var value = Math.floor(Math.random() * 64);
+                    context.fillStyle = "rgb(" + [value, value, value].join(",") + ")";
+                    context.fillRect(x, y, 2, 1);
+                }
+            }
+
+            // build a bigger canvas and copy the small one in it
+            // This is a trick to upscale the texture without filtering
+            var canvas2 = document.createElement("canvas");
+            canvas2.width = 512;
+            canvas2.height = 1024;
+            var context = canvas2.getContext("2d");
+            // disable smoothing
+            context.imageSmoothingEnabled = false;
+            context.webkitImageSmoothingEnabled = false;
+            context.mozImageSmoothingEnabled = false;
+            // then draw the image
+            context.drawImage(canvas, 0, 0, canvas2.width, canvas2.height);
+            // return the just built canvas2
+            return canvas2;
+        }
+
+
+
+    </script>
+</body>
+
+</html>
