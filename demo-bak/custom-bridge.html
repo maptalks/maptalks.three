@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>custom bridge demo</title>
+    <script type="text/javascript" src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.104.0/build/three.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/turf@7.0.0-alpha.1/dist/turf.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+
+        const baseLayer = new maptalks.TileLayer('base', {
+            urlTemplate:
+                'https://webst04.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',
+            subdomains: ['a', 'b', 'c', 'd'],
+            attribution: '&copy; <a href="https://www.amap.com">amap</a>',
+            maxAvailableZoom: 18
+        })
+
+        // baseLayer.getTileUrl = function (x, y, z) {
+        //     //replace with your own
+        //     //e.g. return a url pointing to your sqlite database
+        //     if (z > 20) {
+        //         return 'https://mt2.google.cn/maps/vt?lyrs=s&hl=zh-CN&gl=CN&x=3481&y=1675&z=12';
+        //     }
+        //     return maptalks.TileLayer.prototype.getTileUrl.call(this, x, y, z);
+        // };
+
+        // A complete customized TileLayer
+        var resolutions = [];
+        var d = 2 * 6378137 * Math.PI;
+        for (var i = 0; i < 25; i++) {
+            resolutions[i] = d / (256 * Math.pow(2, i));
+        }
+
+        var map = new maptalks.Map("map", {
+            seamlessZoom: false,
+            "center": [120.59340210102584, 31.272080148238757], "zoom": 20, "pitch": 80, "bearing": -8.455029375002027,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            spatialReference: {
+                projection: 'EPSG:3857', // geo projection, can be a string or a function
+                resolutions: resolutions,
+                fullExtent: {         // map's full extent
+                    'top': 6378137 * Math.PI,
+                    'left': -6378137 * Math.PI,
+                    'bottom': -6378137 * Math.PI,
+                    'right': 6378137 * Math.PI
+                }
+            },
+            baseLayer: baseLayer
+        });
+
+
+        map.on('click', e => {
+            console.log(e.coordinate.toArray());
+        });
+
+
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+            // animation: true
+        });
+
+
+
+        var meshes = [];
+        var helperMeshes = [];
+
+        var material = new THREE.MeshBasicMaterial({ color: 'rgb(12,12,17)', transparent: true, wireframe: false });
+        var highlightmaterial = new THREE.MeshBasicMaterial({ color: 'yellow', transparent: true });
+
+        const material1 = new THREE.MeshLambertMaterial({
+            color: '#000'
+        });
+        const highlightmaterial1 = new THREE.MeshLambertMaterial({
+            color: 'red'
+        });
+
+        var edgeLineMaterial = new THREE.LineBasicMaterial({
+            color: '#fff',
+            transparent: true,
+            opacity: 0.6
+        });
+
+        var linematerial = new THREE.LineDashedMaterial({
+            color: '#fff',
+            dashSize: 0.05,
+            gapSize: 0.05
+        });
+
+
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+
+            camera.add(new THREE.PointLight('#fff'))
+
+
+            var lnglats = [
+                [120.5901478287473, 31.277654711461373], [120.59063275011565, 31.27719233895469], [120.59100235401762, 31.27680526773434],
+                [120.59142002692728, 31.27645780572754], [120.59181232273716, 31.276063695286066], [120.59242594212274, 31.275396069835626],
+                [120.59284061712694, 31.27500275321804], [120.59337209011473, 31.274488431874524], [120.59410537949803, 31.273739252209],
+                [120.5949584280685, 31.272908250400576], [120.59565786440767, 31.272217301803472], [120.59599819871146, 31.271881438682126],
+                [120.5963842628518, 31.271523584096045], [120.59682791619475, 31.27106299981221], [120.59764557032716, 31.27032600254013],
+                [120.59843348270465, 31.269662258092747]
+            ];
+
+            addLine(lnglats.map(lnglat => {
+                lnglat.push(120);
+                return lnglat;
+            }), '西环高架由北向南')
+
+            lnglats = [
+                [120.59848219394223, 31.269751204316634]
+                , [120.59795544175574, 31.270198310562847]
+                , [120.59726002728337, 31.270800469180386]
+                , [120.59680781314614, 31.271229485977727]
+                , [120.59593811919763, 31.27211653919258]
+                , [120.59531970009937, 31.272712214343613]
+                , [120.59432981445855, 31.273665577202138]
+                , [120.59358010732353, 31.274439024639975]
+                , [120.59300187385463, 31.27500064166574]
+                , [120.59216236477766, 31.27585765112579]
+                , [120.5916217048665, 31.27647296102245]
+                , [120.5912366902246, 31.276946774575805]
+                , [120.59075677639248, 31.277498835909654]
+                , [120.59044400279095, 31.277859883937566]
+            ];
+            addLine(lnglats.map(lnglat => {
+                lnglat.push(120);
+                return lnglat;
+            }), '西环高架由南向北');
+
+            lnglats = [
+                [120.58747300267294, 31.27168948690118, 100]
+                , [120.58899651686863, 31.271910424152594, 100]
+                , [120.59035868139767, 31.27209236696794, 100]
+                , [120.59096183164138, 31.272210540773102, 100]
+                , [120.59175167127319, 31.272440447906177, 80]
+                , [120.59222942432257, 31.272593712369797, 50]
+                , [120.59251536085833, 31.27272729663602, 50]
+                , [120.59326391831064, 31.27300759117699, 50]
+                , [120.59401186801892, 31.273385145416313, 50]
+                , [120.5946971307958, 31.273717671069875, 80]
+                , [120.59532775582943, 31.274052539816893, 100]
+                , [120.59597803237739, 31.274399168543226, 100]
+                , [120.596992267107, 31.274898537283406, 100]
+                , [120.59791786743983, 31.27537739815355, 100]
+                , [120.59855773381832, 31.275690257394928, 100]
+                , [120.5991144747569, 31.275950863855968, 100]
+            ];
+
+            addLine(lnglats, '南环高架由东往西');
+
+            lnglats = [
+                [120.5875106543948, 31.271590385930807, 100]
+                , [120.5889340934832, 31.27178957413267, 100]
+                , [120.58972277409703, 31.271896308899926, 100]
+                , [120.59039700880635, 31.271976764757227, 80]
+                , [120.59105851703657, 31.272126509422293, 60]
+                , [120.59184929892854, 31.272360955094854, 50]
+                , [120.59263795314018, 31.27265336790711, 50]
+                , [120.59325122825521, 31.272914966225386, 50]
+                , [120.59375933306501, 31.273128774895355, 50]
+                , [120.5943402798639, 31.273438825708894, 50]
+                , [120.59474718396746, 31.273635413632206, 60]
+                , [120.59536176908125, 31.274000036878846, 70]
+                , [120.59607464914234, 31.27432232592693, 80]
+                , [120.59665877426085, 31.274638260391413, 100]
+                , [120.59750171926339, 31.27506992720285, 100]
+                , [120.59806942086402, 31.275370913033356, 100]
+                , [120.59872136773356, 31.275688662470003, 100]
+                , [120.59915450287372, 31.27586419048791, 100]
+            ];
+            addLine(lnglats, '南环高架由西往东');
+
+            lnglats = [
+                [120.59887013598927, 31.275882463958766, 100]
+                , [120.59854859682684, 31.27572575277722, 100]
+                , [120.59825509463417, 31.275656597041547, 100]
+                , [120.59810837547298, 31.275577826106343, 100]
+                , [120.59787170244135, 31.275465169036778, 97]
+                , [120.5974699054708, 31.275259363291212, 96]
+                , [120.5969937846686, 31.275018854034244, 88]
+                , [120.5966302230562, 31.27492934901582, 77]
+                , [120.59639834674681, 31.27490943768649, 66]
+                , [120.59589715710729, 31.275030252974233, 55]
+                , [120.59541076607525, 31.27523210381898, 44]
+                , [120.59512905249903, 31.275338167373633, 13]
+                , [120.59475371682026, 31.275423516096254, 8]
+                , [120.59435309456467, 31.275463469825212, 2]
+                , [120.59400292056193, 31.27547386613591, 0]
+                , [120.5935709289106, 31.27551489164236, 13]
+                , [120.5932850768545, 31.275571701257007, 32]
+                , [120.59297073984851, 31.275652025450285, 45]
+                , [120.59259454170751, 31.275792482627395, 70]
+                , [120.59224058873372, 31.276001567519444, 80]
+                , [120.59202401231028, 31.27615185925984, 99]
+                , [120.59179983236322, 31.276360233634847, 125]
+                , [120.59160234999047, 31.276595136775057, 120]
+                , [120.59141312938391, 31.276815448365113, 120]
+                , [120.59051433743343, 31.277882075801102, 120]
+            ];
+            addLine(lnglats, '匝道1', 4);
+
+            lnglats = [
+                [120.59781030215015, 31.270348804917802, 120]
+                , [120.59757110134592, 31.270585147607306, 120]
+                , [120.59740415811189, 31.270756676699904, 120]
+                , [120.5971864224482, 31.270947979646195, 120]
+                , [120.59691435959849, 31.27123694402232, 110]
+                , [120.5968119216518, 31.271382269727752, 100]
+                , [120.59669824532739, 31.27158039529334, 90]
+                , [120.59660515672556, 31.271871107810142, 80]
+                , [120.59652034465034, 31.272195157841765, 80]
+                , [120.59652143001028, 31.272543512367378, 80]
+                , [120.5965627153206, 31.27283759726126, 90]
+                , [120.59658229142838, 31.27299074441126, 92]
+                , [120.59663781383983, 31.273350347517265, 95]
+                , [120.59663858214503, 31.273608268727884, 99]
+                , [120.59664955288258, 31.273905798715163, 100]
+                , [120.59668735209857, 31.274214068725684, 100]
+                , [120.59680011488479, 31.274453568421762, 100]
+                , [120.59693743885862, 31.274638956487337, 100]
+                , [120.59710624754689, 31.274805550145373, 100]
+                , [120.59740227510065, 31.274990531046313, 100]
+                , [120.59784152599866, 31.27522047518275, 100]
+                , [120.5979480598179, 31.27527366895228, 100]
+                , [120.59908125123991, 31.275791023141068, 100]
+            ];
+            addLine(lnglats, '匝道2', 4);
+
+            lnglats = [
+                [120.59018883913768, 31.277584560720328]
+                , [120.59040185526396, 31.277339875891784]
+                , [120.59068073302933, 31.277017312190168]
+                , [120.59086375998618, 31.27678560528247]
+                , [120.59114962975866, 31.27652716722477]
+                , [120.59135513549018, 31.276324083813137]
+                , [120.59154904013735, 31.27611115953127]
+                , [120.59171830405967, 31.275880446813943]
+                , [120.591869610608, 31.275663985682314]
+                , [120.59202202443362, 31.275361202063863]
+                , [120.59212694368989, 31.2750481938144]
+                , [120.592160854251, 31.27481464485166]
+                , [120.59217731785975, 31.27456923960969]
+                , [120.59216618276082, 31.274328254630262]
+                , [120.59210947083011, 31.273939132563527]
+                , [120.59198109516956, 31.27363470032023]
+                , [120.59188172378413, 31.273398573038406]
+                , [120.59166906605947, 31.2731275787759]
+                , [120.59143861226516, 31.2728726340184]
+                , [120.59122673547427, 31.272706001947455]
+                , [120.59104058301966, 31.272575403571665]
+                , [120.59071763017141, 31.272377618002594]
+                , [120.59032272641502, 31.27223276975539]
+                , [120.59006432497313, 31.272153366768038]
+                , [120.58982957733667, 31.272083436400095]
+                , [120.58942694443317, 31.271995713199402]
+                , [120.58913432303211, 31.271957617647075]
+                , [120.58892153463262, 31.27190398406688]
+            ];
+            for (let i = 0, len = lnglats.length; i < len; i++) {
+                lnglats[i].push(120 - (120 - 100) / len * i);
+            }
+            addLine(lnglats, '匝道3', 4);
+
+            lnglats = [
+                // [120.58914657361117, 31.271835220976044, 100]
+                // , [120.58972369140167, 31.271895177159053, 90]
+                [120.59059171970262, 31.27202064400646, 70]
+                , [120.59117608183192, 31.27209592828146, 55]
+                , [120.59196006089678, 31.272206526015594, 50]
+                , [120.59253754525162, 31.27221972475931, 50]
+                , [120.59307663336847, 31.27216526226593, 40]
+                , [120.59369162239284, 31.27209145162712, 40]
+                , [120.59408978141357, 31.272030786617478, 40]
+                , [120.59439084393546, 31.272009131149815, 50]
+                , [120.59467270212781, 31.27202153603659, 60]
+                , [120.5950565433318, 31.27204261797047, 70]
+                , [120.59538206326056, 31.271987831450957, 80]
+                , [120.5956360313694, 31.271934433549774, 90]
+                , [120.59596464225297, 31.27175377367044, 100]
+                , [120.59626282194495, 31.271563047697754, 120]
+                , [120.59650575889532, 31.271306361455885, 120]
+                , [120.59672115990543, 31.271072896754987, 120]
+                , [120.5970771358684, 31.270756608089272, 120]
+                , [120.59754017705939, 31.270337519526578, 120]
+                , [120.59833731783169, 31.269644677974924, 120]
+            ];
+            addLine(lnglats, '匝道4', 4);
+
+            lnglats = [
+                [120.59508768307933, 31.275339758356353, 7]
+                , [120.5949314815067, 31.275395166332743, 6]
+                , [120.59453274566295, 31.27542687722749, 6]
+                , [120.59425847490343, 31.2754249559662, 6]
+                , [120.59397200572812, 31.27538091252856, 10]
+                , [120.5936489239939, 31.2752804156016, 30]
+                , [120.59332737005184, 31.27513732260283, 50]
+                , [120.59312156743817, 31.275006244246896, 60]
+                , [120.59297552499629, 31.27489213506132, 70]
+                , [120.59283691631163, 31.27473315079166, 80]
+                , [120.59266831848754, 31.274486394469335, 100]
+                , [120.59254712390532, 31.27423880203301, 110]
+                , [120.59247976105644, 31.273978608924125, 110]
+                , [120.5924637385574, 31.273782006142795, 110]
+                , [120.59245771221765, 31.273557954984284, 110]
+                , [120.59251595815385, 31.273245727045577, 110]
+                , [120.59261387710626, 31.27299202538032, 110]
+                , [120.5927403883278, 31.272798370359993, 100]
+                , [120.59292025684613, 31.272591170881782, 90]
+                , [120.59315518943436, 31.27239959845062, 77]
+                , [120.59335125253847, 31.272270661299757, 55]
+                , [120.59354349181604, 31.272184787407213, 40]
+                , [120.59370252337635, 31.27212030153234, 40]
+                , [120.59394962190629, 31.27204904432071, 40]
+            ];
+            addLine(lnglats, '匝道5', 4);
+
+            lnglats = [
+                [120.59218162551883, 31.274328414931205, 110]
+                , [120.59214494416938, 31.273988654289127, 110]
+                , [120.5921265106756, 31.273652840010612, 110]
+                , [120.59211647855273, 31.273381180908785, 110]
+                , [120.59216311499938, 31.27305994669129, 110]
+                , [120.5922965989522, 31.272707712225582, 100]
+                , [120.59243641270223, 31.272442604748818, 100]
+                , [120.59258171155011, 31.272294769626484, 100]
+                , [120.59276529322256, 31.27212017117543, 100]
+                , [120.59302799200555, 31.271932023790185, 90]
+                , [120.59326910431025, 31.271808116989376, 80]
+                , [120.5935683074863, 31.271693070474925, 70]
+                , [120.59382668505782, 31.271630015420016, 60]
+                , [120.59408412021571, 31.27157147407084, 50]
+                , [120.59433599860643, 31.271565646299706, 50]
+                , [120.59464813715601, 31.271571338611153, 50]
+                , [120.5949798970064, 31.27162659861463, 50]
+                , [120.59532675283594, 31.271740050955515, 40]
+                , [120.59558826815294, 31.271870760021926, 40]
+                , [120.59577914808085, 31.271974393960164, 50]
+                , [120.59599851320536, 31.272124289729817, 60]
+                , [120.59623646818454, 31.272367841074384, 70]
+                , [120.59640416994898, 31.272621634837236, 80]
+                , [120.59651906183024, 31.272867373064486, 92]
+                , [120.5965883986762, 31.273057259483693, 92]
+                , [120.59665746842484, 31.273365868640298, 92]
+                , [120.5966476645799, 31.27366618775781, 100]
+            ];
+            addLine(lnglats, '匝道6', 4);
+
+            lnglats = [
+                [120.59443727398991, 31.273592516558182, 120]
+                , [120.59432428532602, 31.27372183857264, 120]
+                , [120.59407941468226, 31.273972833836098, 120]
+                , [120.59387837995052, 31.27419351069838, 120]
+                , [120.59371473789383, 31.2743949183089, 120]
+                , [120.59363549846717, 31.274584240243172, 110]
+                , [120.59364405365955, 31.274795740902476, 110]
+                , [120.59373814214484, 31.275006577309938, 100]
+                , [120.59389900618794, 31.275184976838403, 100]
+                , [120.59414954450324, 31.275301216102804, 100]
+                , [120.59437924077179, 31.275331998710584, 100]
+                , [120.59458970248102, 31.275309877428782, 90]
+                , [120.59477692473456, 31.275237902588145, 80]
+                , [120.59494290998066, 31.275114548888695, 70]
+                , [120.59508630961011, 31.274931631358044, 60]
+                , [120.59513142555556, 31.274713028886225, 50]
+                , [120.59512643936705, 31.274504950985914, 50]
+                , [120.5950374455092, 31.274274879681258, 50]
+                , [120.59490792586507, 31.27405418029545, 50]
+                , [120.59475132559612, 31.273897096524337, 50]
+                , [120.59447750689355, 31.273703396133357, 53]
+                , [120.59425748212425, 31.27358540842684, 50]
+                , [120.59398261462206, 31.273435496057658, 50]
+                , [120.59370217566811, 31.273283685677058, 50]
+                , [120.59339931875184, 31.273088263118296, 50]
+            ];
+
+            // for (let i = 0, len = lnglats.length; i < len; i++) {
+            //     lnglats[i].push(120 - (120 - 100) / len * i);
+            // }
+            addLine(lnglats, '匝道7', 4);
+
+            lnglats = [
+                [120.5945835648156, 31.273561858090744, 60]
+                , [120.59486384902993, 31.273697584932933, 60]
+                , [120.59505949712593, 31.27378848769459, 60]
+                , [120.59523733663184, 31.27386385614429, 70]
+                , [120.59554950322672, 31.273941419356646, 70]
+                , [120.59586729853027, 31.273949312690746, 80]
+                , [120.59611642945276, 31.27388073764891, 80]
+                , [120.59634260980852, 31.273724814006613, 80]
+                , [120.59646126659186, 31.273532069074548, 80]
+                , [120.59649559474497, 31.273369348029206, 90]
+                , [120.59648078177213, 31.27320312298704, 90]
+                , [120.59637668147388, 31.27297972943947, 90]
+                , [120.596297429689, 31.272885738182566, 90]
+                , [120.59613794861764, 31.272779770103256, 90]
+                , [120.59587027194152, 31.27269336568437, 100]
+                , [120.59558943990135, 31.272704249311886, 100]
+                , [120.59535193699685, 31.27280368514559, 120]
+                , [120.59517556979927, 31.272906729036066, 120]
+                , [120.59499963227745, 31.273074369638124, 120]
+                , [120.59475582863183, 31.27329986026703, 120]
+                , [120.59460033077289, 31.273463577003582, 120]
+                , [120.59438080051837, 31.27363451375075, 120]
+                // , [120.59430738802007, 31.27378604041175, 120]
+                // , [120.5941135197204, 31.273948396947475, 120]
+                // , [120.59398806738909, 31.27400677073021, 120]
+            ];
+            addLine(lnglats, '匝道8', 4);
+
+            lnglats = [
+                [120.59326997044991, 31.275106555463793, 6, "桥墩1"],
+                [120.59379081339296, 31.27534020228407, 2, "桥墩2"],
+                [120.59265611807405, 31.27444268060387, 11, "桥墩3"],
+                [120.59245317890463, 31.273780594343833, 12, "桥墩4"],
+                [120.59263235441244, 31.27296635511638, 12, "桥墩5"],
+                [120.59324521507176, 31.272334039075048, 8, "桥墩6"],
+                [120.59485961206133, 31.27204198692945, 8, "桥墩7"],
+                [120.5959212025939, 31.2717658625389, 12, "桥墩8"],
+                [120.59614166549034, 31.274969069831883, 7, "桥墩9"],
+                [120.59265412764444, 31.275790615101613, 8, "桥墩10"],
+                [120.59177115851878, 31.275830414816966, 13, "桥墩11"],
+                [120.59213913685551, 31.274004526591142, 13, "桥墩12"],
+                [120.59148174522466, 31.272928734703754, 12, "桥墩13"],
+                [120.5905273563692, 31.272314959263014, 12.4, "桥墩14"],
+                [120.59227416611395, 31.272745537400027, 11, "桥墩15"],
+                [120.59283095706633, 31.27207527580751, 11, "桥墩16"],
+                [120.59413581161255, 31.271570700034005, 6, "桥墩17"],
+                [120.59548586970948, 31.271807342023664, 6, "桥墩18"],
+                [120.59655434869296, 31.27294336425379, 10, "桥墩19"],
+                [120.59667002622712, 31.274160575551917, 11, "桥墩20"],
+                [120.59203499174532, 31.27221026114742, 7, "桥墩21"],
+                [120.59663785673933, 31.271775666439765, 10, "桥墩22"],
+                [120.5941494187249, 31.273862633528978, 13, "桥墩23"],
+                [120.59446576530956, 31.275313584739337, 11, "桥墩24"],
+                [120.59389741037648, 31.273372122871905, 6, "桥墩25"],
+                [120.59475481051891, 31.273652608969627, 8, "桥墩26"],
+                [120.59648867706164, 31.273280206542523, 10.5, "桥墩27"],
+                [120.59772868112634, 31.27529424852011, 11, "桥墩28"],
+                [120.59489653100309, 31.273829741378762, 10, "桥墩29"],
+                [120.59132892913931, 31.272306107240382, 10, "桥墩30"],
+                [120.59328275110033, 31.27293711301897, 6, "桥墩31"],
+                [120.59256439041837, 31.27528925691857, 13, "桥墩32"],
+                [120.59403052878747, 31.27383437223088, 13, "桥墩33"],
+                [120.59557449008105, 31.27229170885377, 13, "桥墩34"],
+                [120.5971617227301, 31.27073734103473, 14, "桥墩35"],
+                [120.59647603709232, 31.271513453925962, 13, "桥墩36"],
+                [120.59473618356196, 31.273275560758492, 13, "桥墩37"],
+                [120.59144058924755, 31.276668420213724, 13, "桥墩38"],
+                [120.5909866465895, 31.272106688184664, 7, "桥墩39"],
+                [120.59000687195885, 31.271957523259942, 10, "桥墩40"],
+                [120.58887947670041, 31.27178498533104, 10, "桥墩41"],
+                [120.5876579270913, 31.271613076850343, 10, "桥墩42"],
+                [120.5919819156295, 31.27241651939616, 7, "桥墩43"],
+                [120.59261249063047, 31.272663956409673, 7, "桥墩44"],
+                [120.59423824978217, 31.27339873435332, 7, "桥墩45"],
+                [120.59602779198815, 31.274314047869808, 9, "桥墩46"],
+                [120.59711308153442, 31.27485467500648, 10, "桥墩47"],
+                [120.59859356616755, 31.27559778590907, 11, "桥墩48"],
+                [120.59854928673963, 31.275725412478295, 11, "桥墩49"],
+                [120.59640121877692, 31.274614001378524, 10, "桥墩50"],
+                [120.5936661612534, 31.273237859709212, 8, "桥墩51"],
+                [120.59245132574392, 31.272695989226946, 6, "桥墩52"],
+                [120.58966636061723, 31.272013435031425, 10, "桥墩53"],
+                [120.58820147898746, 31.27179999913048, 11, "桥墩54"],
+                [120.59037697366057, 31.277427274291284, 13, "桥墩55"],
+                [120.59160760012173, 31.27629155345764, 12, "桥墩56"],
+                [120.5946052710242, 31.273254335919177, 13, "桥墩57"],
+                [120.59633445686336, 31.271547226869046, 13, "桥墩58"],
+                [120.59751570200308, 31.270583420919507, 13, "桥墩59"],
+                [120.59513873788273, 31.272896238506434, 13, "桥墩60"],
+                [120.59296682722106, 31.275048756126324, 13, "桥墩61"],
+                [120.59060281927441, 31.27771622609899, 13, "桥墩62"],
+                [120.5912659159992, 31.27643464409786, 13, "桥墩63"],
+                [120.59214823976515, 31.274930496010285, 13, "桥墩64"],
+                [120.59376016091971, 31.272093663618676, 5, "桥墩65"],
+                [120.59743691783513, 31.27523947693024, 10.5, "桥墩66"],
+                [120.59582342098224, 31.273943462708388, 9, "桥墩67"],
+                [120.59584721259785, 31.27268132796499, 11, "桥墩68"],
+                [120.59364294172997, 31.27453436678931, 12, "桥墩69"],
+                [120.59506214708608, 31.27435924222422, 6, "桥墩70"]
+            ];
+            let idx = 1;
+            const bars = lnglats.map(lnglat => {
+                (lnglat.length < 4) && lnglat.push('桥墩' + idx);
+                const box = new Box(lnglat, { height: Math.max(lnglat[2] - 1, 0.001), radius: 0.6 }, material1, threeLayer);
+                box.setToolTip('桥墩' + idx, {
+                    showTimeout: 0,
+                    eventsPropagation: true,
+                    dx: 10
+                });
+                //event test
+                ['click', 'mouseout', 'mouseover', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].forEach(function (eventType) {
+                    box.on(eventType, function (e) {
+                        if (e.type === 'mouseout') {
+                            this.setSymbol(material1);
+                        }
+                        if (e.type === 'mouseover') {
+                            this.setSymbol(highlightmaterial1);
+                        }
+                    });
+                });
+                idx++;
+                return box;
+            });
+            helperMeshes = helperMeshes.concat(bars);
+            threeLayer.addMesh(bars);
+            initGui();
+            animation();
+        };
+        const sceneConfig = {
+            postProcess: {
+                enable: true,
+                antialias: { enable: true }
+            }
+        };
+        const groupLayer = new maptalks.GroupGLLayer('group', [threeLayer], { sceneConfig });
+        groupLayer.addTo(map);
+
+
+        function addLine(lnglats, name, width = 8) {
+            const lineString = new maptalks.LineString(lnglats);
+            const altitudes = lnglats.map(lnglat => {
+                return lnglat[2] / 10;
+            });
+            lineString.setProperties({ altitudes });
+            const line = new Bridge(lineString, { width }, material, threeLayer);
+            line.setToolTip(name, {
+                showTimeout: 0,
+                eventsPropagation: true,
+                dx: 10
+            });
+
+
+            const { coordinates, height } = line.getOptions();
+            const alts = coordinates.map(c => {
+                return c[2];
+            })
+            const pLine = new maptalks.LineString(coordinates);
+            pLine.setProperties({
+                altitudes: alts
+            });
+            const edgeLine = new Line(pLine, { altitude: -0.05, offset: -0.05 }, edgeLineMaterial, threeLayer);
+            const edgeLine1 = new Line(pLine, { altitude: height + 0.05, offset: height + 0.05 }, edgeLineMaterial, threeLayer);
+
+            const centerLine = new Line(lineString, { altitude: 1.1, offset: 1.1 }, linematerial, threeLayer);
+
+            threeLayer.addMesh([line, centerLine, edgeLine, edgeLine1]);
+            meshes.push(line);
+
+            helperMeshes.push(centerLine, edgeLine, edgeLine1);
+        }
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer.redraw();
+            }
+            requestAnimationFrame(animation);
+        }
+
+
+        function initGui() {
+            var params = {
+                add: true,
+                color: material.color.getStyle(),
+                show: true,
+                opacity: 1,
+                altitude: 0
+            };
+            var gui = new dat.GUI();
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    threeLayer.addMesh(meshes);
+                    threeLayer.addMesh(helperMeshes);
+                } else {
+                    threeLayer.removeMesh(meshes);
+                    threeLayer.removeMesh(helperMeshes);
+                }
+            });
+            gui.addColor(params, 'color').onChange(function () {
+                material.color.set(params.color);
+                meshes.forEach(function (mesh) {
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'opacity', 0, 1).onChange(function () {
+                material.opacity = params.opacity;
+                meshes.forEach(function (mesh) {
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'altitude', 0, 30).onChange(function () {
+                meshes.forEach(function (mesh) {
+                    mesh.setAltitude(params.altitude);
+                });
+                helperMeshes.forEach(function (mesh) {
+                    const offset = mesh.getOptions().offset || 0;
+                    mesh.setAltitude(params.altitude + offset);
+                });
+            });
+        }
+
+
+        const OPTIONS = {
+            width: 10,
+            height: 1,
+            altitude: 0
+        }
+        class Bridge extends maptalks.BaseObject {
+            constructor(lineString, options, material, layer) {
+                options = maptalks.Util.extend({}, OPTIONS, options, { layer, lineString });
+                super();
+                //Initialize internal configuration
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L135
+
+                const { geometry, centerPt, polygon, coordinates } = this.generateGeometry(lineString, options);
+                options.polygon = polygon;
+                options.coordinates = coordinates;
+                this._initOptions(options);
+                this._createMesh(geometry, material);
+
+                const { altitude } = options;
+                //set object3d position
+                const z = layer.altitudeToVector3(altitude, altitude).x;
+                centerPt.z = z;
+                this.getObject3d().position.copy(centerPt);
+            }
+
+
+            generateGeometry(lineString, options) {
+                const { width, height, layer } = options;
+                const altitudes = lineString.getProperties().altitudes;
+
+                const geojson = lineString.toGeoJSON();
+                const offsetLine = turf.lineOffset(geojson, width / 2, { units: 'meters' });
+                const offsetLine1 = turf.lineOffset(geojson, -width / 2, { units: 'meters' });
+                const coordinates = [];
+                for (let i = 0, len = offsetLine.geometry.coordinates.length; i < len; i++) {
+                    const coordinate = offsetLine.geometry.coordinates[i];
+                    coordinate.push(altitudes[i]);
+                    coordinates.push(coordinate);
+                }
+                for (let len = offsetLine1.geometry.coordinates.length, i = len - 1; i >= 0; i--) {
+                    const coordinate = offsetLine1.geometry.coordinates[i];
+                    coordinate.push(altitudes[i]);
+                    coordinates.push(coordinate);
+                }
+                coordinates.push(coordinates[0]);
+                const polygon = new maptalks.Polygon([coordinates]);
+                // polygon.addTo(vectorlayer);
+
+
+
+                const centerPt = layer.coordinateToVector3(polygon.getCenter());
+                const xykeys = {};
+                for (let i = 0, len = coordinates.length; i < len; i++) {
+                    const altitude = coordinates[i][2];
+                    const z = layer.altitudeToVector3(altitude, altitude).x;
+                    const p = layer.coordinateToVector3(coordinates[i]).sub(centerPt);
+                    const xy = [p.x.toFixed(4), p.y.toFixed(4)].join('-').toString();
+                    xykeys[xy] = z;
+                }
+
+                const geometry = layer.toExtrudePolygon(polygon, {
+                    height,
+                    topColor: '#fff'
+                }, material).getObject3d().geometry;
+
+                const position = geometry.attributes.position.array;
+                const xyzkeys = {};
+                for (let i = 0, len = position.length; i < len; i += 3) {
+                    const x = position[i], y = position[i + 1], z = position[i + 2];
+
+                    const xyz = [x, y, z].join('-').toString();
+                    const xy = [x.toFixed(4), y.toFixed(4)].join('-').toString();
+                    let offset;
+                    if (xykeys[xyz] != null) {
+                        offset = xykeys[xyz];
+                    } else {
+                        offset = xykeys[xy] || 0;
+                        xyzkeys[xyz] = offset;
+                    }
+                    position[i + 2] += offset;
+                }
+
+                return {
+                    coordinates,
+                    geometry,
+                    centerPt,
+                    polygon
+                };
+
+            }
+        }
+
+        //default values
+        const OPTIONS1 = {
+            altitude: 0,
+            radius: 1,
+            height: 4
+        };
+
+        class Box extends maptalks.BaseObject {
+            constructor(coordinate, options, material, layer) {
+                options = maptalks.Util.extend({}, OPTIONS1, options, { layer, coordinate });
+                super();
+                //Initialize internal configuration
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L135
+                this._initOptions(options);
+                const { altitude, radius, height } = options;
+                //generate geometry
+
+                const r = threeLayer.distanceToVector3(radius, radius).x;
+                const h = threeLayer.altitudeToVector3(height, height).x;
+                const geometry = new THREE.BoxBufferGeometry(r * 2, r * 2, h);
+                geometry.translate(0, 0, h / 2);
+
+                //Initialize internal object3d
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L140
+                this._createMesh(geometry, material);
+
+                //set object3d position
+                const z = layer.altitudeToVector3(altitude, altitude).x;
+                const position = layer.coordinateToVector3(coordinate, z);
+                this.getObject3d().position.copy(position);
+            }
+        }
+
+
+
+        //default values
+        const OPTIONS2 = {
+            altitude: 0
+        };
+
+        /**
+         * custom Circle component
+         * 
+         * you can customize your own components
+         * */
+
+        class Line extends maptalks.BaseObject {
+            constructor(lineString, options, material, layer) {
+                options = maptalks.Util.extend({}, OPTIONS2, options, { layer, lineString });
+                super();
+                //Initialize internal configuration
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L135
+                this._initOptions(options);
+                const { altitude } = options;
+                //generate geometry
+                const positions = this._generatePositions(lineString, layer);
+                const geometry = new THREE.BufferGeometry();
+                geometry.addAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+                //Initialize internal object3d
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L140
+                this._createLine(geometry, material);
+
+                //set object3d position
+                const z = layer.altitudeToVector3(altitude, altitude).x;
+                const position = layer.coordinateToVector3(lineString.getCenter(), z);
+                this.getObject3d().position.copy(position);
+            }
+
+            _generatePositions(lineString, layer) {
+                const altitudes = lineString.getProperties().altitudes;
+                const coordinates = lineString.getCoordinates();
+                const centerPt = layer.coordinateToVector3(lineString.getCenter());
+                const position = [];
+                for (let i = 0, len = coordinates.length; i < len; i++) {
+                    const z = layer.altitudeToVector3(altitudes[i], altitudes[i]).x;
+                    const p = layer.coordinateToVector3(coordinates[i]).sub(centerPt);
+                    position.push(p.x, p.y, z);
+                }
+                return position;
+            }
+        }
+
+
+    </script>
+</body>
+
+</html>

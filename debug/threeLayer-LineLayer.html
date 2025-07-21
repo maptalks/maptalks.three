@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>points-sizes</title>
+
+    <script type="text/javascript" src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/gcoord@0.2.3/dist/gcoord.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css" />
+    <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/@maptalks/vt/dist/maptalks.vt.js"></script>
+    <script type="text/javascript" src="../dist/maptalks.three.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/examples/js/libs/stats.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+    <script type="x-shader/x-vertex" id="vertexshader">
+            attribute float size;
+            varying vec3 vColor;
+            void main() {
+                vColor = color;
+                vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+                gl_PointSize = size * ( 1.0);
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        </script>
+
+    <script type="x-shader/x-fragment" id="fragmentshader">
+            uniform sampler2D pointTexture;
+            varying vec3 vColor;
+            void main() {
+                gl_FragColor = vec4( vColor, 0.4 );
+            }
+        </script>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+        var map = new maptalks.Map("map", {
+            center: [90, 0],
+            zoom: 3,
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer("tile", {
+                urlTemplate:
+                    "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+                subdomains: ["a", "b", "c", "d"],
+                attribution:
+                    '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>',
+            }),
+        });
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer("t", {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true,
+            // animation: true
+        });
+        var state;
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+            // stats = new Stats();
+            // stats.domElement.style.zIndex = 100;
+            // document.getElementById('map').appendChild(stats.domElement);
+
+            // var light = new THREE.DirectionalLight(0xffffff);
+            // light.position.set(0, -10, 10).normalize();
+            // scene.add(light);
+
+            const bar = threeLayer.toBar([30, 1], { height: 10000, radius: 10000 }, new THREE.MeshBasicMaterial());
+            threeLayer.addMesh(bar);
+            addPoints(scene);
+        };
+        const sceneConfig = {
+            postProcess: {
+                enable: false,
+            },
+        };
+        const groupLayer = new maptalks.GroupGLLayer("group", [], {
+            sceneConfig,
+        });
+        groupLayer.addTo(map);
+
+        const linelayer = new maptalks.LineStringLayer("line");
+        groupLayer.addLayer(linelayer);
+        groupLayer.addLayer(threeLayer);
+        const line = new maptalks.LineString(
+            [
+                [0, 0],
+                [180, 0],
+            ],
+            {
+                symbol: {
+                    lineColor: "rgba(0,0,200,1)",
+                    lineWidth: 10,
+                },
+            }
+        ).addTo(linelayer);
+
+        var points = [],
+            selectMesh = [];
+        var material = new THREE.ShaderMaterial({
+            uniforms: {
+                pointTexture: {
+                    value: new THREE.TextureLoader().load("./data/圆.png"),
+                },
+            },
+            vertexShader:
+                document.getElementById("vertexshader").textContent,
+            fragmentShader:
+                document.getElementById("fragmentshader").textContent,
+            transparent: true,
+            vertexColors: true,
+            depthTest: true,
+            depthWrite: true,
+            // sizeAttenuation: false
+        });
+
+        function getColor(v) {
+            if (v > 30) {
+                return "red";
+            }
+            if (v > 27) {
+                return "orange";
+            }
+            if (v > 20) {
+                return "yellow";
+            }
+            if (v > 10) {
+                return "blue";
+            }
+            return "green";
+        }
+
+        function addPoints(scene) {
+            const color = new THREE.Color();
+            const data = [
+                {
+                    coordinate: [30, 1],
+                    height: 0,
+                    size: 34,
+                    color: getColor(34),
+                    value: Math.random() * 10000,
+                },
+                {
+                    coordinate: [50, 0],
+                    height: 0,
+                    size: 37,
+                    color: getColor(37),
+                    value: Math.random() * 10000,
+                },
+                {
+                    coordinate: [120, 0],
+                    height: 0,
+                    size: 30,
+                    color: getColor(30),
+                    value: Math.random() * 10000,
+                },
+            ];
+            const point = threeLayer.toPoints(data, {}, material);
+            points.push(point);
+            threeLayer.addMesh(points);
+            animation();
+        }
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer.redraw();
+            }
+            requestAnimationFrame(animation);
+        }
+    </script>
+</body>
+
+</html>

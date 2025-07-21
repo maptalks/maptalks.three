@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>fatline test</title>
+    <script type="text/javascript" src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+    <!-- <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script> -->
+    <script type="text/javascript" src="https://unpkg.com/@maptalks/gl-layers/dist/maptalks-gl-layers.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
+    <!--fatline script-->
+    <!-- https://threejs.org/examples/#webgl_lines_fat -->
+    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/examples/js/lines/LineMaterial.js"></script>
+    <!---->
+    <script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/examples/js/libs/stats.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: black;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map" class="map">
+
+    </div>
+    <script>
+
+        var map = new maptalks.Map("map", {
+            center: [13.416935229170008, 52.529564137540376],
+            zoom: 13,
+            pitch: 70,
+            // bearing: 180,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            baseLayer: new maptalks.TileLayer('tile', {
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c', 'd'],
+                attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            })
+        });
+
+
+        // the ThreeLayer to draw buildings
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true
+            // animation: true
+        });
+
+
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            addLines();
+        };
+        const sceneConfig = {
+            postProcess: {
+                enable: true,
+                antialias: { enable: true }
+            }
+        };
+        const groupLayer = new maptalks.GroupGLLayer('group', [], { sceneConfig });
+        groupLayer.addTo(map);
+
+
+        const pointLayer = new maptalks.PointLayer('pointLayer', {
+            minZoom: 0,
+            maxZoom: 28,
+            zIndex: 6,
+            collision: false,
+            enableAltitude: true,
+        });
+
+        function setPointLayerStyle() {
+            const style = [
+                {
+                    // filter: [
+                    //     "all",
+                    // ],
+                    // renderPlugin: {
+                    //     dataConfig: {
+                    //         type: "point",
+                    //     },
+                    //     sceneConfig: {},
+                    //     type: "text",
+                    // },
+                    symbol: {
+                        textRotationAlignment: null,
+                        textPitchAlignment: null,
+                        // textFaceName: props.options.nameFontFamily,
+                        textName: `{name}`,
+                        textSize: 16,
+                        textFill: '#000',
+                        textWeight: 500,
+                        textHorizontalAlignment: 'center',
+                        textHaloFill: '#fff',
+                        textHaloRadius: 10,
+                        textHaloOpacity: 1,
+                        textAllowOverlap: false,
+                        textIgnorePlacement: false,
+                        textDx: 0,
+                        textDy: 0,
+                    },
+                },
+            ];
+            pointLayer.setStyle(style);
+        }
+        setPointLayerStyle();
+
+        const center = map.getCenter();
+        for (let i = 0; i < 3; i++) {
+            const marker = new maptalks.Marker(
+                [center.x + 0.05 * Math.random() - 0.025, center.y + 0.05 * Math.random() - 0.025], {
+                properties: { name: "测试点位" },
+            }).addTo(pointLayer);
+        }
+        groupLayer.addLayer(pointLayer);
+        groupLayer.addLayer(threeLayer);
+
+
+        var lines;
+
+        //https://threejs.org/examples/#webgl_lines_fat
+        var material = new THREE.LineMaterial({
+            color: 0x00ffff,
+            transparent: true,
+            // vertexColors: THREE.VertexColors,
+            // side: THREE.BackSide,
+            linewidth: 4 // in pixels
+            // vertexColors: THREE.VertexColors,
+            // dashed: false
+
+        });
+
+
+
+
+
+        function addLines() {
+            const coordinates = [];
+            for (let i = 0; i < 3; i++) {
+                coordinates.push([center.x + 0.05 * Math.random() - 0.025, center.y + 0.05 * Math.random() - 0.025]);
+            }
+            var line = threeLayer.toFatLine(new maptalks.LineString(coordinates), { altitude: 0 }, material);
+            threeLayer.addMesh(line);
+            animation();
+            initGui();
+        }
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer.redraw();
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+        }
+
+        function initGui() {
+            var params = {
+                add: true,
+                color: 0x00ffff,
+                show: true,
+                opacity: 1,
+                altitude: 0
+            };
+            var gui = new dat.GUI();
+            gui.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    threeLayer.addMesh(lines);
+                } else {
+                    threeLayer.removeMesh(lines);
+                }
+            });
+            gui.addColor(params, 'color').name('line color').onChange(function () {
+                material.color.set(params.color);
+                lines.forEach(function (mesh) {
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'opacity', 0, 1).onChange(function () {
+                material.uniforms.opacity.value = (params.opacity);
+                lines.forEach(function (mesh) {
+                    mesh.setSymbol(material);
+                });
+            });
+            gui.add(params, 'show').onChange(function () {
+                lines.forEach(function (mesh) {
+                    if (params.show) {
+                        mesh.show();
+                    } else {
+                        mesh.hide();
+                    }
+                });
+            });
+            gui.add(params, 'altitude', 0, 300).onChange(function () {
+                lines.forEach(function (mesh) {
+                    mesh.setAltitude(params.altitude);
+                });
+            });
+        }
+    </script>
+</body>
+
+</html>

@@ -80,7 +80,7 @@
                 antialias: { enable: true }
             }
         };
-        const groupLayer = new maptalks.GroupGLLayer('group', [threeLayer], { sceneConfig, onlyWebGL1: true });
+        const groupLayer = new maptalks.GroupGLLayer('group', [threeLayer], { sceneConfig, onlyWebGL1: false });
         groupLayer.addTo(map);
 
         const extrudePolygons = [];

@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Customize your own components </title>
+    <script type="text/javascript" src="https://unpkg.com/dat.gui@0.7.6/build/dat.gui.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+    <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.104.0/build/three.min.js"></script>
+    <!-- https://github.com/jbouny/ocean -->
+    <script type="text/javascript" src="./../demo/js/water-material.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/earcut@2.2.1/dist/earcut.min.js"></script>
+    <script type="text/javascript"
+        src="https://unpkg.com/three@0.104.0/examples/js/libs/stats.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <!-- <script type="text/javascript" src="./js/geoutil.js"></script> -->
+    <script type="text/javascript" src="https://unpkg.com/lz-string@1.4.4/libs/lz-string.min.js"></script>
+    <script type="text/javascript" src="./../demo/js/workerqueuemanage.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+        var map = new maptalks.Map("map", {
+            "center": [120.1267972889317, 30.24294669175569], "zoom": 14, "pitch": 60.400000000000006, "bearing": -115.21087875,
+
+            centerCross: true,
+            doubleClickZoom: false,
+            // baseLayer: new maptalks.TileLayer('tile', {
+            //     urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+            //     subdomains: ['a', 'b', 'c', 'd'],
+            //     attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+            // })
+        });
+
+
+        var threeLayer = new maptalks.ThreeLayer('t', {
+            forceRenderOnMoving: true,
+            forceRenderOnRotating: true,
+            // animation: true
+        });
+
+        var stats;
+        threeLayer.prepareToDraw = function (gl, scene, camera) {
+
+            stats = new Stats();
+            stats.domElement.style.zIndex = 100;
+            document.getElementById('map').appendChild(stats.domElement);
+
+            var light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(0, -10, 10).normalize();
+            scene.add(light);
+            addTerrain();
+            // threeLayer.config('animation', true);
+
+        };
+        threeLayer.addTo(map);
+
+
+        var terrains = [];
+        var lines = [];
+        var lineMaterial = new THREE.LineBasicMaterial({
+            linewidth: 1,
+            color: 'rgb(128,109,117)',
+            opacity: 0.3,
+            transparent: true
+        });
+        var terrainMaterial = new THREE.MeshPhongMaterial({ side: 2, transparent: true, color: '#4c7d42' });
+        function addTerrain() {
+            fetch('./../demo/data/hangzhoudem').then(res => res.text()).then(evadata => {
+                evadata = LZString.decompressFromBase64(evadata);
+                evadata = JSON.parse(evadata);
+                const roads = evadata,
+                    data = [];
+                const elevationMap = {};
+                roads.forEach(element => {
+                    let coordinates = element.l;
+                    if (coordinates) {
+                        const elevation = element.h;
+                        elevationMap[elevation] = elevation;
+                        coordinates.slice(0, coordinates.length - 1).forEach(lnglat => {
+                            lnglat[2] = elevation * 2;
+                            data.push(lnglat);
+                        });
+                        const line = threeLayer.toLine(new maptalks.LineString(coordinates), { altitude: 2 }, lineMaterial);
+                        lines.push(line);
+                    }
+                });
+                // console.log(elevationMap);
+                // console.log(data);
+                const terrain = new Terrain(data, { interactive: false }, terrainMaterial, threeLayer);
+                terrains.push(terrain);
+                threeLayer.addMesh(terrains);
+                threeLayer.addMesh(lines);
+                initGui();
+                animation();
+                addOcean();
+            });
+
+            // initGui();
+        }
+
+
+        var oceans;
+        function addOcean() {
+            fetch('./../demo/data/westlake.geojson').then(function (res) {
+                return res.text();
+            }).then(function (geojson) {
+                var polygons = maptalks.GeoJSON.toGeometry(geojson);
+                oceans = polygons.map(p => {
+                    var ocean = new Ocean(p, {
+                        // altitude: 2,
+                        waterNormals: './../demo/data/waternormals.jpg'
+                    }, threeLayer)
+                    return ocean;
+                });
+
+                threeLayer.addMesh(oceans);
+            })
+        }
+
+
+
+
+        function animation() {
+            // layer animation support Skipping frames
+            threeLayer._needsUpdate = !threeLayer._needsUpdate;
+            if (threeLayer._needsUpdate) {
+                threeLayer.redraw();
+            }
+            stats.update();
+            requestAnimationFrame(animation);
+        }
+
+
+
+        function initGui() {
+            var params = {
+                lineAdd: true,
+                lineColor: lineMaterial.color.getStyle(),
+                lineOpacity: lineMaterial.opacity,
+
+                oceanAdd: true,
+                oceanColor: OPTIONS1.waterColor,
+                oceanOpacity: OPTIONS1.alpha,
+
+                add: true,
+                color: terrainMaterial.color.getStyle(),
+                show: true,
+                opacity: 1,
+                altitude: 0,
+                animateShow: function () {
+                    terrains.forEach(terrain => {
+                        terrain.animateShow({
+                            duration: 3000
+                        });
+                    });
+                }
+            };
+
+            var gui = new dat.GUI();
+            var lineF = gui.addFolder('line');
+            lineF.open();
+            lineF.add(params, 'lineAdd').name('add').onChange(function () {
+                if (params.lineAdd) {
+                    threeLayer.addMesh(lines);
+                } else {
+                    threeLayer.removeMesh(lines);
+                }
+            });
+            lineF.addColor(params, 'lineColor').name('color').onChange(function () {
+                lineMaterial.color.set(params.lineColor);
+                lines.forEach(mesh => {
+                    mesh.setSymbol(lineMaterial);
+                });
+            });
+            lineF.add(params, 'lineOpacity', 0, 1).name('opacity').onChange(function () {
+                lineMaterial.opacity = params.lineOpacity;
+                lines.forEach(function (mesh) {
+                    mesh.setSymbol(lineMaterial);
+                });
+            });
+
+
+            var oceanF = gui.addFolder('ocean');
+            oceanF.open();
+            oceanF.add(params, 'oceanAdd').name('add').onChange(function () {
+                if (params.oceanAdd) {
+                    threeLayer.addMesh(oceans);
+                } else {
+                    threeLayer.removeMesh(oceans);
+                }
+            });
+
+            oceanF.addColor(params, 'oceanColor').name('color').onChange(function () {
+                const color = new THREE.Color(params.oceanColor);
+                oceans.forEach(function (mesh) {
+                    const material = mesh.getSymbol();
+                    material.uniforms.waterColor.value = color;
+                    mesh.setSymbol(material);
+                });
+            });
+            oceanF.add(params, 'oceanOpacity', 0, 1).name('opacity').onChange(function () {
+                oceans.forEach(function (mesh) {
+                    const material = mesh.getSymbol();
+                    material.uniforms.alpha.value = params.oceanOpacity;
+                    mesh.setSymbol(material);
+                });
+            });
+
+
+            var terrainF = gui.addFolder('terrain');
+            terrainF.open();
+            terrainF.add(params, 'add').onChange(function () {
+                if (params.add) {
+                    threeLayer.addMesh(terrains);
+                } else {
+                    threeLayer.removeMesh(terrains);
+                }
+            });
+            terrainF.addColor(params, 'color').name('terrain color').onChange(function () {
+                terrains.forEach(function (mesh) {
+                    var material = mesh.getSymbol();
+                    material.color.set(params.color);
+                    mesh.setSymbol(material);
+                });
+            });
+            terrainF.add(params, 'opacity', 0, 1).onChange(function () {
+                terrains.forEach(function (mesh) {
+                    var material = mesh.getSymbol();
+                    material.opacity = params.opacity;
+                    mesh.setSymbol(material);
+                });
+            });
+            terrainF.add(params, 'show').onChange(function () {
+                terrains.forEach(function (mesh) {
+                    if (params.show) {
+                        mesh.show();
+                    } else {
+                        mesh.hide();
+                    }
+                });
+            });
+            terrainF.add(params, 'altitude', 0, 300).onChange(function () {
+                terrains.forEach(function (mesh) {
+                    mesh.setAltitude(params.altitude);
+                });
+            });
+            terrainF.add(params, 'animateShow');
+        }
+
+
+
+        var tinWorker;
+        function getTinWorker() {
+            if (!tinWorker) {
+                tinWorker = new Worker('./../demo/js/worker.tin.js');
+            }
+            return tinWorker;
+        }
+
+        var geometryCacahe = {};
+        function messageCallback(e) {
+            console.log('worker message callback');
+            const { id, faces } = e.data;
+            const { _positions, callback, timeId } = geometryCacahe[id];
+            console.timeEnd(timeId);
+            const geometry = new THREE.Geometry();
+            geometry.vertices = _positions;
+            for (let i = 0, len = faces.length; i < len; i += 3) {
+                const index1 = faces[i],
+                    index2 = faces[i + 1],
+                    index3 = faces[i + 2];
+                // if ((!(_positions[index1].z > _minZ) && (!(_positions[index2].z > _minZ)) && (!(_positions[index3].z > _minZ)))) {
+                //     continue;
+                // }
+                const face = new THREE.Face3(index1, index2, index3);
+                geometry.faces.push(face);
+            }
+            geometry.computeVertexNormals();
+            geometry.computeFaceNormals();
+            // geometry.computeFlatVertexNormals();
+            // geometry.computeMorphNormals();
+            const buffGeom = new THREE.BufferGeometry();
+            buffGeom.fromGeometry(geometry);
+            if (callback) {
+                callback(buffGeom);
+                delete geometryCacahe[id];
+            }
+        }
+
+        function getGeometry(data = [], layer, callback) {
+            if (!Array.isArray(data)) {
+                data = [data];
+            }
+            const points = [];
+            let minHeight = Infinity;
+            data.forEach(element => {
+                let lnglat, height;
+                if (Array.isArray(element)) {
+                    lnglat = [element[0], element[1]];
+                    height = element[2];
+                } else {
+                    lnglat = element.lnglat || element.xy || element._lnglat || element._xy;
+                    height = element.height || element.z || element.h;
+                }
+                if (height !== undefined) {
+                    minHeight = Math.min(minHeight, height);
+                }
+                if (lnglat && height !== undefined) {
+                    const point = {
+                        geometry: {
+                            coordinates: lnglat,
+                            type: 'Point'
+                        },
+                        properties: {
+                            z: height
+                        }
+                    };
+                    points.push(point);
+                }
+            });
+            const indexMap = {};
+            const positions = [];
+            const zs = [];
+            const zMap = {};
+            for (let i = 0, len = points.length; i < len; i++) {
+                const { geometry, properties } = points[i];
+                const lnglat = geometry.coordinates;
+                const key = lnglat.toString();
+                indexMap[key] = i;
+                const height = properties.z;
+                let z = zMap[height];
+                if (z === undefined) {
+                    z = zMap[height] = layer.altitudeToVector3(height, height).x;
+                }
+                const v = layer.coordinateToVector3(lnglat, z);
+                positions.push(v);
+                zs.push(v.z);
+            }
+
+            const id = maptalks.Util.GUID();
+            const minZ = layer.altitudeToVector3(minHeight, minHeight).x;
+            const buffGeom = new THREE.BufferGeometry();
+            const timeId = 'tin worker ' + maptalks.Util.GUID();
+            geometryCacahe[id] = {
+                _positions: positions,
+                _indexMap: indexMap,
+                _minHeight: minHeight,
+                _minZ: minZ,
+                timeId,
+                callback
+            };
+            console.log('worker runing');
+            console.time(timeId);
+            pushQueue(getTinWorker(), { points, id, indexMap, zs, minZ }, messageCallback);
+            return {
+                buffGeom, minHeight
+            };
+        }
+
+        //default values
+        const OPTIONS = {
+            altitude: 0
+        };
+
+        /**
+         * custom Terrain component
+         * 
+         * you can customize your own components
+         * */
+        class Terrain extends maptalks.BaseObject {
+            constructor(data, options, material, layer) {
+                options = maptalks.Util.extend({ data, layer }, OPTIONS, options);
+                super();
+                this._initOptions(options);
+
+                const { buffGeom, minHeight } = getGeometry(data, layer, (buffGeom) => {
+                    this.getObject3d().geometry = buffGeom;
+                    this.getObject3d().geometry.needsUpdate = true;
+                });
+
+                this._createMesh(buffGeom, material);
+                const z = layer.altitudeToVector3(options.altitude, options.altitude).x;
+                this.getObject3d().position.z = z;
+            }
+
+            /**
+          * animationShow test
+          * 
+          * */
+            animateShow(options = {}, cb) {
+                if (this._showPlayer) {
+                    this._showPlayer.cancel();
+                }
+                if (maptalks.Util.isFunction(options)) {
+                    options = {};
+                    cb = options;
+                }
+                const duration = options['duration'] || 1000,
+                    easing = options['easing'] || 'out';
+                const player = this._showPlayer = maptalks.animation.Animation.animate({
+                    'scale': 1
+                }, {
+                    'duration': duration,
+                    'easing': easing
+                }, frame => {
+                    const scale = frame.styles.scale;
+                    if (scale > 0) {
+                        this.getObject3d().scale.set(1, 1, scale);
+                    }
+                    if (cb) {
+                        cb(frame, scale);
+                    }
+                });
+                player.play();
+                return player;
+            }
+
+        }
+
+
+
+        //default values
+        var OPTIONS1 = {
+            textureWidth: 512,
+            textureHeight: 512,
+            sunColor: 0xffffff,
+            betaVersion: 0,
+            waterNormals: null,
+            side: THREE.DoubleSide,
+            depthTest: true,
+            alpha: 1,
+            waterColor: '#00ff4a',
+            noiseScale: 0.1,
+            interactive: false,
+            altitude: 0
+        };
+
+        /**
+         * custom component
+         * */
+
+        class Ocean extends maptalks.BaseObject {
+            constructor(polygon, options, layer) {
+                options = maptalks.Util.extend({}, OPTIONS1, options, { layer, polygon });
+                if (!options.waterNormals) {
+                    throw new Error('waterNormals is null');
+                }
+                super();
+                //Initialize internal configuration
+                // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L135
+                this._initOptions(options);
+
+                const waterNormalsTexture = new THREE.TextureLoader().load(options.waterNormals);
+                waterNormalsTexture.wrapS = waterNormalsTexture.wrapT = THREE.RepeatWrapping;
+                options.waterNormals = waterNormalsTexture;
+
+                const water = new THREE.Water(
+                    layer.getThreeRenderer(),
+                    layer.getCamera(),
+                    layer.getScene(),
+                    options
+                );
+                const geometry = getOceanGeometry(polygon, layer);
+                this._createMesh(geometry, water.material);
+
+                this.getObject3d().add(water);
+                this.water = water;
+                //set object3d position
+                const { altitude } = options;
+                const z = layer.altitudeToVector3(altitude, altitude).x;
+                const center = polygon.getCenter();
+                const v = layer.coordinateToVector3(center, z);
+                this.getObject3d().position.copy(v);
+
+            }
+
+
+            getSymbol() {
+                return this.water.material;
+            }
+
+
+            setSymbol(material) {
+                this.water.material = material;
+                return this;
+            }
+
+
+            _animation() {
+                const water = this.water;
+                water.material.uniforms.time.value += 1.0 / 60.0;
+                water.render();
+            }
+        }
+
+
+
+        function getSingleGeometry(polygon, layer, centerPt) {
+            //if lnglats
+            if (Array.isArray(polygon)) {
+                polygon = new maptalks.Polygon(polygon);
+            }
+
+            const shell = polygon.getShell();
+            const holes = polygon.getHoles();
+            const lnglats = shell;
+            const positions = [],
+                holesIndices = [], positionsV = [];
+            lnglats.forEach(lnglat => {
+                const v = layer.coordinateToVector3(lnglat).sub(centerPt);
+                positions.push(v.x, v.y, v.z);
+                positionsV.push(v);
+            });
+            if (holes && holes.length > 0) {
+                holes.forEach(hole => {
+                    holesIndices.push(positionsV.length);
+                    hole.forEach(lnglat => {
+                        const v = layer.coordinateToVector3(lnglat).sub(centerPt);
+                        positions.push(v.x, v.y, v.z);
+                        positionsV.push(v);
+                    });
+                });
+            }
+            const hole = (holesIndices.length > 0 ? holesIndices : undefined);
+            const faces = earcut(positions, hole, 3);
+            return {
+                positionsV,
+                faces
+            };
+        }
+
+        function getOceanGeometry(polygon, layer) {
+            const geometry = new THREE.Geometry();
+            let positions = [],
+                fcs = [];
+            const centerPt = layer.coordinateToVector3(polygon.getCenter());
+            if (polygon instanceof maptalks.Polygon) {
+                const {
+                    positionsV,
+                    faces
+                } = getSingleGeometry(polygon, layer, centerPt);
+                positions = positionsV;
+                fcs = faces;
+            } else {
+                const lnglats = polygon.getCoordinates();
+                for (let i = 0, len = lnglats.length; i < len; i++) {
+                    const {
+                        positionsV,
+                        faces
+                    } = getSingleGeometry(lnglats[i], layer, centerPt);
+                    if (i > 0) {
+                        const LEN = positions.length;
+                        for (let i = 0, len = faces.length; i < len; i++) {
+                            faces[i] += LEN;
+                        }
+                    }
+                    positionsV.forEach(p => {
+                        positions.push(p);
+                    });
+                    faces.forEach(f => {
+                        fcs.push(f);
+                    });
+                }
+            }
+
+            geometry.vertices = positions;
+            for (let i = 0, len = fcs.length; i < len; i += 3) {
+                const face = new THREE.Face3(
+                    fcs[i],
+                    fcs[i + 1],
+                    fcs[i + 2]
+                );
+                geometry.faces.push(face);
+            }
+            // geometry.computeFlatVertexNormals();
+            // geometry.computeMorphNormals();
+            geometry.computeVertexNormals();
+            geometry.computeFaceNormals();
+            return geometry;
+        }
+    </script>
+</body>
+
+</html>

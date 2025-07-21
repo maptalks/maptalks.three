@@ -7,11 +7,12 @@
     <link type="text/css" rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
     <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.js"></script>
     <script type="text/javascript" src="https://unpkg.com/@maptalks/gl/dist/maptalksgl.js"></script>
-    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
-    <script type="text/javascript" src="https://unpkg.com/three@0.138.0/examples/js/libs/stats.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/three@0.104.0/build/three.min.js"></script>
+    <script type="text/javascript"
+        src="https://unpkg.com/three@0.104.0/examples/js/libs/stats.min.js"></script>
     <!-- <script type="text/javascript" src="https://unpkg.com/lz-string@1.4.4/libs/lz-string.min.js"></script> -->
     <script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
-    <script type="text/javascript" src="js/geoutil.js"></script>
+    <script type="text/javascript" src="../demo/js/geoutil.js"></script>
     <!-- <script type="text/javascript" src="buildings.js"></script> -->
     <style>
         html,
@@ -36,7 +37,7 @@
         var map = new maptalks.Map("map", {
             center: [115.63373210417001, 34.87688357015699],
             zoom: 4,
-            pitch: 40,
+            // pitch: 70,
             // bearing: 180,
             centerCross: true,
             doubleClickZoom: false,
@@ -73,24 +74,24 @@
 
         var material = new THREE.LineBasicMaterial({
             linewidth: 1,
-            color: 'rgb(13,141,255)',
-            opacity: 0.12,
+            color: '#fff',
+            opacity: 0.2,
             transparent: true,
             blending: THREE.AdditiveBlending
         });
 
-        // var lineMaterial = new THREE.LineBasicMaterial({
-        //     linewidth: 1,
-        //     color: '#0d37ff',
-        //     opacity: 0.1,
-        //     transparent: true,
-        //     blending: THREE.AdditiveBlending
-        // });
-        var lines;
+        var lineMaterial = new THREE.LineBasicMaterial({
+            linewidth: 1,
+            color: '#0d37ff',
+            opacity: 0.1,
+            transparent: true,
+            blending: THREE.AdditiveBlending
+        });
+        var lineTrails;
 
         function addLines() {
             // data from https://github.com/maptalks/maptalks.odline
-            fetch('./data/lines.json').then(function (res) {
+            fetch('./../demo/data/lines.json').then(function (res) {
                 return res.json();
             }).then(function (geojson) {
                 var lineStrings = geojson.map(function (feature) {
@@ -113,18 +114,25 @@
                     return b.len - a.len
                 });
 
-                var offset = Infinity;
-                lines = list.slice(0, offset).map(d => {
-                    var line = new ArcLine(d.lineString, {
-                        altitude: 0,
-                        height: d.len / 3
+                var offset = 2000;
+                lineTrails = list.slice(0, offset).map(d => {
+                    var line = new LineTrail(d.lineString, {
+                        chunkLength: d.len / 100,
+                        trail: 5,
+                        speed: 1,
+                        altitude: 100,
                     }, material, threeLayer)
                     return line;
                 });
+                var lines = list.slice(0, offset).map(d => {
+                    return threeLayer.toLine(d.lineString, {}, lineMaterial);
+                });
 
-                console.log('lines.length:', lines.length);
+
+                console.log('lines.length:', lineTrails.length);
                 console.timeEnd(timer);
                 threeLayer.addMesh(lines);
+                threeLayer.addMesh(lineTrails);
                 initGui();
                 // threeLayer.config('animation', true);
                 animation();
@@ -157,25 +165,25 @@
             var gui = new dat.GUI();
             gui.add(params, 'add').onChange(function () {
                 if (params.add) {
-                    threeLayer.addMesh(lines);
+                    threeLayer.addMesh(lineTrails);
                 } else {
-                    threeLayer.removeMesh(lines);
+                    threeLayer.removeMesh(lineTrails);
                 }
             });
             gui.addColor(params, 'color').name('line color').onChange(function () {
                 material.color.set(params.color);
-                lines.forEach(function (mesh) {
+                lineTrails.forEach(function (mesh) {
                     mesh.setSymbol(material);
                 });
             });
             gui.add(params, 'opacity', 0, 1).onChange(function () {
                 material.opacity = params.opacity;
-                lines.forEach(function (mesh) {
+                lineTrails.forEach(function (mesh) {
                     mesh.setSymbol(material);
                 });
             });
             gui.add(params, 'show').onChange(function () {
-                lines.forEach(function (mesh) {
+                lineTrails.forEach(function (mesh) {
                     if (params.show) {
                         mesh.show();
                     } else {
@@ -183,8 +191,8 @@
                     }
                 });
             });
-            gui.add(params, 'altitude', 0, 300000).onChange(function () {
-                lines.forEach(function (mesh) {
+            gui.add(params, 'altitude', 0, 300).onChange(function () {
+                lineTrails.forEach(function (mesh) {
                     mesh.setAltitude(params.altitude);
                 });
             });
@@ -193,16 +201,20 @@
 
         //default values
         var OPTIONS = {
-            height: 0,
-            altitude: 0
+            trail: 5,
+            chunkLength: 50,
+            speed: 1,
+            altitude: 0,
+            interactive: false
         };
 
+        const MAX_POINTS = 1000;
 
         /**
          * custom component
          * */
 
-        class ArcLine extends maptalks.BaseObject {
+        class LineTrail extends maptalks.BaseObject {
             constructor(lineString, options, material, layer) {
                 options = maptalks.Util.extend({}, OPTIONS, options, { layer, lineString });
                 super();
@@ -210,45 +222,84 @@
                 // https://github.com/maptalks/maptalks.three/blob/1e45f5238f500225ada1deb09b8bab18c1b52cf2/src/BaseObject.js#L135
                 this._initOptions(options);
 
-                const { altitude, height } = options;
-                const points = getArcPoints(lineString, layer.altitudeToVector3(height, height).x, layer);
-                const positions = getLinePosition(points, layer).positions;
+                const { altitude, chunkLength, speed, trail } = options;
+                const chunkLines = lineSlice(lineString, chunkLength);
+
+
+                const centerPt = layer.coordinateToVector3(lineString.getCenter());
+                //cache position for  faster computing,reduce double counting
+                const positionMap = {};
+                for (let i = 0, len = chunkLines.length; i < len; i++) {
+                    const chunkLine = chunkLines[i];
+                    for (let j = 0, len1 = chunkLine.length; j < len1; j++) {
+                        const lnglat = chunkLine[j];
+                        const key = lnglat.join(',').toString();
+                        if (!positionMap[key]) {
+                            positionMap[key] = layer.coordinateToVector3(lnglat).sub(centerPt);
+                        }
+                    }
+                }
+
+                const positions = getChunkLinesPosition([chunkLines[0]], layer, positionMap, centerPt).positions;
                 const geometry = new THREE.BufferGeometry();
-                geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                const ps = new Float32Array(MAX_POINTS * 3); // 3 vertices per point
+                geometry.addAttribute('position', new THREE.BufferAttribute(ps, 3).setDynamic(true));
+                setLineGeometryAttribute(geometry, positions);
                 this._createLine(geometry, material);
 
                 //set object3d position
                 const z = layer.altitudeToVector3(altitude, altitude).x;
+
                 const center = lineString.getCenter();
                 const v = layer.coordinateToVector3(center, z);
                 this.getObject3d().position.copy(v);
+
+                this._params = {
+                    trail: Math.max(1, trail),
+                    index: 0,
+                    len: chunkLines.length,
+                    chunkLines,
+                    layer,
+                    speed: Math.min(1, speed),
+                    idx: 0,
+                    positions: [],
+                    positionMap,
+                    centerPt
+                };
+                // this._init();
             }
 
-        }
+
+            _init() {
+                const { len, chunkLines, layer, trail, positionMap, centerPt } = this._params;
+                for (let i = 0; i < len; i++) {
+                    const result = chunkLines.slice(i, i + trail);
+                    const ps = getChunkLinesPosition(result, layer, positionMap, centerPt).positions;
+                    this._params.positions[i] = ps;
+                }
+            }
 
 
-        function getArcPoints(lineString, height, layer) {
-            const lnglats = [];
-            if (Array.isArray(lineString)) {
-                lnglats.push(lineString[0], lineString[lineString.length - 1]);
-            } else if (lineString instanceof maptalks.LineString) {
-                const coordinates = lineString.getCoordinates();
-                lnglats.push(coordinates[0], coordinates[coordinates.length - 1]);
+            _animation() {
+                const { index, positions, idx, speed, len, chunkLines, layer, trail, positionMap, centerPt } = this._params;
+                const i = Math.round(index);
+                if (i > idx) {
+                    this._params.idx++;
+                    let ps = positions[i];
+                    if (!ps) {
+                        const result = chunkLines.slice(i, i + trail);
+                        ps = getChunkLinesPosition(result, layer, positionMap, centerPt).positions;
+                        this._params.positions[i] = ps;
+                    }
+                    setLineGeometryAttribute(this.getObject3d().geometry, ps);
+                    this.getObject3d().geometry.attributes.position.needsUpdate = true;
+                }
+                if (index >= len) {
+                    this._params.index = -1;
+                    this._params.idx = -1;
+                }
+                this._params.index += speed;
             }
-            const [first, last] = lnglats;
-            let center;
-            if (Array.isArray(first)) {
-                center = [first[0] / 2 + last[0] / 2, first[1] / 2 + last[1] / 2];
-            } else if (first instanceof maptalks.Coordinate) {
-                center = [first.x / 2 + last.x / 2, first.y / 2 + last.y / 2];
-            }
-            const centerPt = layer.coordinateToVector3(lineString.getCenter());
-            const v = layer.coordinateToVector3(first).sub(centerPt);
-            const v1 = layer.coordinateToVector3(last).sub(centerPt);
-            const vh = layer.coordinateToVector3(center, height).sub(centerPt);
-            const ellipse = new THREE.CatmullRomCurve3([v, vh, v1], false, 'catmullrom');
-            const points = ellipse.getPoints(40);
-            return points;
         }
     </script>
 </body>
