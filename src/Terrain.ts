@@ -152,9 +152,10 @@ class Terrain extends BaseObject {
                 updateGeometryPosition(rgbImg, geometry, layer, { imageWidth, imageHeight, flaserBoundary });
                 this.fire('dataload', {});
             };
-            rgbImg.onerror = function () {
-                console.error(`not load ${rgbImg.src}`);
-                this.fire('dataerror', {});
+            rgbImg.onerror = (error) => {
+                console.error(error);
+                console.error(`can not  load terrain data: ${rgbImg.src}`);
+                this.fire('dataerror', { image: rgbImg, error, url: rgbImg.src });
             };
         }
         if (img) {
@@ -164,6 +165,10 @@ class Terrain extends BaseObject {
                 material.opacity = 1;
                 material.needsUpdate = true;
                 this.fire('textureload', {});
+            }, () => { }, (error) => {
+                console.error(error);
+                console.error(`can not load terrain texture ${img.src}`, error);
+                this.fire('textureerror', { image: img, error, url: img.src });
             });
         } else {
             material.opacity = 1;
