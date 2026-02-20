@@ -216,7 +216,7 @@ bar.setToolTip(d.height * 400, {
 
 * on(eventsOn, handler, context)
 
-  * eventsOn [event types to register, seperated by space if more than one.]
+  * eventsOn [event types to register, separated by space if more than one.]
   * handler [handler function to be called]
   * context [the context of the handler]
   * return this
@@ -233,7 +233,7 @@ bar.setToolTip(d.height * 400, {
 
 * addEventListener(eventTypes, handler, context)
 
-  * eventTypes  [event types to register, seperated by space if more than one.
+  * eventTypes  [event types to register, separated by space if more than one.
   * handler  [handler function to be called]
   * context  [the context of the handler]
   * return this
@@ -243,7 +243,7 @@ bar.setToolTip(d.height * 400, {
 
 * once(eventTypes, handler, context)
 
-  * eventTypes  [event types to register, seperated by space if more than one.]
+  * eventTypes  [event types to register, separated by space if more than one.]
   * handler  [handler function to be called]
   * context  [the context of the handler]
   * return this
@@ -253,7 +253,7 @@ bar.setToolTip(d.height * 400, {
 
 * off(eventsOff, handler, contextopt)
 
-  * eventsOff  [event types to unregister, seperated by space if more than one.]
+  * eventsOff  [event types to unregister, separated by space if more than one.]
   * handler  [handler function to be called]
   * context  [the context of the handler]
   * return this
@@ -268,7 +268,7 @@ bar.setToolTip(d.height * 400, {
 
 * removeEventListener(eventTypes, handler, context)
 
-  * eventTypes  [event types to unregister, seperated by space if more than one.]
+  * eventTypes  [event types to unregister, separated by space if more than one.]
   * handler  [handler function to be called]
   * context  [the context of the handler]
   * return this
