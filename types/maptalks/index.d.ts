@@ -84,16 +84,16 @@ declare class Size {
 }
 
 declare namespace renderer {
-  export class CanvasLayerRenderer {
-    _drawContext: boolean;
-    _drawLayer(params: any): void
+  export class LayerAbstractRenderer {
+    prepareCanvas(): any
     createCanvas(): void
     onCanvasCreate(): void
     getMap(): Map
     completeRender(): void
     remove(): void
     setToRedraw(): void
-
+    needToRedraw(): boolean
+    getViewExtent(): any
   }
 }
 

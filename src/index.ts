@@ -162,8 +162,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
         return map.isInteracting() || map.isAnimating();
     }
 
-    prepareToDraw(...args) {
-
+    prepareToDraw(...args): any[] {
+        return [];
     }
     /**
      * Draw method of ThreeLayer
@@ -183,9 +183,9 @@ class ThreeLayer extends maptalks.CanvasLayer {
 
     /**
      * transform height to glpoint
-     * @param enableHeight 
-     * @param height 
-     * @returns 
+     * @param enableHeight
+     * @param height
+     * @returns
      */
     _transformHeight(enableHeight: boolean, height: number) {
         if (!enableHeight) {
@@ -683,7 +683,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
 
     /**
      * clear all object3ds
-     * @returns 
+     * @returns
      */
     clear() {
         return this.clearMesh();
@@ -1426,7 +1426,7 @@ const TEMPMESH = {
     bloom: true
 };
 
-class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
+class ThreeRenderer extends maptalks.renderer.LayerAbstractRenderer {
     scene: THREE.Scene;
     camera: THREE.Camera;
     canvas: any
@@ -1437,6 +1437,10 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
     pick: GPUPick;
     _renderTime: number = 0;
     _renderTarget: THREE.WebGLRenderTarget = null;
+    //@internal
+    _drawContext: any[];
+    //@internal
+    _predrawed: boolean;
 
     getPrepareParams(): Array<any> {
         return [this.scene, this.camera];
@@ -1446,37 +1450,36 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         return [this.scene, this.camera];
     }
 
-    _drawLayer() {
-        super._drawLayer.apply(this, arguments);
-        // this.renderScene();
-    }
 
     hitDetect(): boolean {
         return false;
     }
 
-    createCanvas() {
-        super.createCanvas();
-        this.createContext();
+    createContext() {
+        this.createCanvas();
+        const layer = this.layer;
+        const attributes = layer.options.glOptions || {
+            alpha: true,
+            depth: true,
+            antialias: true,
+            stencil: true,
+            preserveDrawingBuffer: false
+        };
+        attributes.preserveDrawingBuffer = true;
+        this.gl = this.gl || this._createGLContext(this.canvas, attributes);
     }
 
-    createContext() {
-        if (this.canvas.gl && this.canvas.gl.wrap) {
-            this.gl = this.canvas.gl.wrap();
-        } else {
-            const layer = this.layer;
-            const attributes = layer.options.glOptions || {
-                alpha: true,
-                depth: true,
-                antialias: true,
-                stencil: true,
-                preserveDrawingBuffer: false
-            };
-            attributes.preserveDrawingBuffer = true;
-            this.gl = this.gl || this._createGLContext(this.canvas, attributes);
+    initContext() {
+        if (this.gl.wrap) {
+            this.gl = this.gl.wrap();
         }
         this._initThreeRenderer();
         this.layer.onCanvasCreate(this.context, this.scene, this.camera);
+        const renderer = this.context;
+        (this.context as any).getImageData = (sx, sy, sw, sh) => {
+                const pixels = new Uint8Array(sw * sh * 4);
+                return renderer.readRenderTargetPixels(this._renderTarget, sx, sy, sw, sh, pixels);
+        }
     }
 
     _initThreeRenderer() {
@@ -1541,15 +1544,6 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         this.context.clear();
     }
 
-    prepareCanvas(): any {
-        if (!this.canvas) {
-            this.createCanvas();
-        } else {
-            this.clearCanvas();
-        }
-        this.layer.fire('renderstart', { 'context': this.context });
-        return null;
-    }
     renderScene(context) {
         // const time = maptalks.Util.now();
         // Make sure to execute only once in a frame
@@ -1683,6 +1677,85 @@ class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer {
         return context;
         /* eslint-enable no-empty */
     }
+
+    needToRedraw() {
+        if (this.layer.options['animation']) {
+            return true;
+        }
+        const map = this.getMap();
+        if (map.isInteracting() && !this.layer.drawOnInteracting) {
+            return false;
+        }
+        return super.needToRedraw();
+    }
+
+    draw(...args: any[]) {
+        this.prepareCanvas();
+        this.prepareDrawContext();
+        this._drawLayer(...args);
+    }
+
+    drawOnInteracting(...args: any[]) {
+        this._drawLayerOnInteracting(...args);
+    }
+
+    prepareDrawContext() {
+        if (!this._predrawed) {
+            const params = ensureParams(this.getPrepareParams());
+            this._drawContext = this.layer.prepareToDraw(this.context, ...params);
+            if (!this._drawContext) {
+                this._drawContext = [];
+            }
+            if (!Array.isArray(this._drawContext)) {
+                this._drawContext = [this._drawContext];
+            }
+            this._predrawed = true;
+        }
+    }
+
+    //@internal
+    _prepareDrawParams() {
+        if (!this.getMap()) {
+            return null;
+        }
+        const view = this.getViewExtent();
+        if (view['maskExtent'] && !view['extent'].intersects(view['maskExtent'])) {
+            this.completeRender();
+            return null;
+        }
+        const args: any[] = [this.context, view];
+        const params = ensureParams(this.getDrawParams());
+        return [
+            ...args,
+            ...params,
+            ...this._drawContext
+        ];
+    }
+
+    //@internal
+    _drawLayer(...args: any[]) {
+        const params = this._prepareDrawParams();
+        if (!params) {
+            return;
+        }
+        // eslint-disable-next-line prefer-spread
+        this.layer.draw.apply(this.layer, params.concat(args));
+        this.completeRender();
+    }
+
+
+    //@internal
+    _drawLayerOnInteracting(...args: any[]) {
+        if (!this.layer.drawOnInteracting) {
+            return;
+        }
+        const params = this._prepareDrawParams();
+        if (!params) {
+            return;
+        }
+        this.layer.drawOnInteracting.apply(this.layer, params.concat(args));
+        this.completeRender();
+    }
 }
 
 ThreeLayer.registerRenderer('gl', ThreeRenderer);
@@ -1727,4 +1800,14 @@ export {
 if (maptalks.registerWorkerAdapter) {
     maptalks.registerWorkerAdapter(getWorkerName(), workerCode);
     maptalks.registerWorkerAdapter(fetchDataWorkerKey, fetchDataWorkerCode);
+}
+
+function ensureParams(params?: any | any[]) {
+    if (!params) {
+        params = [];
+    }
+    if (!Array.isArray(params)) {
+        params = [params];
+    }
+    return params;
 }
