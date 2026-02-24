@@ -95,6 +95,19 @@ declare namespace renderer {
     needToRedraw(): boolean
     getViewExtent(): any
   }
+
+  export class CanvasLayerRenderer {
+    _drawContext: boolean;
+    _drawLayer(params: any): void
+    createCanvas(): void
+    onCanvasCreate(): void
+    getMap(): Map
+    completeRender(): void
+    remove(): void
+    setToRedraw(): void
+
+
+  }
 }
 
 declare class TileLayer {
