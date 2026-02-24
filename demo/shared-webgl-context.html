@@ -12,6 +12,8 @@
         src="https://unpkg.com/@maptalks/3dtiles/dist/maptalks.3dtiles.js"></script>
     <script type="text/javascript" src="https://unpkg.com/three@0.138.0/build/three.min.js"></script>
     <script type="text/javascript" src="https://unpkg.com/maptalks.three@latest/dist/maptalks.three.js"></script>
+    <script type="text/javascript"
+        src="https://unpkg.com/@maptalks/transcoders.draco/dist/transcoders.draco.js"></script>
     <style>
         html,
         body {
@@ -57,8 +59,7 @@
             // loadingLimit : 0, //瓦片请求最大数量
             services: [
                 {
-                    //data from cesiumlab
-                    url: 'https://earthsdk.com/v/last/Apps/assets/dayanta/tileset.json',
+                    url: "http://resource.dvgis.cn/data/3dtiles/dayanta/tileset.json",
                     // maximumScreenSpaceError值越小，加载的模型越清晰，但加载的数据量会变大
                     // 清晰度可以接受的情况下，推荐把这个值设得越大越好，性能会越好
                     maximumScreenSpaceError: 12.0,
