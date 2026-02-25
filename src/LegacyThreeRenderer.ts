@@ -1,64 +1,14 @@
 import * as maptalks from 'maptalks';
 import * as THREE from 'three';
 import GPUPick from './GPUPick';
-import BaseObject from './BaseObject';
-import { BaseLayerOptionType } from './type/index';
 import { BaseObjectTaskManager } from './BaseObjectTaskManager';
+import { recursionObject3dLayer } from './rendererutil';
 import { ThreeLayer } from './index';
 
-
-type MeshType = BaseObject | THREE.Object3D | Array<BaseObject | THREE.Object3D>;
-
-
-const options: BaseLayerOptionType = {
-    'renderer': 'gl',
-    'doubleBuffer': false,
-    'glOptions': null,
-    'geometryEvents': true,
-    'identifyCountOnEvent': 0,
-    'forceRenderOnZooming': true,
-    'loopRenderCount': 50
-};
 const TEMPMESH = {
     bloom: true
 };
 
-const RADIAN = Math.PI / 180;
-
-const LINEPRECISIONS = [
-    [4000, 220],
-    [2000, 100],
-    [1000, 30],
-    [500, 15],
-    [100, 5],
-    [50, 2],
-    [10, 1],
-    [5, 0.7],
-    [2, 0.1],
-    [1, 0.05],
-    [0.5, 0.02],
-    [0.4, 0.01],
-    [0.1, 0.005],
-    [0.05, 0.002],
-    [0.01, 0.001]
-];
-
-const EVENTS = [
-    'mouseout',
-    'mousemove',
-    'click',
-    'mousedown',
-    'mouseup',
-    'dblclick',
-    'contextmenu',
-    'touchstart',
-    'touchmove',
-    'touchend'
-];
-const TEMP_COORD = new maptalks.Coordinate(0, 0);
-const TEMP_POINT = new maptalks.Point(0, 0);
-const TEMP_VECTOR3 = new THREE.Vector3();
-const heightCache = new Map();
 const KEY_FBO = '__webglFramebuffer';
 const TEMP_V4 = new THREE.Vector4();
 
@@ -318,20 +268,5 @@ export default class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer
         }
         return context;
         /* eslint-enable no-empty */
-    }
-}
-
-function recursionObject3dLayer(object3d, layer) {
-    if (!object3d) {
-        return;
-    }
-    if (object3d.layers) {
-        object3d.layers.set(layer);
-    }
-    const children = object3d.children;
-    if (children && children.length) {
-        for (let i = 0, len = children.length; i < len; i++) {
-            recursionObject3dLayer(children[i], layer);
-        }
     }
 }

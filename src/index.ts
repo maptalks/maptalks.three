@@ -41,6 +41,7 @@ import Path from './Path';
 import Paths from './Paths';
 import workerCode from './worker/worker.amd.js';
 import LegacyThreeRenderer from './LegacyThreeRenderer';
+import { recursionObject3dLayer } from './rendererutil';
 
 type MeshType = BaseObject | THREE.Object3D | Array<BaseObject | THREE.Object3D>;
 
@@ -1768,20 +1769,6 @@ if (maptalks.renderer.LayerAbstractRenderer) {
 }
 
 
-function recursionObject3dLayer(object3d, layer) {
-    if (!object3d) {
-        return;
-    }
-    if (object3d.layers) {
-        object3d.layers.set(layer);
-    }
-    const children = object3d.children;
-    if (children && children.length) {
-        for (let i = 0, len = children.length; i < len; i++) {
-            recursionObject3dLayer(children[i], layer);
-        }
-    }
-}
 function getGLRes(map: maptalks.Map) {
     return map.getGLRes ? map.getGLRes() : map.getGLZoom();
 }
