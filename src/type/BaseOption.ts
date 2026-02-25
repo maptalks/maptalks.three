@@ -3,10 +3,10 @@ import * as THREE from 'three';
 
 export type BaseLayerOptionType = {
     minZoom?: number;
-	maxZoom?: number;
-	visible?: boolean;
-	opacity?: number;
-	zIndex?: number;
+    maxZoom?: number;
+    visible?: boolean;
+    opacity?: number;
+    zIndex?: number;
     renderer?: 'gl',
     doubleBuffer?: boolean,
     glOptions?: {
@@ -35,7 +35,7 @@ export type BaseObjectOptionType = {
     lineString?: maptalks.LineString,
     polygon?: maptalks.Polygon,
     index?: number,
-    id?: string,
+    id?: string | number,
     center?: maptalks.Coordinate | Array<number>,
     height?: number,
     heightEnable?: boolean,
@@ -87,7 +87,8 @@ export type ExtrudeLineTrailOptionType = BaseObjectOptionType & {
     width?: number,
     height?: number,
     speed?: number,
-    pathUV?: boolean
+    pathUV?: boolean,
+    parentCenter?: maptalks.Coordinate
 }
 
 export type PointOptionType = BaseObjectOptionType & {

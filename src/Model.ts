@@ -34,7 +34,7 @@ class Model extends BaseObject {
     getCoordinates() {
         const coordinate = this.options.coordinate;
         const altitude = this.options.altitude;
-        const c = new maptalks.Coordinate(coordinate);
+        const c = new maptalks.Coordinate(coordinate as maptalks.Coordinate);
         c.z = altitude;
         return c;
     }

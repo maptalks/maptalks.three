@@ -39,11 +39,11 @@ class TerrainVectorTileLayer extends BaseVectorTileLayer {
      */
     formatBaseObjects(index: string, image: ImageType): BaseObject[] {
         const opts = this.options, baseobjects: BaseObject[] = [];
-        const { scale, tileDivisor } = opts;
+        const { scale, tileDivisor } = opts as any;
         const { x, y, z } = this._getXYZOfIndex(index);
         const zoom = this.getMap().getZoom();
         const texture = this.getTileUrl(x, y, z);
-        const [imageWidth, imageHeight] = this.options.tileSize;
+        const [imageWidth, imageHeight] = this.options.tileSize as [number, number];
 
         const extent = this._getTileLngLatExtent(x, y, z);
         const material = this.material.clone();

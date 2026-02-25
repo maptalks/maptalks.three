@@ -17,8 +17,10 @@ class BaseVectorTileLayer extends maptalks.TileLayer {
     _add: boolean;
     _layerLaodTime: number;
     intervalId: any;
+    _renderer: any;
+
     constructor(url, options = {}) {
-        super(maptalks.Util.GUID(), maptalks.Util.extend({ urlTemplate: url }, options));
+        super(maptalks.Util.GUID() as unknown as string, maptalks.Util.extend({ urlTemplate: url }, options));
         this._opts = null;
         this._layer = null;
         this.material = null;
@@ -97,7 +99,7 @@ class BaseVectorTileLayer extends maptalks.TileLayer {
     }
 
     _getCurentTileKeys() {
-        const tileGrids = this.getTiles().tileGrids || [];
+        const tileGrids = this.getTiles(null, null).tileGrids || [];
         const keys: Array<string> = [], keysMap: { [key: string]: boolean } = {};
         for (let i = 0, len = tileGrids.length; i < len; i++) {
             const d = tileGrids[i];
@@ -302,8 +304,8 @@ class BaseVectorTileLayer extends maptalks.TileLayer {
 
     _getTileExtent(x: number, y: number, z: number): maptalks.Extent {
         const map = this.getMap(),
-            res = map._getResolution(z),
-            tileConfig = this._getTileConfig(),
+            res = map['_getResolution'](z),
+            tileConfig = this['_getTileConfig'](),
             tileExtent = tileConfig.getTilePrjExtent(x, y, res);
         return tileExtent;
     }
@@ -316,8 +318,8 @@ class BaseVectorTileLayer extends maptalks.TileLayer {
      */
     _getTileLngLatExtent(x: number, y: number, z: number): maptalks.Extent {
         const tileExtent = this._getTileExtent(x, y, z);
-        let max = tileExtent.getMax(),
-            min = tileExtent.getMin();
+        let max = tileExtent.getMax() as maptalks.Coordinate,
+            min = tileExtent.getMin() as maptalks.Coordinate;
         const map = this.getMap();
         const projection = map.getProjection();
         min = projection.unproject(min);

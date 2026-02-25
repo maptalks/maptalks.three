@@ -28,7 +28,7 @@ export function getLinePosition(lineString: SingleLineStringType | Array<THREE.V
         positionsV = lineString;
     } else {
         if (Array.isArray(lineString)) {
-            lineString = new maptalks.LineString(lineString);
+            lineString = new maptalks.LineString(lineString as unknown as number[][]);
         }
         const z = 0;
         //support geojson
@@ -248,7 +248,7 @@ export function getPathParams(lineString: SingleLineStringType | Array<THREE.Vec
 export function LineStringSplit(lineString: LineStringType) {
     let lineStrings: Array<SingleLineStringType> = [], center: maptalks.Coordinate;
     if (lineString instanceof maptalks.MultiLineString) {
-        lineStrings = lineString.getGeometries();
+        lineStrings = lineString.getGeometries() as maptalks.LineString[];
         center = lineString.getCenter();
     } else if (lineString instanceof maptalks.LineString) {
         lineStrings.push(lineString);

@@ -33,6 +33,7 @@ export default class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer
     }
 
     _drawLayer() {
+        //@ts-ignore
         super._drawLayer.apply(this, arguments);
         // this.renderScene();
     }
@@ -62,6 +63,7 @@ export default class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer
             this.gl = this.gl || this._createGLContext(this.canvas, attributes);
         }
         this._initThreeRenderer();
+        //@ts-ignore
         this.layer.onCanvasCreate(this.context, this.scene, this.camera);
     }
 
@@ -78,6 +80,7 @@ export default class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer
         const scene = this.scene = new THREE.Scene();
         const map = this.layer.getMap();
         const fov = map.getFov() * Math.PI / 180;
+        //@ts-ignore
         const camera = this.camera = new THREE.PerspectiveCamera(fov, map.width / map.height, map.cameraNear, map.cameraFar);
         camera.matrixAutoUpdate = false;
         this._syncCamera();
@@ -106,6 +109,7 @@ export default class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer
         const r = map.getDevicePixelRatio ? map.getDevicePixelRatio() : (maptalks.Browser.retina ? 2 : 1);
         const canvas = this.canvas;
         const { width, height, cssWidth, cssHeight } = maptalks.Util.calCanvasSize(size, r);
+        //@ts-ignore
         if (this.layer._canvas && (canvas.style.width !== cssWidth || canvas.style.height !== cssHeight)) {
             canvas.style.width = cssWidth;
             canvas.style.height = cssHeight;
@@ -232,7 +236,7 @@ export default class ThreeRenderer extends maptalks.renderer.CanvasLayerRenderer
     }
 
     remove() {
-        delete this._drawContext;
+        // delete this._drawContext;
         if (this._renderTarget) {
             this._renderTarget.dispose();
             delete this._renderTarget;

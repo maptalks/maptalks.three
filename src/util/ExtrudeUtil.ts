@@ -148,7 +148,7 @@ export function getPolygonPositions(polygon: PolygonType, layer: ThreeLayer, cen
     let datas = [];
     if (polygon instanceof maptalks.MultiPolygon) {
         datas = polygon.getGeometries().map(p => {
-            return getSinglePolygonPositions(p, layer, center || polygon.getCenter(), centerPt, isArrayBuff);
+            return getSinglePolygonPositions(p as maptalks.Polygon, layer, center || polygon.getCenter(), centerPt, isArrayBuff);
         });
     } else if (polygon instanceof maptalks.Polygon) {
         const data = getSinglePolygonPositions(polygon, layer, center || polygon.getCenter(), centerPt, isArrayBuff);
@@ -169,7 +169,8 @@ export function getPolygonPositions(polygon: PolygonType, layer: ThreeLayer, cen
 }
 
 export function getSinglePolygonPositions(polygon: SinglePolygonType, layer: ThreeLayer,
-    center: maptalks.Coordinate, centerPt: THREE.Vector3, isArrayBuff = false): Array<Array<Array<number>> | ArrayBufferLike> {
+    center: maptalks.Coordinate, centerPt: THREE.Vector3, isArrayBuff = false): Array<Array<Array<number>> | ArrayBufferLike | Float32Array> {
+
     let shell: Array<any>, holes: Array<any>;
     //it is pre for geojson,Possible later use of geojson
     if (isGeoJSONPolygon(polygon as any)) {
@@ -211,7 +212,7 @@ export function getPolygonArrayBuffer(polygon: PolygonType): Array<Array<ArrayBu
     let datas = [];
     if (polygon instanceof maptalks.MultiPolygon) {
         datas = polygon.getGeometries().map(p => {
-            return getSinglePolygonArrayBuffer(p, false);
+            return getSinglePolygonArrayBuffer(p as maptalks.Polygon, false);
         });
     } else if (polygon instanceof maptalks.Polygon) {
         const data = getSinglePolygonArrayBuffer(polygon, false);

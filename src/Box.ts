@@ -17,7 +17,7 @@ const OPTIONS = {
 };
 
 class Box extends BaseObject {
-    constructor(coordinate: maptalks.Coordinate, options: BarOptionType, material: THREE.Material, layer: ThreeLayer) {
+    constructor(coordinate: maptalks.Coordinate | number[], options: BarOptionType, material: THREE.Material, layer: ThreeLayer) {
         options = maptalks.Util.extend({}, OPTIONS, options, { layer, coordinate });
         super();
         this._initOptions(options);

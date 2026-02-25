@@ -134,7 +134,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
     _baseObjects: Array<BaseObject> = [];
     _delayMeshes: Array<BaseObject> = [];
     _identifyBaseObjectEventsThis: Function;
-    _zoomendThis: Function;
+    _zoomendThis: (result?: any) => void | boolean;
     _emptyIdentifyThis: Function;
     _meshes: Array<BaseObject | THREE.Object3D> = [];
 
@@ -149,7 +149,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
             return false;
         }
         const sp = map.getSpatialReference();
-        const prj = sp._projection, res = sp._resolutions;
+        const prj = sp['_projection'], res = sp['_resolutions'];
         if (prj && prj.code === 'EPSG:3857' && res && res.length && Math.floor(res[0]) === 156543 && map.getGLRes) {
             return true;
         }
@@ -216,7 +216,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
             TEMP_COORD.x = coordinate[0];
             TEMP_COORD.y = coordinate[1];
         } else if (!(coordinate instanceof maptalks.Coordinate)) {
-            coordinate = new maptalks.Coordinate(coordinate);
+            coordinate = new maptalks.Coordinate(coordinate as [number, number]);
         }
         const res = getGLRes(map);
         const p = coordinateToPoint(map, isArray ? TEMP_COORD : coordinate, res, TEMP_POINT);
@@ -248,7 +248,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 TEMP_COORD.x = coordinate[0];
                 TEMP_COORD.y = coordinate[1];
             } else if (!(coordinate instanceof maptalks.Coordinate)) {
-                coordinate = new maptalks.Coordinate(coordinate);
+                coordinate = new maptalks.Coordinate(coordinate as [number, number]);
             }
             const p = coordinateToPoint(map, isArray ? TEMP_COORD : coordinate, res, TEMP_POINT);
             p.x -= centerPt.x;
@@ -294,7 +294,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                 TEMP_COORD.x = coordinate[0];
                 TEMP_COORD.y = coordinate[1];
             } else if (!(coordinate instanceof maptalks.Coordinate)) {
-                coordinate = new maptalks.Coordinate(coordinate);
+                coordinate = new maptalks.Coordinate(coordinate as [number, number]);
             }
             const p = coordinateToPoint(map, isArray ? TEMP_COORD : coordinate, res, TEMP_POINT);
             p.x -= centerPt.x;
@@ -318,7 +318,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         const res = getGLRes(map);
         let center = coord || map.getCenter();
         if (!(center instanceof maptalks.Coordinate)) {
-            center = new maptalks.Coordinate(center);
+            center = new maptalks.Coordinate(center as [number, number]);
         }
         const target = map.locate(center, w, h);
         const p0 = coordinateToPoint(map, center, res),
@@ -360,7 +360,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
             return null;
         }
         if (polygon instanceof maptalks.MultiPolygon) {
-            return polygon.getGeometries().map(c => this.toShape(c) as any);
+            return polygon.getGeometries().map(c => this.toShape(c as maptalks.Polygon) as any);
         }
         const center = polygon.getCenter();
         const centerPt = this.coordinateToVector3(center);
@@ -398,7 +398,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
             return null;
         }
         if (polygon instanceof maptalks.MultiPolygon) {
-            return polygon.getGeometries().map(c => this.toExtrudeMesh(c, altitude, material, height) as any);
+            return polygon.getGeometries().map(c => this.toExtrudeMesh(c as maptalks.Polygon, altitude, material, height) as any);
         }
         const rings = polygon.getCoordinates();
         rings.forEach(ring => {
@@ -727,7 +727,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
     }
 
     getCamera(): THREE.Camera {
-        const renderer = this._getRenderer();
+        const renderer = this['_getRenderer']();
         if (renderer) {
             return renderer.camera;
         }
@@ -735,7 +735,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
     }
 
     getScene(): THREE.Scene {
-        const renderer = this._getRenderer();
+        const renderer = this['_getRenderer']();
         if (renderer) {
             return renderer.scene;
         }
@@ -743,7 +743,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
     }
 
     renderScene(context?: Object, layer?: any) {
-        const renderer = this._getRenderer();
+        const renderer = this['_getRenderer']();
         if (renderer) {
             renderer.clearCanvas();
             renderer.renderScene(context);
@@ -773,7 +773,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
     }
 
     renderPickScene() {
-        const renderer = this._getRenderer();
+        const renderer = this['_getRenderer']();
         if (renderer) {
             const pick = renderer.pick;
             if (pick) {
@@ -784,7 +784,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
     }
 
     getThreeRenderer(): THREE.WebGLRenderer {
-        const renderer = this._getRenderer();
+        const renderer = this['_getRenderer']();
         if (renderer) {
             return renderer.context;
         }
@@ -792,7 +792,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
     }
 
     getPick(): GPUPick {
-        const renderer = this._getRenderer();
+        const renderer = this['_getRenderer']();
         if (renderer) {
             return renderer.pick;
         }
@@ -841,7 +841,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         });
         this._zoomend();
         if (render) {
-            const renderer = this._getRenderer();
+            const renderer = this['_getRenderer']();
             if (renderer) {
                 renderer.setToRedraw();
             }
@@ -894,7 +894,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
             }
         });
         if (render) {
-            const renderer = this._getRenderer();
+            const renderer = this['_getRenderer']();
             if (renderer) {
                 renderer.setToRedraw();
             }
@@ -1068,8 +1068,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
         function showInfoWindow(baseObject: BaseObject, eventType?: string) {
             eventType = eventType || type;
             const infoWindow = baseObject.getInfoWindow();
-            if (infoWindow && (!infoWindow._owner)) {
-                infoWindow.addTo(baseObject);
+            if (infoWindow && (!(infoWindow as any)._owner)) {
+                infoWindow.addTo(baseObject as unknown as maptalks.Geometry);
             }
 
             const infoOptions = infoWindow ? (infoWindow as any).options : {};
@@ -1085,8 +1085,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
             baseObject.fire(type, Object.assign({}, e, { target: baseObject, selectMesh: (baseObject.getSelectMesh ? baseObject.getSelectMesh() : null) }));
             // tooltip
             const tooltip = baseObject.getToolTip();
-            if (tooltip && (!tooltip._owner)) {
-                tooltip.addTo(baseObject);
+            if (tooltip && (!(tooltip as any)._owner)) {
+                tooltip.addTo(baseObject as unknown as maptalks.Geometry);
             }
             baseObject.openToolTip(coordinate);
             showInfoWindow(baseObject);
@@ -1125,7 +1125,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         if (!map) {
             return this;
         }
-        const e = map._getEventParams ? map._getEventParams(event) : this._getEventParams(event);
+        const e = map['_getEventParams'] ? map['_getEventParams'](event) : this._getEventParams(event);
         for (let i = 0, len = scene.children.length; i < len; i++) {
             const child = scene.children[i] || {};
             const parent = child['__parent'];
@@ -1145,11 +1145,11 @@ class ThreeLayer extends maptalks.CanvasLayer {
         }
         const map = this.map || this.getMap();
         //When map interaction, do not carry out mouse movement detection, which can have better performance
-        if (map.isInteracting() || !map.options.geometryEvents || map._ignoreEvent(event)) {
+        if (map.isInteracting() || !map.options.geometryEvents || map['_ignoreEvent'](event)) {
             return this;
         }
         const eventType = event.type;
-        const e = map._getEventParams ? map._getEventParams(event) : this._getEventParams(event);
+        const e = map['_getEventParams'] ? map['_getEventParams'](event) : this._getEventParams(event);
         e.type = eventType;
         const { type, coordinate } = e;
         const now = maptalks.Util.now();
@@ -1232,8 +1232,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
         function showInfoWindow(baseObject: BaseObject, eventType?: string) {
             eventType = eventType || type;
             const infoWindow = baseObject.getInfoWindow();
-            if (infoWindow && (!infoWindow._owner)) {
-                infoWindow.addTo(baseObject);
+            if (infoWindow && (!(infoWindow as any)._owner)) {
+                infoWindow.addTo(baseObject as unknown as maptalks.Geometry);
             }
 
             const infoOptions = infoWindow ? (infoWindow as any).options : {};
@@ -1259,8 +1259,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
                     baseObject.fire(type, Object.assign({}, e, { target: baseObject, selectMesh: (baseObject.getSelectMesh ? baseObject.getSelectMesh() : null) }));
                     // tooltip
                     const tooltip = baseObject.getToolTip();
-                    if (tooltip && (!tooltip._owner)) {
-                        tooltip.addTo(baseObject);
+                    if (tooltip && (!(tooltip as any)._owner)) {
+                        tooltip.addTo(baseObject as unknown as maptalks.Geometry);
                     }
                     baseObject.openToolTip(coordinate);
                     showInfoWindow(baseObject);
@@ -1304,7 +1304,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
             eventParam['coordinate'] = map.containerPointToCoordinate(containerPoint);
             eventParam['containerPoint'] = containerPoint;
             eventParam['viewPoint'] = map.containerPointToViewPoint(containerPoint);
-            eventParam['pont2d'] = map._containerPointToPoint(containerPoint);
+            eventParam['pont2d'] = map['_containerPointToPoint'](containerPoint);
         }
         return eventParam;
     }
@@ -1383,7 +1383,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         if (!map) return this;
         const dom = this._getGeometryEventMapPanel();
         if (!map.options.supportPluginEvent) {
-            maptalks.DomUtil.off(dom, EVENTS.join(' '), this._identifyBaseObjectEventsThis, this);
+            maptalks.DomUtil.off(dom, EVENTS.join(' '), this._identifyBaseObjectEventsThis);
         } else {
             // @ts-ignore
             this.off('identifyempty', this._emptyIdentifyThis);
@@ -1478,11 +1478,12 @@ if (maptalks.renderer.LayerAbstractRenderer) {
                 this.gl = this.gl.wrap();
             }
             this._initThreeRenderer();
+            //@ts-ignore
             this.layer.onCanvasCreate(this.context, this.scene, this.camera);
             const renderer = this.context;
             (this.context as any).getImageData = (sx, sy, sw, sh) => {
-                    const pixels = new Uint8Array(sw * sh * 4);
-                    return renderer.readRenderTargetPixels(this._renderTarget, sx, sy, sw, sh, pixels);
+                const pixels = new Uint8Array(sw * sh * 4);
+                return renderer.readRenderTargetPixels(this._renderTarget, sx, sy, sw, sh, pixels);
             }
         }
 
@@ -1499,6 +1500,7 @@ if (maptalks.renderer.LayerAbstractRenderer) {
             const scene = this.scene = new THREE.Scene();
             const map = this.layer.getMap();
             const fov = map.getFov() * Math.PI / 180;
+            //@ts-ignore
             const camera = this.camera = new THREE.PerspectiveCamera(fov, map.width / map.height, map.cameraNear, map.cameraFar);
             camera.matrixAutoUpdate = false;
             this._syncCamera();
@@ -1527,6 +1529,7 @@ if (maptalks.renderer.LayerAbstractRenderer) {
             const r = map.getDevicePixelRatio ? map.getDevicePixelRatio() : (maptalks.Browser.retina ? 2 : 1);
             const canvas = this.canvas;
             const { width, height, cssWidth, cssHeight } = maptalks.Util.calCanvasSize(size, r);
+            //@ts-ignore
             if (this.layer._canvas && (canvas.style.width !== cssWidth || canvas.style.height !== cssHeight)) {
                 canvas.style.width = cssWidth;
                 canvas.style.height = cssHeight;
@@ -1770,6 +1773,7 @@ if (maptalks.renderer.LayerAbstractRenderer) {
 
 
 function getGLRes(map: maptalks.Map) {
+    //@ts-ignore
     return map.getGLRes ? map.getGLRes() : map.getGLZoom();
 }
 

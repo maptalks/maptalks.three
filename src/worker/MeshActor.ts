@@ -56,8 +56,10 @@ if (maptalks.worker) {
     };
 }
 
-var actor: maptalks.worker.Actor;
-export function getActor(): maptalks.worker.Actor {
+type ActorType = InstanceType<typeof maptalks.worker.Actor>;
+
+let actor: ActorType;
+export function getActor(): ActorType {
     if (!maptalks.worker) {
         console.error('maptalks.worker is not defined,You can\'t use ThreeVectorTileLayer');
     }
@@ -68,11 +70,11 @@ export function getActor(): maptalks.worker.Actor {
 }
 
 /**
- * 
- * @param distance 
- * @param layer 
- * @param altCache 
- * @returns 
+ *
+ * @param distance
+ * @param layer
+ * @param altCache
+ * @returns
  */
 function getDistance(distance: number, layer: ThreeLayer, altCache = {}) {
     if (distance !== undefined && typeof distance === 'number' && distance !== 0) {
@@ -247,12 +249,12 @@ function gengerateExtrudeLines(lineStringList: Array<Array<SingleLineStringType>
 
 /**
  * generate Lines data for worker
- * @param lineStringList 
- * @param center 
- * @param layer 
- * @param lineStrings 
- * @param options 
- * @returns 
+ * @param lineStringList
+ * @param center
+ * @param layer
+ * @param lineStrings
+ * @param options
+ * @returns
  */
 function gengerateLines(lineStringList: Array<Array<SingleLineStringType>>, center: maptalks.Coordinate, layer: ThreeLayer,
     lineStrings: Array<LineStringType>, options: Array<any> = [], baseOptions?: any) {

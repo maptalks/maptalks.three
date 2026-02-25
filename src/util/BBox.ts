@@ -63,7 +63,7 @@ class BBox {
             [maxlng, minlat],
             [maxlng, maxlat]
         ].map(lnglat => {
-            return new maptalks.Coordinate(lnglat);
+            return new maptalks.Coordinate(lnglat as [number, number]);
         }).map(coordinate => {
             return map.coordToContainerPoint(coordinate);
         }).forEach(pixel => {

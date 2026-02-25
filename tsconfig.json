@@ -21,9 +21,9 @@
         "baseUrl": "./",
         //custom types
         "paths": {
-            "maptalks": [
-                "./types/maptalks/index.d.ts"
-            ],
+            // "maptalks": [
+            //     "./types/maptalks/index.d.ts"
+            // ],
             "deyihu-geometry-extrude": [
                 "./types/deyihu-geometry-extrude/index.d.ts"
             ]

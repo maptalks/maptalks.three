@@ -58,7 +58,7 @@ function Base() {
  * maptalks.Eventable(Base) return a Class  https://github.com/maptalks/maptalks.js/blob/master/src/core/Eventable.js
  *
  */
-class BaseObject extends maptalks.Eventable(Base) {
+class BaseObject extends maptalks.Eventable(Base as any) {
     isAdd: boolean = false;
     object3d: THREE.Object3D;
     options: BaseObjectOptionType;
@@ -163,7 +163,7 @@ class BaseObject extends maptalks.Eventable(Base) {
         const options = this.getOptions();
         const { coordinate, lineString, polygon } = options;
         if (coordinate) {
-            return coordinate instanceof maptalks.Coordinate ? coordinate : new maptalks.Coordinate(coordinate);
+            return coordinate instanceof maptalks.Coordinate ? coordinate : new maptalks.Coordinate(coordinate as unknown as [number, number]);
         } else {
             const geometry = polygon || lineString;
             if (geometry && geometry.getCenter) {
@@ -302,7 +302,7 @@ class BaseObject extends maptalks.Eventable(Base) {
     setInfoWindow(options: object) {
         this.removeInfoWindow();
         this.infoWindow = new maptalks.ui.InfoWindow(options);
-        this.infoWindow.addTo(this);
+        this.infoWindow.addTo(this as unknown as maptalks.Geometry);
         return this;
     }
 
@@ -339,7 +339,7 @@ class BaseObject extends maptalks.Eventable(Base) {
     setToolTip(content: string, options: object) {
         this.removeToolTip();
         this.toolTip = new maptalks.ui.ToolTip(content, options);
-        this.toolTip.addTo(this);
+        this.toolTip.addTo(this as unknown as maptalks.Geometry);
         return this;
     }
 
@@ -523,7 +523,7 @@ class BaseObject extends maptalks.Eventable(Base) {
 
     /**
      * rewrite three.js computeLineDistances ,1.7 speed
-     * @param geometry 
+     * @param geometry
      */
     _computeLineDistances(geometry: THREE.BufferGeometry) {
         const position = geometry.attributes.position.array;

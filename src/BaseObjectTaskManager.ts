@@ -4,7 +4,7 @@ import { ThreeLayer } from './index';
 import { getActor } from './worker/MeshActor';
 
 type TaskQueue = {
-    id: string,
+    id: string | number,
     data: any,
     layer: ThreeLayer,
     baseObject: BaseObject,
