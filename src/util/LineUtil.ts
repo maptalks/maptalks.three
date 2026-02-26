@@ -69,7 +69,7 @@ export function getLinePosition(lineString: SingleLineStringType | Array<THREE.V
             positions,
             positionsV,
             positions2d,
-            arrayBuffer: positions.buffer
+            arrayBuffer: positions.buffer as ArrayBuffer
         }
     }
     positions2d = new Float32Array(positionsV.length * 2);
@@ -89,7 +89,7 @@ export function getLinePosition(lineString: SingleLineStringType | Array<THREE.V
         positions,
         positionsV,
         positions2d,
-        arrayBuffer: positions.buffer
+        arrayBuffer: positions.buffer as ArrayBuffer
     };
 }
 

@@ -42,13 +42,13 @@
     "eslint": "^4.19.1",
     "eslint-config-maptalks": "^0.3.0",
     "eslint-plugin-mocha": "^5.0.0",
+    "maptalks": "^1.12.1",
     "rollup": "^2.64.0",
     "rollup-plugin-terser": "^7.0.2",
     "three": "^0.151.0",
     "tslib": "^2.1.0",
     "typescript": "^4.5.4",
-    "vitepress": "^1.5.0",
-    "maptalks": "^1.12.1"
+    "vitepress": "^1.5.0"
   },
   "dependencies": {
     "deyihu-geometry-extrude": "0.1.10",
