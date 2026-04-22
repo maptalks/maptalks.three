@@ -47,12 +47,11 @@ var threeLayer = new maptalks.ThreeLayer('t', {
     forceRenderOnMoving : true,
     forceRenderOnRotating : true
 });
-threeLayer.prepareToDraw = function (gl, scene, camera) {
+threeLayer.prepareToDraw = function (gl, scene, camera, worldGroup) {
     var me = this;
     var light = new THREE.DirectionalLight(0xffffff);
     light.position.set(0, -10, 10).normalize();
     scene.add(light);
-    const worldGroup = scene.children[0];
 
     features.forEach(function (g) {
         var heightPerLevel = 10;

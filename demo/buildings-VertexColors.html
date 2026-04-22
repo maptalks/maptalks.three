@@ -62,12 +62,11 @@
         var meshs = [];
         var material = new THREE.MeshLambertMaterial({ color: '#fff', transparent: true });
         var highlightmaterial = new THREE.MeshBasicMaterial({ color: 'yellow', transparent: true });
-        threeLayer.prepareToDraw = function (gl, scene, camera) {
+        threeLayer.prepareToDraw = function (gl, scene, camera, worldGroup) {
             var light = new THREE.DirectionalLight(0xffffff);
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
             scene.add(new THREE.AmbientLight('#fff', 0.2));
-            var worldGroup = scene.children[0];
 
             // var material = new THREE.MeshBasicMaterial({ color: '#3e35cf' });
             // material.vertexColors = THREE.VertexColors;
