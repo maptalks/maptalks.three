@@ -102,10 +102,10 @@
             if (!Array.isArray(meshes)) {
                 meshes = [meshes];
             }
-            const scene = this.getScene();
+            const worldGroup = this.getWorldGroup();
             meshes.forEach(mesh => {
                 if (mesh instanceof maptalks.BaseObject) {
-                    scene.add(mesh.getObject3d());
+                    worldGroup.add(mesh.getObject3d());
                     if (!mesh.isAdd) {
                         mesh.isAdd = true;
                         mesh._fire('add', { target: mesh });
@@ -124,7 +124,7 @@
                         this._animationBaseObjectMap[mesh.getObject3d().uuid] = mesh;
                     }
                 } else if (mesh instanceof THREE.Object3D) {
-                    scene.add(mesh);
+                    worldGroup.add(mesh);
                 }
             });
             this._zoomend();

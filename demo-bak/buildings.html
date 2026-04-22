@@ -52,6 +52,7 @@ threeLayer.prepareToDraw = function (gl, scene, camera) {
     var light = new THREE.DirectionalLight(0xffffff);
     light.position.set(0, -10, 10).normalize();
     scene.add(light);
+    const worldGroup = scene.children[0];
 
     features.forEach(function (g) {
         var heightPerLevel = 10;
@@ -64,9 +65,9 @@ threeLayer.prepareToDraw = function (gl, scene, camera) {
 
         var mesh = me.toExtrudeMesh(maptalks.GeoJSON.toGeometry(g), levels * heightPerLevel, m, levels * heightPerLevel);
         if (Array.isArray(mesh)) {
-          scene.add.apply(scene, mesh);
+          worldGroup.add.apply(worldGroup, mesh);
         } else {
-          scene.add(mesh);
+          worldGroup.add(mesh);
         }
     });
 };
@@ -78,7 +79,7 @@ var raycaster = new THREE.Raycaster();
 document.addEventListener('click', function (event) {
     event.preventDefault();
     var mouse = new THREE.Vector2();
-    
+
     let dpr = map.getDevicePixelRatio();
     if(!dpr)
     {

@@ -332,22 +332,23 @@ class ThreeLayer extends maptalks.CanvasLayer {
         if ((altitude === 0) || (!maptalks.Util.isNumber(altitude))) {
             return new THREE.Vector3(0, 0, 0);
         }
-        const map = this.getMap();
-        if (map.altitudeToPoint) {
-            const res = getGLRes(map);
-            let z = map.altitudeToPoint(altitude, res);
-            if (altitude < 0 && z > 0) {
-                z = -z;
-            }
-            if (out) {
-                out.x = z;
-                out.y = z;
-                out.z = 0;
-                return out;
-            }
-            return new THREE.Vector3(z, z, 0);
-        }
-        return this.distanceToVector3(altitude, altitude, coord);
+        // const map = this.getMap();
+        // if (map.altitudeToPoint) {
+        //     const res = getGLRes(map);
+        //     let z = map.altitudeToPoint(altitude, res);
+        //     if (altitude < 0 && z > 0) {
+        //         z = -z;
+        //     }
+        //     if (out) {
+        //         out.x = z;
+        //         out.y = z;
+        //         out.z = 0;
+        //         return out;
+        //     }
+        //     return new THREE.Vector3(z, z, 0);
+        // }
+        // return this.distanceToVector3(altitude, altitude, coord);
+        return new THREE.Vector3(altitude, altitude1, 0);
     }
 
     /**
@@ -668,13 +669,13 @@ class ThreeLayer extends maptalks.CanvasLayer {
 
 
     getMeshes(): Array<THREE.Object3D | BaseObject> {
-        const scene = this.getScene();
-        if (!scene) {
+        const worldGroup = this.getWorldGroup();
+        if (!worldGroup) {
             return [];
         }
         const meshes = [];
-        for (let i = 0, len = scene.children.length; i < len; i++) {
-            const child = scene.children[i];
+        for (let i = 0, len = worldGroup.children.length; i < len; i++) {
+            const child = worldGroup.children[i];
             if (child instanceof THREE.Object3D && !(child instanceof THREE.Camera)) {
                 meshes.push(child['__parent'] || child);
             }
@@ -696,14 +697,14 @@ class ThreeLayer extends maptalks.CanvasLayer {
     }
 
     clearMesh() {
-        const scene = this.getScene();
-        if (!scene) {
+        const worldGroup = this.getWorldGroup();
+        if (!worldGroup) {
             return this;
         }
-        for (let i = scene.children.length - 1; i >= 0; i--) {
-            const child = scene.children[i];
+        for (let i = worldGroup.children.length - 1; i >= 0; i--) {
+            const child = worldGroup.children[i];
             if (child instanceof THREE.Object3D && !(child instanceof THREE.Camera)) {
-                scene.remove(child);
+                worldGroup.remove(child);
                 const parent = child['__parent'];
                 if (parent && parent instanceof BaseObject) {
                     parent.isAdd = false;
@@ -738,6 +739,14 @@ class ThreeLayer extends maptalks.CanvasLayer {
         const renderer = this['_getRenderer']();
         if (renderer) {
             return renderer.scene;
+        }
+        return null;
+    }
+
+    getWorldGroup(): THREE.Group {
+        const renderer = this['_getRenderer']();
+        if (renderer) {
+            return renderer.worldGroup;
         }
         return null;
     }
@@ -819,10 +828,10 @@ class ThreeLayer extends maptalks.CanvasLayer {
         if (!Array.isArray(meshes)) {
             meshes = [meshes];
         }
-        const scene = this.getScene();
+        const worldGroup = this.getWorldGroup();
         meshes.forEach(mesh => {
             if (mesh instanceof BaseObject) {
-                scene.add(mesh.getObject3d());
+                worldGroup.add(mesh.getObject3d());
                 if (!mesh.isAdd) {
                     mesh.isAdd = true;
                     mesh.options.layer = this;
@@ -832,7 +841,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
                     this._animationBaseObjectMap[mesh.getObject3d().uuid] = mesh;
                 }
             } else if (mesh instanceof THREE.Object3D) {
-                scene.add(mesh);
+                worldGroup.add(mesh);
             }
             const index = this._meshes.indexOf(mesh);
             if (index === -1) {
@@ -941,6 +950,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
             mouse = this._mouse,
             camera = this.getCamera(),
             scene = this.getScene(),
+            worldGroup = this.getWorldGroup(),
             size = this.getMap().getSize();
         //fix Errors will be reported when the layer is not initialized
         if (!scene) {
@@ -957,7 +967,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         //set linePrecision for THREE.Line
         setRaycasterLinePrecision(raycaster, this._getLinePrecision(this.getMap().getResolution()));
         const children: Array<THREE.Object3D> = [], hasidentifyChildren: Array<BaseObject> = [];
-        scene.children.forEach(mesh => {
+        worldGroup.children.forEach(mesh => {
             const parent = mesh['__parent'];
             if (parent && parent.getOptions) {
                 const baseObject = parent as BaseObject;
@@ -1118,6 +1128,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
     _emptyIdentify(options: any = {}) {
         const event = options.domEvent;
         const scene = this.getScene();
+        const worldGroup = this.getWorldGroup();
         if (!scene) {
             return this;
         }
@@ -1126,8 +1137,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
             return this;
         }
         const e = map['_getEventParams'] ? map['_getEventParams'](event) : this._getEventParams(event);
-        for (let i = 0, len = scene.children.length; i < len; i++) {
-            const child = scene.children[i] || {};
+        for (let i = 0, len = worldGroup.children.length; i < len; i++) {
+            const child = worldGroup.children[i] || {};
             const parent = child['__parent'];
             if (parent) {
                 (parent as BaseObject).fire('empty', Object.assign({}, e, { target: parent }));
@@ -1218,10 +1229,10 @@ class ThreeLayer extends maptalks.CanvasLayer {
             return this;
         }
         const baseObjects = this.identify(coordinate, { count });
-        const scene = this.getScene();
-        if (baseObjects.length === 0 && scene) {
-            for (let i = 0, len = scene.children.length; i < len; i++) {
-                const child = scene.children[i] || {};
+        const worldGroup = this.getWorldGroup();
+        if (baseObjects.length === 0 && worldGroup) {
+            for (let i = 0, len = worldGroup.children.length; i < len; i++) {
+                const child = worldGroup.children[i] || {};
                 const parent = child['__parent'];
                 if (parent) {
                     (parent as BaseObject).fire('empty', Object.assign({}, e, { target: parent }));
@@ -1314,12 +1325,12 @@ class ThreeLayer extends maptalks.CanvasLayer {
      *map zoom event
      */
     _zoomend() {
-        const scene = this.getScene();
-        if (!scene) {
+        const worldGroup = this.getWorldGroup();
+        if (!worldGroup) {
             return;
         }
         const zoom = this.getMap().getZoom();
-        scene.children.forEach(mesh => {
+        worldGroup.children.forEach(mesh => {
             const parent = mesh['__parent'];
             if (parent && parent.getOptions) {
                 const baseObject = parent as BaseObject;
@@ -1432,6 +1443,7 @@ let ThreeRenderer;
 if (maptalks.renderer.LayerAbstractRenderer) {
     class ThreeGLRenderer extends maptalks.renderer.LayerAbstractRenderer {
         scene: THREE.Scene;
+        worldGroup: THREE.Group;
         camera: THREE.Camera;
         canvas: any
         layer: ThreeLayer;
@@ -1498,7 +1510,11 @@ if (maptalks.renderer.LayerAbstractRenderer) {
             this.context = renderer;
 
             const scene = this.scene = new THREE.Scene();
+            this.worldGroup = new THREE.Group();
+            scene.add(this.worldGroup);
             const map = this.layer.getMap();
+            const zScale = map.altitudeToPoint(100, map.getGLRes()) / 100;
+            this.worldGroup.scale.set(1, 1, zScale);
             const fov = map.getFov() * Math.PI / 180;
             //@ts-ignore
             const camera = this.camera = new THREE.PerspectiveCamera(fov, map.width / map.height, map.cameraNear, map.cameraFar);
@@ -1586,7 +1602,8 @@ if (maptalks.renderer.LayerAbstractRenderer) {
                 renderTargetProps[KEY_FBO] = context.renderTarget.getFramebuffer(context.renderTarget.fbo);
                 this.context.setRenderTarget(this._renderTarget);
                 const bloomEnable = context.bloom === 1 && context.sceneFilter;
-                const object3ds = this.scene.children || [];
+                const object3ds = this.worldGroup.children || [];
+
                 //是否是bloom渲染帧
                 let isBloomFrame = false;
                 if (bloomEnable) {

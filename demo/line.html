@@ -63,6 +63,7 @@
 
 
         threeLayer.prepareToDraw = function (gl, scene, camera) {
+            var worldGroup = scene.children[0];
             var light = new THREE.DirectionalLight(0xffffff);
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
@@ -95,9 +96,9 @@
                 // initVertexColors(mesh.geometry, '#2d2f61', '#fff');
                 meshs.push(mesh);
                 // if (Array.isArray(mesh)) {
-                //     scene.add.apply(scene, mesh);
+                //     worldGroup.add.apply(worldGroup, mesh);
                 // } else {
-                //     scene.add(mesh);
+                //     worldGroup.add(mesh);
                 // }
             });
             threeLayer.addMesh(meshs);
