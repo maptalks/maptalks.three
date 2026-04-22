@@ -171,7 +171,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * Draw method of ThreeLayer
      * In default, it calls renderScene, refresh the camera and the scene
      */
-    draw(gl, view, scene, camera, timeStamp, context) {
+    draw(gl, view, scene, camera, worldGroup, timeStamp, context) {
         this.renderScene(context, this);
     }
 
@@ -179,7 +179,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * Draw method of ThreeLayer when map is interacting
      * In default, it calls renderScene, refresh the camera and the scene
      */
-    drawOnInteracting(gl, view, scene, camera, event, timeStamp, context) {
+    drawOnInteracting(gl, view, scene, camera, worldGroup, event, timeStamp, context) {
         this.renderScene(context, this);
     }
 
@@ -1459,11 +1459,11 @@ if (maptalks.renderer.LayerAbstractRenderer) {
         _predrawed: boolean;
 
         getPrepareParams(): Array<any> {
-            return [this.scene, this.camera];
+            return [this.scene, this.camera, this.worldGroup];
         }
 
         getDrawParams(): Array<any> {
-            return [this.scene, this.camera];
+            return [this.scene, this.camera, this.worldGroup];
         }
 
 

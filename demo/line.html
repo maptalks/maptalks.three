@@ -62,8 +62,7 @@
         });
 
 
-        threeLayer.prepareToDraw = function (gl, scene, camera) {
-            var worldGroup = scene.children[0];
+        threeLayer.prepareToDraw = function (gl, scene, camera, worldGroup) {
             var light = new THREE.DirectionalLight(0xffffff);
             light.position.set(0, -10, 10).normalize();
             scene.add(light);
