@@ -6,6 +6,7 @@ import Line from './Line';
 import ExtrudeLine from './ExtrudeLine';
 import ExtrudePolygon from './ExtrudePolygon';
 import Model from './Model';
+import { wrapSkinnedModel } from './Model';
 import ExtrudeLineTrail from './ExtrudeLineTrail';
 import ExtrudePolygons from './ExtrudePolygons';
 import Point from './Point';
@@ -1793,7 +1794,8 @@ export {
     getFetchDataActor,
     BaseObjectTaskManager,
     BaseObjectTask,
-    polyextrude
+    polyextrude,
+    wrapSkinnedModel
 };
 
 if (maptalks.registerWorkerAdapter) {
