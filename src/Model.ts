@@ -30,10 +30,7 @@ class Model extends BaseObject {
         const position = layer.coordinateToVector3(coordinate, z);
         this.getObject3d().position.copy(position);
 
-        this.wrapSkinnedMesh(model, model);
-        model.traverse((child) => {
-            this.wrapSkinnedMesh(child, model);
-        });
+        wrapSkinnedModel(model);
 
         this.type = 'Model';
     }
@@ -46,17 +43,27 @@ class Model extends BaseObject {
         c.z = altitude;
         return c;
     }
+}
 
-    wrapSkinnedMesh(mesh, rootObject3D) {
+export default Model;
+
+export function wrapSkinnedModel(model: THREE.Object3D) {
+    if (!model || !(model instanceof THREE.Object3D)) {
+        return;
+    }
+    function wrapSkinnedMesh(mesh, rootObject3D) {
         if (!mesh.isSkinnedMesh) {
             return;
         }
         mesh.updateMatrixWorld = wrapUpdateMatrixWorld(mesh.updateMatrixWorld, rootObject3D).bind(mesh);
         mesh.skeleton.update = wrapSkeletonUpdate(mesh.skeleton.update, rootObject3D).bind(mesh.skeleton);
     }
-}
 
-export default Model;
+    wrapSkinnedMesh(model, model);
+    model.traverse((child) => {
+        wrapSkinnedMesh(child, model);
+    });
+}
 
 function wrapSkeletonUpdate(fn, rootObject3D) {
     const _offsetMatrix = /*@__PURE__*/ new THREE.Matrix4();
@@ -66,24 +73,24 @@ function wrapSkeletonUpdate(fn, rootObject3D) {
         const matrixWorld = rootObject3D.matrixWorld;
 
         const bones = this.bones;
-		const boneInverses = this.boneInverses;
-		const boneMatrices = this.boneMatrices;
-		const boneTexture = this.boneTexture;
+        const boneInverses = this.boneInverses;
+        const boneMatrices = this.boneMatrices;
+        const boneTexture = this.boneTexture;
 
         //写入boneTexture之前，从boneMatrices中去掉 root translation
         //重新计算 boneMatrices，不能直接减去 root translation，否则会有精度问题导致的绘制失真
 
-		for ( let i = 0, il = bones.length; i < il; i ++ ) {
+        for (let i = 0, il = bones.length; i < il; i++) {
 
-			const matrix = bones[ i ] ? bones[ i ].matrixWorld : _identityMatrix;
+            const matrix = bones[i] ? bones[i].matrixWorld : _identityMatrix;
 
-			_offsetMatrix.multiplyMatrices( matrix, boneInverses[ i ] );
+            _offsetMatrix.multiplyMatrices(matrix, boneInverses[i]);
             _offsetMatrix.elements[12] -= matrixWorld.elements[12];
             _offsetMatrix.elements[13] -= matrixWorld.elements[13];
             _offsetMatrix.elements[14] -= matrixWorld.elements[14];
-			_offsetMatrix.toArray( boneMatrices, i * 16 );
+            _offsetMatrix.toArray(boneMatrices, i * 16);
 
-		}
+        }
     }
 }
 
@@ -93,9 +100,9 @@ function wrapUpdateMatrixWorld(fn, rootObject3D) {
         fn.apply(this, arguments);
         //从bindMatrixInverse中去掉 root translation
         const matrixWorld = rootObject3D.matrixWorld;
-        if ( this.bindMode === (THREE.AttachedBindMode || 'attached')) {
+        if (this.bindMode === (THREE.AttachedBindMode || 'attached')) {
             const bindMatrixInverse = this.bindMatrixInverse;
-            bindMatrixInverse.copy( this.matrixWorld );
+            bindMatrixInverse.copy(this.matrixWorld);
             bindMatrixInverse.elements[12] -= matrixWorld.elements[12];
             bindMatrixInverse.elements[13] -= matrixWorld.elements[13];
             bindMatrixInverse.elements[14] -= matrixWorld.elements[14];
