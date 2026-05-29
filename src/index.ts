@@ -747,6 +747,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
         const renderer = this['_getRenderer']();
         if (renderer) {
             renderer.clearCanvas();
+
             renderer.renderScene(context);
             //外部调用时，直接redraw
             if (!layer) {
@@ -1548,8 +1549,12 @@ if (maptalks.renderer.LayerAbstractRenderer) {
             if (!this.canvas) {
                 return;
             }
+            const mapRenderer = this.getMap().getRenderer();
+            if (!this.gl.wrap &&
+                this.canvas !== mapRenderer.canvas) {
+                this.context.clear();
+            }
 
-            this.context.clear();
         }
 
         renderScene(context) {
