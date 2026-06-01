@@ -172,7 +172,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * Draw method of ThreeLayer
      * In default, it calls renderScene, refresh the camera and the scene
      */
-    draw(gl, view, scene, camera, timeStamp, context) {
+    draw(gl, view, scene, camera, drawParams, timeStamp, context) {
         this.renderScene(context, this);
     }
 
@@ -180,7 +180,7 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * Draw method of ThreeLayer when map is interacting
      * In default, it calls renderScene, refresh the camera and the scene
      */
-    drawOnInteracting(gl, view, scene, camera, event, timeStamp, context) {
+    drawOnInteracting(gl, view, scene, camera, event, drawParams, timeStamp, context) {
         this.renderScene(context, this);
     }
 
@@ -1612,7 +1612,7 @@ if (maptalks.renderer.LayerAbstractRenderer) {
                         let layer = 0;
                         //当object3d找不到parent(baseobject)时，也加入当前渲染帧，这种情况的一般都是灯光对象
                         //sceneFilter 用来过滤符合当前模式的meshes
-                        if (object3ds[i] && sceneFilter(object3ds[i]) || !parent) {
+                        if (object3ds[i] && object3ds[i].isMesh && sceneFilter(object3ds[i])) {
                             //当时bloom渲染帧时，将meshes分组到layer=1
                             if (isBloomFrame) {
                                 layer = 1;
