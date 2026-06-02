@@ -96,6 +96,16 @@ const heightCache = new Map();
 const KEY_FBO = '__webglFramebuffer';
 const TEMP_V4 = new THREE.Vector4();
 
+function getParentRenderContext(args: any[]) {
+    for (let i = 0, len = args.length; i < len; i++) {
+        const arg = args[i];
+        if (typeof arg === 'object' && arg !== null && 'testSceneFilter' in arg) {
+            return arg;
+        }
+    }
+    return null;
+}
+
 // const MATRIX4 = new THREE.Matrix4();
 
 /**
@@ -172,7 +182,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * Draw method of ThreeLayer
      * In default, it calls renderScene, refresh the camera and the scene
      */
-    draw(gl, view, scene, camera, drawParams, timeStamp, context) {
+    draw(...args) {
+        const context = getParentRenderContext(args);
         this.renderScene(context, this);
     }
 
@@ -180,7 +191,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * Draw method of ThreeLayer when map is interacting
      * In default, it calls renderScene, refresh the camera and the scene
      */
-    drawOnInteracting(gl, view, scene, camera, event, drawParams, timeStamp, context) {
+    drawOnInteracting(...args) {
+        const context = getParentRenderContext(args);
         this.renderScene(context, this);
     }
 
@@ -1430,6 +1442,18 @@ const TEMPMESH = {
     bloom: true
 };
 
+function needRenderForBloomFrame(object: THREE.Object3D) {
+    if (!object) {
+        return false;
+    }
+    const bloom = (object as any).bloom;
+    if (bloom) {
+        return true;
+    }
+    return object instanceof THREE.Light || object instanceof THREE.Camera;
+
+}
+
 let ThreeRenderer;
 if (maptalks.renderer.LayerAbstractRenderer) {
     class ThreeGLRenderer extends maptalks.renderer.LayerAbstractRenderer {
@@ -1612,7 +1636,7 @@ if (maptalks.renderer.LayerAbstractRenderer) {
                         let layer = 0;
                         //当object3d找不到parent(baseobject)时，也加入当前渲染帧，这种情况的一般都是灯光对象
                         //sceneFilter 用来过滤符合当前模式的meshes
-                        if (object3ds[i] && sceneFilter(object3ds[i]) || !parent) {
+                        if (object3ds[i] && sceneFilter(object3ds[i]) || needRenderForBloomFrame(object3ds[i])) {
                             //当时bloom渲染帧时，将meshes分组到layer=1
                             if (isBloomFrame) {
                                 layer = 1;
