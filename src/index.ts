@@ -96,6 +96,16 @@ const heightCache = new Map();
 const KEY_FBO = '__webglFramebuffer';
 const TEMP_V4 = new THREE.Vector4();
 
+function getParentRenderContext(args: any[]) {
+    for (let i = 0, len = args.length; i < len; i++) {
+        const arg = args[i];
+        if (typeof arg === 'object' && arg !== null && 'bloom' in arg && 'sceneFilter' in arg) {
+            return arg;
+        }
+    }
+    return null;
+}
+
 // const MATRIX4 = new THREE.Matrix4();
 
 /**
@@ -172,7 +182,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * Draw method of ThreeLayer
      * In default, it calls renderScene, refresh the camera and the scene
      */
-    draw(gl, view, scene, camera, drawParams, timeStamp, context) {
+    draw(...args) {
+        const context = getParentRenderContext(args);
         this.renderScene(context, this);
     }
 
@@ -180,7 +191,8 @@ class ThreeLayer extends maptalks.CanvasLayer {
      * Draw method of ThreeLayer when map is interacting
      * In default, it calls renderScene, refresh the camera and the scene
      */
-    drawOnInteracting(gl, view, scene, camera, event, drawParams, timeStamp, context) {
+    drawOnInteracting(...args) {
+        const context = getParentRenderContext(args);
         this.renderScene(context, this);
     }
 
